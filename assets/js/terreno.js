@@ -51,7 +51,7 @@ function bilineal(arr, gw, gh, u, v) {
 }
 
 // Radio del llano que necesita cada lugar (las capitales grandes, más).
-export const radioDe = l => (l.tipo === 'capital' ? 15 * (l.tamano || 1) : 9);
+export const radioDe = l => (l.tipo === 'capital' ? 15 : l.tipo === 'puerto' ? 14 : 9) * (l.tamano || 1);
 
 export function crearTerreno(mundo, { movil = false } = {}) {
   const W = mundo.meta.ancho, H = mundo.meta.alto, cx = W / 2, cz = H / 2;
@@ -67,7 +67,18 @@ export function crearTerreno(mundo, { movil = false } = {}) {
     c.largo = 0;
     for (let i = 1; i < c.trazo.length; i++) c.largo += Math.hypot(c.trazo[i][0] - c.trazo[i - 1][0], c.trazo[i][1] - c.trazo[i - 1][1]);
   }
-  const rios = (mundo.rios || []).map(r => ({ ancho: r.ancho || 4, trazo: suavizar(r.puntos, 5) }));
+  // los ríos no bajan rectos: se les añade un serpenteo que se apaga en los extremos
+  const meandro = (trazo, amp) => {
+    const n = trazo.length; let s = 0;
+    return trazo.map((p, i) => {
+      const a = trazo[Math.max(0, i - 1)], b = trazo[Math.min(n - 1, i + 1)];
+      const tx = b[0] - a[0], ty = b[1] - a[1], l = Math.hypot(tx, ty) || 1;
+      if (i) s += Math.hypot(p[0] - trazo[i - 1][0], p[1] - trazo[i - 1][1]);
+      const k = Math.sin(i / (n - 1) * Math.PI), d = (Math.sin(s * 0.06) + Math.sin(s * 0.023 + 1.3) * 0.7) * amp * k;
+      return [p[0] - ty / l * d, p[1] + tx / l * d];
+    });
+  };
+  const rios = (mundo.rios || []).map(r => ({ ancho: r.ancho || 6, trazo: meandro(suavizar(r.puntos, 4), 5) }));
 
   /* ---------- pesos de región (suavizados: de ahí salen las transiciones) ---------- */
   const ids = mundo.regiones.map(r => r.id);
@@ -165,7 +176,7 @@ export function crearTerreno(mundo, { movil = false } = {}) {
     const mont = Math.pow(wT, 2.1);
     h += mont * (6 + crestas(x * 0.0105, y * 0.0105, 5) * 70 * (0.55 + fbm(x * 0.004 + 3, y * 0.004 + 8, 2) * 0.9));
     // ríos: cauce
-    h -= 1.6 * suave(11, 2, distRio(x, y));
+    h -= 2.4 * suave(17, 4, distRio(x, y));
     // lagos
     const dl = pesoLagos(x, y);
     h = mezcla(h, Math.min(h, 1.0), suave(1.7, 1.1, dl));
@@ -174,7 +185,7 @@ export function crearTerreno(mundo, { movil = false } = {}) {
     const wMa = pesoMarisma(x, y);
     h = mezcla(h, 0.14 + (fbm(x * 0.07 + 5, y * 0.07 + 9, 3) - 0.5) * 2.0, wMa);
     // llano bajo lugares y caminos (valles en la montaña, explanadas en el resto); el lago y la marisma mandan
-    const llano = Math.max(suave(20, 2, distLugar(x, y)), suave(12, 4, distCamino(x, y))) * suave(0.9, 1.2, dl) * (1 - wMa * 0.85);
+    const llano = Math.max(suave(20, 2, distLugar(x, y)), suave(12, 4, distCamino(x, y)) * suave(7, 15, distRio(x, y))) * suave(0.9, 1.2, dl) * (1 - wMa * 0.85);   // los caminos no rellenan el cauce: lo cruzan por puente
     if (llano > 0) h = mezcla(h, Math.max(1.3, base + mont * 3), llano);
     // mar
     const dc = haciaCosta(x, y);
@@ -244,8 +255,9 @@ export function crearTerreno(mundo, { movil = false } = {}) {
       const wMa = pesoMarisma(x, y);
       r = mezcla(r, 54 + n * 26, wMa); v = mezcla(v, 68 + n * 24, wMa); b = mezcla(b, 42 + n * 10, wMa);
       // ribera de los ríos
-      const rib = suave(10, 3, distRio(x, y)) * 0.55 * (1 - nieve * wT);
-      r = mezcla(r, 74, rib); v = mezcla(v, 98, rib); b = mezcla(b, 60, rib);
+      const dr = distRio(x, y), rib = suave(19, 8, dr) * 0.6 * (1 - nieve * wT), grava = suave(9, 5, dr) * 0.8;
+      r = mezcla(r, 70, rib); v = mezcla(v, 100, rib); b = mezcla(b, 56, rib);
+      r = mezcla(r, 150 + g2 * 30, grava); v = mezcla(v, 142 + g2 * 26, grava); b = mezcla(b, 118 + g2 * 20, grava);   // lecho de grava
       // arena en la costa
       const arena = suave(1.5, 0.35, h) * suave(60, 20, haciaCosta(x, y)) * (1 - wMa);
       r = mezcla(r, 214, arena); v = mezcla(v, 198, arena); b = mezcla(b, 156, arena);
@@ -391,24 +403,27 @@ export function crearTerreno(mundo, { movil = false } = {}) {
   grupo.add(agua);
 
   /* ---------- cintas sobre el terreno: ríos, caminos y fronteras ---------- */
-  function cinta(trazo, ancho, elev, suelo = 0, soloTierra = false) {
-    const p = [], uvs = [], ix = [], n = trazo.length;
+  function cinta(trazo, ancho, elev, suelo = 0, soloTierra = false, lamina = false, lejosDe = 0) {
+    const p = [], uvs = [], rap = [], ix = [], n = trazo.length;
     let largo = 0;
     for (let i = 0; i < n; i++) {
       const a = trazo[Math.max(0, i - 1)], b = trazo[Math.min(n - 1, i + 1)];
       const tx = b[0] - a[0], ty = b[1] - a[1], l = Math.hypot(tx, ty) || 1;
       const nx = -ty / l * ancho / 2, ny = tx / l * ancho / 2, [x, y] = trazo[i];
       if (i) largo += Math.hypot(x - trazo[i - 1][0], y - trazo[i - 1][1]);
-      const hc = Math.max(suelo, alturaEn(x, y), alturaEn(x + nx, y + ny), alturaEn(x - nx, y - ny)) + elev;
+      // lamina: superficie de agua a la cota del centro del cauce (las orillas quedan por encima)
+      const hc = (lamina ? alturaEn(x, y) : Math.max(suelo, alturaEn(x, y), alturaEn(x + nx, y + ny), alturaEn(x - nx, y - ny))) + elev;
       p.push(x + nx - cx, hc, y + ny - cz, x - nx - cx, hc, y - ny - cz);
       uvs.push(0, largo, 1, largo);
+      const caida = Math.min(1, Math.abs(alturaEn(b[0], b[1]) - alturaEn(a[0], a[1])) / l * 5); rap.push(caida, caida);
       // sobre el agua no se dibuja: una senda que acaba en un lago se queda en la orilla
-      const seco = !soloTierra || (alturaEn(x, y) > -0.05 && alturaEn(b[0], b[1]) > -0.05);
+      const seco = (!soloTierra || (alturaEn(x, y) > -0.05 && alturaEn(b[0], b[1]) > -0.05)) && (!lejosDe || distLugar(x, y) > lejosDe);
       if (i < n - 1 && seco) { const k = i * 2; ix.push(k, k + 2, k + 1, k + 1, k + 2, k + 3); }
     }
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.Float32BufferAttribute(p, 3));
     g.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+    g.setAttribute('rapido', new THREE.Float32BufferAttribute(rap, 1));
     g.setIndex(ix);
     g.computeVertexNormals();
     return g;
@@ -418,20 +433,54 @@ export function crearTerreno(mundo, { movil = false } = {}) {
   const matRio = new THREE.ShaderMaterial({
     uniforms: { uTiempo: uniformes.uTiempo, uLuz: uniformes.uLuz, uCielo: uAgua.uCielo },
     transparent: true, depthWrite: false, side: THREE.DoubleSide,
-    vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-    fragmentShader: `varying vec2 vUv; uniform float uTiempo, uLuz; uniform vec3 uCielo;
+    vertexShader: 'attribute float rapido; varying vec2 vUv; varying float vRap; void main(){ vUv = uv; vRap = rapido; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+    fragmentShader: `varying vec2 vUv; varying float vRap; uniform float uTiempo, uLuz; uniform vec3 uCielo;
       ${RUIDO_GLSL}
       void main(){
-        float borde = smoothstep(0.0, 0.22, vUv.x) * smoothstep(1.0, 0.78, vUv.x);
-        float veta = rN(vec2(vUv.x * 5.0, vUv.y * 0.35 - uTiempo * 1.1)) * 0.6 + rN(vec2(vUv.x * 11.0, vUv.y * 0.9 - uTiempo * 1.9)) * 0.4;
-        vec3 col = mix(vec3(0.07, 0.27, 0.36), vec3(0.16, 0.42, 0.50), veta);
-        col = mix(col, uCielo, 0.18) * uLuz + vec3(0.85, 0.92, 0.95) * smoothstep(0.78, 0.95, veta) * 0.35 * uLuz;
-        gl_FragColor = vec4(col, borde * 0.92);
+        float c = abs(vUv.x - 0.5) * 2.0;                          // 0 en el centro, 1 en la orilla
+        float corre = uTiempo * (0.5 + vRap * 1.2) * (1.0 - 0.55 * c * c);   // el centro baja más deprisa
+        float y = vUv.y * 0.085 - corre;
+        float veta = rN(vec2(vUv.x * 3.5, y * 2.6)) * 0.5 + rN(vec2(vUv.x * 8.0 + 3.0, y * 6.0)) * 0.32 + rN(vec2(vUv.x * 19.0, y * 13.0)) * 0.18;
+        vec3 col = mix(vec3(0.012, 0.085, 0.17), vec3(0.04, 0.22, 0.30), veta);
+        col = mix(col, vec3(0.09, 0.30, 0.31), c * c * 0.65);       // somero junto a la orilla
+        col = mix(col, uCielo, 0.2);
+        float rizos = smoothstep(0.6, 0.8, veta) * (0.22 + vRap * 1.1);
+        float orilla = smoothstep(0.72, 1.0, c) * smoothstep(0.42, 0.7, rN(vec2(vUv.x * 2.0, y * 5.0 + 9.0))) * 0.55;
+        float destello = smoothstep(0.93, 1.0, rN(vec2(vUv.x * 30.0, y * 22.0 + uTiempo * 0.7))) * 0.5;
+        col = mix(col, vec3(0.9, 0.95, 0.97), clamp(rizos + orilla + destello, 0.0, 1.0));
+        float borde = smoothstep(0.0, 0.1, vUv.x) * smoothstep(1.0, 0.9, vUv.x);
+        gl_FragColor = vec4(col * uLuz, borde * 0.96);
         #include <tonemapping_fragment>
         #include <colorspace_fragment>
       }`,
   });
-  for (const r of rios) { const m = new THREE.Mesh(cinta(r.trazo, r.ancho, 0.22, 0, true), matRio); m.renderOrder = 2; grupo.add(m); }
+  for (const r of rios) { const m = new THREE.Mesh(cinta(r.trazo, r.ancho, 0.5, 0, true, true), matRio); m.renderOrder = 2; grupo.add(m); }
+
+  // puentes de piedra donde un camino cruza un río
+  {
+    const piedra = new THREE.MeshStandardMaterial({ color: 0x8c8678, roughness: 0.95 });
+    const cruce = (a, b, c, d) => {
+      const r = [b[0] - a[0], b[1] - a[1]], s2 = [d[0] - c[0], d[1] - c[1]], den = r[0] * s2[1] - r[1] * s2[0];
+      if (Math.abs(den) < 1e-6) return null;
+      const t = ((c[0] - a[0]) * s2[1] - (c[1] - a[1]) * s2[0]) / den, u = ((c[0] - a[0]) * r[1] - (c[1] - a[1]) * r[0]) / den;
+      return t >= 0 && t <= 1 && u >= 0 && u <= 1 ? [a[0] + r[0] * t, a[1] + r[1] * t] : null;
+    };
+    for (const c of mundo.caminos) {
+      if (c.tipo === 'barca') continue;
+      for (const r of rios) for (let i = 1; i < c.trazo.length; i++) for (let j = 1; j < r.trazo.length; j++) {
+        const pt = cruce(c.trazo[i - 1], c.trazo[i], r.trazo[j - 1], r.trazo[j]);
+        if (!pt || alturaEn(pt[0], pt[1]) < 0) continue;
+        const g = new THREE.Group(), largo = r.ancho + 15, ancho = c.tipo === 'senda' ? 2.6 : 3.8;
+        const tablero = new THREE.Mesh(new THREE.BoxGeometry(largo, 0.8, ancho), piedra); g.add(tablero);
+        for (const lado of [-1, 1]) { const pretil = new THREE.Mesh(new THREE.BoxGeometry(largo, 0.7, 0.35), piedra); pretil.position.set(0, 0.7, lado * (ancho / 2 - 0.18)); g.add(pretil); }
+        for (const px of [-r.ancho * 0.28, r.ancho * 0.28]) { const pila = new THREE.Mesh(new THREE.BoxGeometry(1.3, 3.2, ancho + 0.8), piedra); pila.position.set(px, -1.9, 0); g.add(pila); }
+        g.position.set(pt[0] - cx, alturaEn(pt[0], pt[1]) + 2.5, pt[1] - cz);
+        g.rotation.y = -Math.atan2(c.trazo[i][1] - c.trazo[i - 1][1], c.trazo[i][0] - c.trazo[i - 1][0]);
+        g.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+        grupo.add(g);
+      }
+    }
+  }
 
   const caminos = new THREE.Group();
   const matCamino = new THREE.MeshStandardMaterial({ color: 0xc2ad84, roughness: 1, side: THREE.DoubleSide });
@@ -452,7 +501,8 @@ export function crearTerreno(mundo, { movil = false } = {}) {
       for (let k = 0; k < pasos; k++) fino.push([mezcla(a[0], b[0], k / pasos), mezcla(a[1], b[1], k / pasos)]);
     }
     fino.push(cerrado[cerrado.length - 1]);
-    const m = new THREE.Mesh(cinta(fino, 1.5, 1.1 + n * 0.12, 0), new THREE.MeshBasicMaterial({ color: reg.color, transparent: true, opacity: 0.62, side: THREE.DoubleSide, depthWrite: false }));
+    const m = new THREE.Mesh(cinta(fino, 1.5, 1.1 + n * 0.12, 0, false, false, 14), new THREE.MeshBasicMaterial({   // la frontera no pisa los lugares
+       color: reg.color, transparent: true, opacity: 0.62, side: THREE.DoubleSide, depthWrite: false }));
     m.userData.color = new THREE.Color(reg.color);
     fronteras.add(m);
   });
@@ -461,21 +511,21 @@ export function crearTerreno(mundo, { movil = false } = {}) {
   /* ---------- árboles ---------- */
   const arboles = new THREE.Group();
   {
-    const hojas = [], pinos = [], secos = [];
+    const hojas = [], pinos = [], secos = [], juncos = [];
     const paso = movil ? 8.2 : 6.2;
     for (let y = 6; y < H - 6; y += paso) for (let x = 6; x < W - 6; x += paso) {
       const jx = x + (azar(x | 0, y | 0) - 0.5) * paso * 1.3, jy = y + (azar((y | 0) + 91, x | 0) - 0.5) * paso * 1.3;
       const h = alturaEn(jx, jy);
       if (h < 0.35) continue;
       const lugarCerca = distLugar(jx, jy), camCerca = distCamino(jx, jy);
-      if (camCerca < 5 || distRio(jx, jy) < 5) continue;
+      if (camCerca < 5 || distRio(jx, jy) < 10) continue;
       const wT = peso(iThr, jx, jy), wV = peso(iVal, jx, jy), wM = peso(iMar, jx, jy), wA = peso(iAst, jx, jy);
       const fuera = Math.max(0, 1 - wT - wV - wM - wA);
       const wMa = pesoMarisma(jx, jy);
       const mancha = fbm(jx * 0.014 + 20, jy * 0.014 + 4, 3);
       const dado = azar((jx * 3.1) | 0, (jy * 2.7) | 0);
       const esc = 0.75 + azar((jx * 1.7) | 0, (jy * 5.3) | 0) * 0.6;
-      if (wMa > 0.45) { if (dado < 0.22) secos.push([jx, h, jy, esc]); continue; }
+      if (wMa > 0.45) { if (dado < 0.22) secos.push([jx, h, jy, esc]); else if (h < 1.1 && dado < 0.75) juncos.push([jx, h, jy, esc]); continue; }
       if (lugarCerca < 8) continue;
       if (haciaCosta(jx, jy) < 9 || pendienteEn(jx, jy) > 1.1 || pesoIslote(jx, jy) > 0.05) continue;
       const densidad = wV * suave(0.2, 0.55, mancha) * 0.95 + wA * suave(0.25, 0.6, mancha) * 0.85 + wM * suave(0.66, 0.8, mancha) * 0.4
@@ -568,6 +618,10 @@ export function crearTerreno(mundo, { movil = false } = {}) {
       return col.setRGB(0.10 + t * 0.06 + nv, 0.24 + t * 0.10 + nv, 0.17 + t * 0.05 + nv, THREE.SRGBColorSpace).clone();
     }));
     arboles.add(instanciar(secos, gSeco, (a, i) => col.setRGB(0.24 + azar(i, 2) * 0.1, 0.21, 0.16, THREE.SRGBColorSpace).clone()));
+    // juncos: matas de varas finas en las orillas de las charcas
+    const vara = (x, z, alto, incl) => { const g = new THREE.ConeGeometry(0.09, alto, 4).toNonIndexed(); g.translate(0, alto / 2, 0); g.rotateZ(incl); g.translate(x, 0, z); return tintar(g, (_, py) => { const t = py / alto; return [0.7 + t * 0.3, 0.7 + t * 0.3, 0.6 + t * 0.2]; }); };
+    const gJunco = mergeGeometries([vara(0, 0, 2.6, 0.05), vara(0.35, 0.2, 2.1, -0.18), vara(-0.3, 0.25, 2.3, 0.2), vara(0.1, -0.35, 1.9, 0.1), vara(-0.25, -0.2, 2.4, -0.12), vara(0.4, -0.25, 1.7, 0.25)]);
+    arboles.add(instanciar(juncos, gJunco, (a, i) => col.setRGB(0.42 + azar(i, 4) * 0.16, 0.46 + azar(i, 6) * 0.12, 0.2, THREE.SRGBColorSpace).clone()));
   }
   grupo.add(arboles);
 

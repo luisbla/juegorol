@@ -37,11 +37,11 @@
   ],
   "marisma": { "nombre": "Marisma Callada", "x": 770, "y": 488, "rx": 128, "ry": 88, "etiqueta": [730, 540] },
   "rios": [
-    { "ancho": 3.6, "puntos": [[1000,340],[950,378],[895,420],[840,452],[790,468]] },
-    { "ancho": 4.2, "puntos": [[800,538],[850,572],[930,602],[1000,622],[1042,630]] },
-    { "ancho": 5.2, "puntos": [[1085,672],[1080,735],[1030,790],[960,838],[900,872],[884,902]] },
-    { "ancho": 3.4, "puntos": [[1245,676],[1262,720],[1278,772]] },
-    { "ancho": 2.6, "puntos": [[1382,574],[1325,598],[1272,620]] }
+    { "ancho": 6.5, "puntos": [[1000,340],[950,378],[895,420],[840,452],[790,468]] },
+    { "ancho": 8, "puntos": [[800,538],[850,572],[930,602],[1000,622],[1048,630],[1082,634]] },
+    { "ancho": 10, "puntos": [[1112,652],[1100,684],[1096,738],[1042,794],[962,842],[906,874],[884,912]] },
+    { "ancho": 6, "puntos": [[1238,656],[1248,684],[1262,720],[1278,772],[1284,794]] },
+    { "ancho": 5, "puntos": [[1398,566],[1378,576],[1325,598],[1272,620],[1250,628]] }
   ],
   "mar": { "nombre": "Mar del Sur", "etiqueta": [1180, 990] },
   "lugares": [
@@ -60,6 +60,10 @@
       "desc": "Tiendas rotas y hogueras frías junto a la frontera. No está claro quién acampó aquí ni por qué se fue con tanta prisa." },
     { "id": "palafitos", "nombre": "Los Palafitos", "tipo": "palafitos", "region": "valcoria", "x": 762, "y": 462, "suelo": "marisma",
       "desc": "Cabañas sobre estacas en mitad de la Marisma Callada, medio hundidas y vacías. Nadie recuerda quién vivía aquí." },
+    { "id": "paso", "nombre": "El Paso Viejo", "tipo": "pasarela", "region": "valcoria", "x": 700, "y": 505, "suelo": "marisma",
+      "desc": "Restos de una calzada de troncos que cruzaba la marisma. Le faltan tramos enteros y nadie la repara." },
+    { "id": "barcaza", "nombre": "La Barcaza Hundida", "tipo": "pecio", "region": "valcoria", "x": 838, "y": 512, "suelo": "marisma",
+      "desc": "El casco de una barcaza de carga, escorado en el fango cerca de donde la marisma desagua hacia los lagos." },
 
     { "id": "griselda", "nombre": "Fortaleza Griselda", "tipo": "capital", "region": "thraengarde", "x": 1040, "y": 270, "tamano": 1.15,
       "desc": "Fortaleza de piedra oscura en un valle entre montañas nevadas. Desde aquí se gobierna a los clanes que antes guerreaban entre sí.",
@@ -90,8 +94,8 @@
       "gobierno": { "titulo": "Quién gobierna", "texto": "El Consejo de las Tres Casas, con voto igual: Casa Ilvane (comercio marítimo), Casa Merrow (pesca y lagos) y Casa Draveth (banca y préstamos)." } },
     { "id": "claro", "nombre": "Claro de Lunas", "tipo": "pueblo", "region": "astravan", "x": 1306, "y": 650,
       "desc": "Pueblo de pescadores en la orilla este del lago grande." },
-    { "id": "liria", "nombre": "Puerto de Liria", "tipo": "puerto", "region": "astravan", "x": 858, "y": 866,
-      "desc": "El puerto de mar de la Confederación, en la desembocadura del río. Por sus muelles sale al Mar del Sur casi todo lo que Astravan vende." },
+    { "id": "liria", "nombre": "Puerto de Liria", "tipo": "puerto", "region": "astravan", "x": 852, "y": 862, "tamano": 1.45,
+      "desc": "El gran puerto de mar de la Confederación, en la desembocadura del río. Muelles, grúas, lonja y almacenes: por aquí sale al Mar del Sur casi todo lo que Astravan vende, y entra casi todo lo que compra." },
     { "id": "faro", "nombre": "Faro de Astravan", "tipo": "faro", "region": "astravan", "x": 968, "y": 962, "suelo": "islote", "tamano": 1.35,
       "desc": "Faro sobre un peñón frente a Puerto de Liria. Marca la entrada del puerto a los barcos que vienen del Mar del Sur." },
     { "id": "ahogada", "nombre": "La Ciudad Ahogada", "tipo": "ruina", "region": "astravan", "x": 1295, "y": 812, "suelo": "agua",
@@ -129,6 +133,9 @@
   "rutasBarcos": [
     { "en": "mar", "puntos": [[892,912],[900,988],[1100,1002],[1300,996],[1460,942],[1380,988],[1150,994],[1040,1000]] },
     { "en": "mar", "puntos": [[872,902],[800,962],[722,1004],[770,1012],[880,1008],[900,975]] },
-    { "en": "lago", "puntos": [[1080,630],[1150,612],[1225,630],[1150,648]] }
+    { "en": "mar", "puntos": [[840,905],[790,985],[900,1012],[1250,1008],[1500,960],[1250,985],[1040,985]] },
+    { "en": "mar", "puntos": [[1010,935],[1150,975],[1350,965],[1480,905],[1350,985],[1120,1005]] },
+    { "en": "lago", "puntos": [[1080,630],[1150,612],[1225,630],[1150,648]] },
+    { "en": "lago", "puntos": [[1250,812],[1295,790],[1345,815],[1295,838]] }
   ]
 }

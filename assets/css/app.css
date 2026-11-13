@@ -82,6 +82,13 @@ button.etq:hover, button.etq.activa { border-color: var(--oro); background: rgba
 #ficha .resultado b { color: var(--oro); font-variant-numeric: tabular-nums; }
 #ficha .nota { font-size: 0.75rem; color: var(--tenue); margin: 4px 0 0; }
 
+/* ---------- interior de ciudad ---------- */
+#velo { position: fixed; inset: 0; background: var(--tinta); opacity: 0; pointer-events: none; transition: opacity 0.35s; z-index: 8; }
+#velo.puesto { opacity: 1; pointer-events: auto; }
+.etq-ciudad, .etq-puerta { background: rgba(14, 16, 21, 0.66); border-radius: 999px; padding: 2px 10px 3px; font: 600 0.85rem/1.25 var(--serif); color: var(--crema); letter-spacing: 0.04em; }
+.etq-puerta { font-weight: 400; font-style: italic; font-size: 0.76rem; color: #e3d9c2; }
+.en-ciudad .capas label:nth-of-type(n+2) { display: none; }
+
 /* ---------- carga ---------- */
 #carga { position: fixed; inset: 0; display: grid; place-items: center; background: var(--tinta); font: italic 1.1rem var(--serif); transition: opacity 0.6s; }
 #carga.fuera { opacity: 0; pointer-events: none; }
@@ -99,5 +106,5 @@ button.etq:hover, button.etq.activa { border-color: var(--oro); background: rgba
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .etq, .cabecera p, #carga { transition: none; }
+  .etq, .cabecera p, #carga, #velo { transition: none; }
 }

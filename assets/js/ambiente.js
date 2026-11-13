@@ -144,6 +144,16 @@ export function crearAmbiente(escena, renderer, mundo, terreno, lugares, { movil
     niebla.push(s); clima.add(s);
   }
 
+  /* ---------- fuegos fatuos: luces frías que vagan por la marisma al caer la tarde ---------- */
+  const fatuos = [];
+  const texFatuo = texturaSuave(0.02, '150,255,215');
+  for (let i = 0; i < (movil ? 7 : 12); i++) {
+    const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: texFatuo, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0, fog: false }));
+    const a = R.rnd() * 6.28, d = Math.sqrt(R.rnd()) * 0.7;
+    s.userData = { x: ma.x + Math.cos(a) * ma.rx * d, y: ma.y + Math.sin(a) * ma.ry * d, f: R.rnd() * 6.28, v: 0.15 + R.rnd() * 0.2, r: 6 + R.rnd() * 12 };
+    fatuos.push(s); escena.add(s);
+  }
+
   /* ---------- humo ---------- */
   const humos = [];
   const matHumoClaro = new THREE.SpriteMaterial({ map: blanda, transparent: true, depthWrite: false, color: 0xd9d4cc });
@@ -239,12 +249,12 @@ export function crearAmbiente(escena, renderer, mundo, terreno, lugares, { movil
   {
     const gAla = new THREE.BufferGeometry();
     gAla.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, -0.35, 0, 0, 0.35, 1.5, 0, 0.05], 3));
-    const mat = new THREE.MeshBasicMaterial({ color: 0x1c1c20, side: THREE.DoubleSide });
+    const mat = new THREE.MeshBasicMaterial({ color: 0x2c2c33, side: THREE.DoubleSide });
     const centros = [[1150, 630, 46], [900, 930, 40], [430, 320, 58], [770, 480, 34], [1295, 815, 38]];
     centros.forEach(([x, y, alto], b) => {
       for (let k = 0; k < (movil ? 4 : 7); k++) {
         const g = new THREE.Group(), izq = new THREE.Mesh(gAla, mat), der = new THREE.Mesh(gAla, mat);
-        der.scale.x = -1; g.add(izq, der); g.scale.setScalar(0.5 + R.rnd() * 0.25);
+        der.scale.x = -1; g.add(izq, der); g.scale.setScalar(0.34 + R.rnd() * 0.18);
         g.userData = { x: x - cx, z: y - cz, alto: alto + R.rnd() * 14, r: 30 + R.rnd() * 45, f: R.rnd() * 6.28 + b, v: (0.16 + R.rnd() * 0.1) * (b % 2 ? 1 : -1), izq, der };
         pajaros.push(g); escena.add(g);
       }
@@ -305,6 +315,12 @@ export function crearAmbiente(escena, renderer, mundo, terreno, lugares, { movil
         ? (0.12 + estado.noche * 0.5) * (0.6 + 0.4 * Math.sin(t * 0.8 + u.fase))
         : estado.noche * u.fuerza * (0.88 + 0.12 * Math.sin(t * 5 + u.fase));
     }
+    for (const s of fatuos) {
+      const u = s.userData, parpadeo = 0.55 + 0.45 * Math.sin(t * 2.3 + u.f * 7) * Math.sin(t * 0.37 + u.f);
+      s.position.set(u.x + Math.cos(t * u.v + u.f) * u.r - cx, 2.2 + Math.sin(t * 0.9 + u.f) * 0.9, u.y + Math.sin(t * u.v * 1.3 + u.f) * u.r * 0.7 - cz);
+      s.material.opacity = suave(0.25, 0.75, estado.noche) * Math.max(0, parpadeo) * 0.9;
+      const tam = 3.2 + parpadeo * 1.6; s.scale.set(tam, tam, 1);
+    }
     if (haz) {
       haz.rotation.y = t * 0.55;
       for (const m of haz.children) m.material.opacity = 0.02 + estado.noche * 0.3;
@@ -332,5 +348,5 @@ export function crearAmbiente(escena, renderer, mundo, terreno, lugares, { movil
   }
 
   ponerHora(estado.hora);
-  return { estado, ponerHora, actualizar, sol };
+  return { estado, ponerHora, actualizar, sol, luz: { sol, luna, luzCielo, dirSol, dirLuna, horizonte: uCielo.uHorizonte.value, arriba: uCielo.uArriba.value } };
 }

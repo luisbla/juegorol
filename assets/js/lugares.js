@@ -98,6 +98,12 @@ const gCaja = new THREE.BoxGeometry(1, 1, 1);
 const gCil = new THREE.CylinderGeometry(1, 1, 1, 14);
 const gCono = new THREE.ConeGeometry(1, 1, 14);
 const gRoca = new THREE.DodecahedronGeometry(1, 0);
+// Casco de barco: cilindro afilado en proa y popa (eje Y = eslora).
+const gCasco = (() => {
+  const g = new THREE.CylinderGeometry(1, 0.62, 1, 12, 8), p = g.attributes.position;
+  for (let i = 0; i < p.count; i++) { const k = 1 - Math.pow(Math.abs(p.getY(i)) * 2, 2.4) * 0.88; p.setX(i, p.getX(i) * k); p.setZ(i, p.getZ(i) * k); }
+  g.computeVertexNormals(); return g;
+})();
 // Tejado a dos aguas: prisma con la cumbrera a lo largo de X. Base 1×1, alto 1.
 const gDosAguas = (() => {
   const A = [-0.5, 0, -0.5], B = [0.5, 0, -0.5], C = [0.5, 0, 0.5], D = [-0.5, 0, 0.5], E = [-0.5, 1, 0], F = [0.5, 1, 0];
@@ -272,17 +278,35 @@ const CONSTRUCTORES = {
     casa(g, 2.7, 0.9, 1.9, 1.5, 1.2, matPared(0xece8df), matTejado(0xa3382c), 0.2, true);   // casa del farero
     return { humos: [], luz: 0.5, alto: 13.5, faro: 11.2 };
   },
-  puerto(g, l, rnd) {
-    const pared = matPared(0xd8d0c0, { entramado: true }), teja = matTejado(0x4b3f7a), rojiza = matTejado(0xa5512c);
-    for (let i = 0; i < 9; i++) casa(g, -7 + i * 1.9 + rnd() * 0.4, -2.4 - rnd() * 3.6, 1.6 + rnd() * 0.6, 1.4, 1.3 + rnd() * 0.9, pared, i % 3 ? teja : rojiza, (rnd() - 0.5) * 0.4, i % 2 === 0);
-    casa(g, -2.0, 1.2, 5.0, 2.3, 1.9, matPared(0x9a7a55), matTejado(0x5c3a2a), 0);   // lonja
-    casa(g, 3.6, 1.0, 3.0, 2.0, 1.6, matPared(0x8a6a48), matTejado(0x5c3a2a), 0);    // almacén
-    torreon(g, 6.4, 0.4, 0.9, 4.8, matPiedra(0x8a8fa0), teja, false);
-    for (let i = 0; i < 6; i++) { const b = cil(g, 0.3, 0.6, -5 + rnd() * 10, 0, 2.8 + rnd() * 0.6, matLiso(0x6a4a2e)); b.scale.x = b.scale.z = 0.3; }   // barriles en el muelle
-    return { humos: [[-4, 3.2, -3.5], [2.5, 3.0, -4]], luz: 0.9, alto: 6.5, muelles: true };
+  puerto(g, l, rnd, ctx) {
+    const pared = matPared(0xd8d0c0, { entramado: true }), teja = matTejado(0x4b3f7a), rojiza = matTejado(0xa5512c), piedra = matPiedra(0x8a8fa0), madera = matLiso(0x6b5440);
+    // caserío en tres calles paralelas a la costa; las casas del frente, más altas
+    for (let f = 0; f < 3; f++) for (let i = 0; i < 10; i++) {
+      casa(g, -10.8 + i * 2.4 + rnd() * 0.5 + (f % 2), -3.4 - f * 2.7 - rnd() * 0.5, 1.7 + rnd() * 0.5, 1.5, 1.3 + rnd() * 0.9 + (f === 0 ? 0.6 : 0), pared, (i + f) % 3 ? teja : rojiza, (rnd() - 0.5) * 0.3, rnd() > 0.5);
+    }
+    // lonja con soportales
+    casa(g, -5.0, 0.0, 7.4, 2.6, 2.4, matPared(0xcbbf9f, { piedra: true }), teja, 0);
+    for (let i = 0; i < 9; i++) cil(g, 0.16, 1.7, -8.4 + i * 0.85, 0, 1.75, piedra);
+    caja(g, 7.6, 0.22, 1.1, -5.0, 1.7, 1.8, madera);
+    // almacenes en hilera, de hastial al muelle
+    for (let i = 0; i < 4; i++) casa(g, 1.6 + i * 2.8, -0.1, 2.6, 2.4, 1.9 + (i % 2) * 0.5, matPared(i % 2 ? 0x9a7a55 : 0x8a6a48), matTejado(0x5c3a2a), Math.PI / 2);
+    // aduana y torre de la cadena
+    torreon(g, -11.6, 0.4, 1.2, 6.4, piedra, teja, true); bandera(g, -11.6, 7.4, 0.4, ctx.colorRegion, ctx.banderas);
+    torreon(g, 12.6, 0.4, 1.0, 5.2, piedra, teja, false);
+    // mercado del muelle: puestos con toldos
+    const TOLDOS = [0xb23a2e, 0x2f6aa0, 0xd9a23a, 0x3f8a54];
+    for (let i = 0; i < 8; i++) {
+      const x = -10 + i * 1.35, z = 2.5 + (i % 2) * 0.45;
+      caja(g, 0.9, 0.5, 0.6, x, 0, z, madera);
+      pieza(g, gDosAguas, matLiso(TOLDOS[i % 4], { side: THREE.DoubleSide }), 1.15, 0.4, 0.95, x, 1.2, z);
+      for (const dx of [-0.45, 0.45]) caja(g, 0.06, 1.2, 0.06, x + dx, 0, z + 0.3, madera);
+    }
+    // mercancía apilada
+    for (let i = 0; i < 14; i++) { const x = 1 + rnd() * 11, z = 1.9 + rnd() * 1.3; if (rnd() > 0.5) cil(g, 0.3, 0.6, x, 0, z, matLiso(0x6a4a2e)); else caja(g, 0.6, 0.5 + rnd() * 0.5, 0.6, x, 0, z, matLiso(rnd() > 0.5 ? 0x8a6a48 : 0x7a5a3a), rnd()); }
+    return { humos: [[-6, 3.4, -4], [3, 3.2, -6.5], [8, 3.0, -4]], luz: 1.5, alto: 9, muelles: true };
   },
   palafitos(g, l, rnd) {
-    const madera = matLiso(0x4a3c2c), vieja = matPared(0x54463a), paja = matTejado(0x6b6046);
+    const madera = matLiso(0x4a3c2c), vieja = matLiso(0x54463a), paja = matTejado(0x6b6046);   // sin ventanas: nadie enciende luz aquí
     const chozas = [[-3.2, -0.6, 0], [0.4, 0.8, 0.12], [3.4, -1.0, -0.2], [0.2, -3.2, 0.3]];
     chozas.forEach(([x, z, caida], i) => {
       const c = new THREE.Group(); c.position.set(x, 0, z); c.rotation.z = caida; c.rotation.y = rnd() * 0.6; g.add(c);
@@ -295,6 +319,31 @@ const CONSTRUCTORES = {
     caja(g, 2.2, 0.1, 0.5, -1.4, 1.62, 0.1, madera, 0.35); caja(g, 1.9, 0.1, 0.5, 1.9, 1.6, -0.1, madera, -0.5);
     const rota = caja(g, 1.6, 0.1, 0.5, 0.3, 1.0, -1.4, madera, 1.5); rota.rotation.z = 0.5;
     return { humos: [], luz: 0, alto: 5.5 };
+  },
+  pasarela(g, l, rnd) {
+    // calzada de troncos sobre pilotes: tramos sueltos, alguno vencido, y pilotes huérfanos donde faltan
+    const madera = matLiso(0x54442f), vieja = matLiso(0x3d3226);
+    for (let i = 0; i < 9; i++) {
+      const x = -10.5 + i * 2.6, falta = i === 3 || i === 6;
+      for (const z of [-0.55, 0.55]) caja(g, 0.2, 2.6 + rnd(), 0.2, x, -1.1, z, vieja);
+      if (falta) continue;
+      const t = new THREE.Group(); t.position.set(x + 1.3, 1.25, 0); t.rotation.z = i === 2 || i === 7 ? -0.28 : (rnd() - 0.5) * 0.06; g.add(t);
+      for (let k = 0; k < 6; k++) { const tr = cil(t, 0.13, 1.5, -1.1 + k * 0.44, -0.75, 0, madera); tr.rotation.x = Math.PI / 2; tr.position.y = 0; }
+      if (rnd() > 0.5) caja(t, 2.4, 0.08, 0.08, 0, 0.75, 0.62, vieja);   // resto de barandilla
+    }
+    return { humos: [], luz: 0, alto: 3.5 };
+  },
+  pecio(g, l, rnd) {
+    // barcaza de carga escorada en el fango: casco abierto, cuadernas al aire y el palo roto
+    const madera = matLiso(0x4d3c2a), oscura = matLiso(0x2f251b);
+    const b = new THREE.Group(); b.rotation.z = 0.38; b.rotation.y = 0.5; b.position.y = 0.2; g.add(b);
+    const casco = pieza(b, gCasco, madera, 1.0, 7.5, 1.5, 0, 0.3, 0); casco.rotation.z = Math.PI / 2;
+    caja(b, 5.6, 0.14, 2.3, 0, 1.0, 0, oscura);
+    for (let i = 0; i < 7; i++) { const c = caja(b, 0.12, 1.5, 0.12, -2.6 + i * 0.86, 1.0, 1.2, oscura); c.rotation.x = 0.35; if (i % 3) caja(b, 0.12, 1.3, 0.12, -2.6 + i * 0.86, 1.0, -1.2, oscura).rotation.x = -0.35; }
+    const palo = cil(b, 0.13, 2.4, 0.6, 1.0, 0, madera); palo.rotation.z = 0.2;
+    const caido = cil(g, 0.12, 4.2, 2.6, 0.3, 1.8, madera); caido.rotation.z = Math.PI / 2 - 0.1; caido.rotation.y = 0.9; caido.position.y = 0.5;
+    for (let i = 0; i < 4; i++) cil(g, 0.32, 0.6, -2 + rnd() * 5, -0.1, 2 + rnd() * 1.5, matLiso(0x5a4630));   // barriles en el fango
+    return { humos: [], luz: 0, alto: 4 };
   },
   ruina(g, l, rnd) {
     const k = l.suelo === 'agua' ? 1.9 : 1, piedra = matPiedra(0x67635c, 1), oscura = matPiedra(0x4a4742, 1);
@@ -323,6 +372,9 @@ const CONSTRUCTORES = {
   },
 };
 
+// Piezas y materiales que reutiliza ciudad.js para levantar el interior de las capitales.
+export const kit = { matPared, matPiedra, matTejado, matLiso, gCaja, gCil, gCono, gRoca, gDosAguas, ESTILOS, ventanas };
+
 // Devuelve el grupo ya colocado y los datos que usan el ambiente (humo, luces, banderas) y la interfaz (selección).
 export function crearLugares(mundo, terreno) {
   const grupo = new THREE.Group(), lista = [], banderas = [];
@@ -335,12 +387,41 @@ export function crearLugares(mundo, terreno) {
     g.scale.setScalar(escala);
     g.position.set(l.x - terreno.cx, y - 0.1, l.y - terreno.cz);
     if (info.muelles) {
-      // muelles a cota fija sobre el agua, hacia el sur, con un par de barcas amarradas
-      const madera = matLiso(0x6b5440), pilote = matLiso(0x4a3a2a), aCota = c => (c - g.position.y) / escala;
-      for (const dx of [-4.5, 0.5, 5.0]) {
-        const m = caja(g, 1.2, 0.3, 14, dx, 0, 9.5, madera); m.position.y = aCota(0.75);
-        for (const dz of [4, 8, 12, 16]) { const p = caja(g, 0.3, 2.6, 0.3, dx + 0.5, 0, dz, pilote); p.position.y = aCota(-0.4); }
-        const barca = pieza(g, gCil, matLiso(0x5a3f2b), 0.5, 2.6, 0.9, dx - 1.2, aCota(0.2), 9 + dx * 0.4); barca.rotation.x = Math.PI / 2;
+      // todo lo que toca el agua va a cota fija: muelle de piedra, espigones, grúas, barcos amarrados, astillero y rompeolas
+      const rnd = azarDe(l.id + '-muelles'), aCota = c => (c - g.position.y) / escala;
+      const madera = matLiso(0x6b5440), pilote = matLiso(0x4a3a2a), sillar = matPiedra(0x8d897f, 1), casco = matLiso(0x5a3f2b), jarcia = matLiso(0x3a2c20);
+      const muelle = caja(g, 27, 1.5, 2.2, 0, 0, 4.4, sillar); muelle.position.y = aCota(0.25);
+      const amarrado = (x, z, largo, ry) => {
+        const b = new THREE.Group(); b.position.set(x, aCota(0.1), z); b.rotation.y = ry; g.add(b);
+        const c = pieza(b, gCasco, casco, 0.85, largo, 1.0, 0, 0.3, 0); c.rotation.x = Math.PI / 2;
+        caja(b, 1.3, 0.1, largo * 0.7, 0, 0.78, 0, madera);
+        caja(b, 1.2, 0.7, largo * 0.18, 0, 0.85, -largo * 0.3, casco);   // castillo de popa
+        for (const dz of [largo * 0.12, -largo * 0.14]) { cil(b, 0.08, largo * 0.75, 0, 0.85, dz, jarcia); const v = caja(b, largo * 0.42, 0.07, 0.07, 0, 0.85 + largo * 0.52, dz, jarcia); v.rotation.y = 0.15; caja(b, largo * 0.38, 0.28, 0.12, 0, 0.85 + largo * 0.5, dz, matLiso(0xe6dcc6)); }
+      };
+      [-10.5, -5.2, 0.4, 5.6, 10.6].forEach((dx, i) => {
+        const largo = 11 + (i % 2) * 5 + (i === 2 ? 6 : 0);
+        const m = caja(g, 1.25, 0.3, largo, dx, 0, 5.4 + largo / 2, madera); m.position.y = aCota(0.85);
+        for (let dz = 7; dz < 5.4 + largo; dz += 3.2) for (const s of [-0.55, 0.55]) { const p = caja(g, 0.26, 2.8, 0.26, dx + s, 0, dz, pilote); p.position.y = aCota(-0.5); }
+        if (i !== 1) amarrado(dx + 2.1, 8.5 + largo * 0.45, 5.2 + (i % 3) * 1.1, (rnd() - 0.5) * 0.12);
+        if (i % 2 === 0) amarrado(dx - 1.9, 7.5 + largo * 0.3, 3.2, (rnd() - 0.5) * 0.2);
+      });
+      // grúas de rueda sobre el muelle
+      for (const dx of [-7.8, 3.0, 8.2]) {
+        const gr = new THREE.Group(); gr.position.set(dx, aCota(1.75), 4.6); gr.rotation.y = (rnd() - 0.5) * 0.8; g.add(gr);
+        caja(gr, 1.3, 1.1, 1.3, 0, 0, 0, matPared(0x8a6a48)); pieza(gr, gCono, matTejado(0x5c3a2a), 1.05, 0.9, 1.05, 0, 1.55, 0);
+        const brazo = caja(gr, 0.2, 4.4, 0.2, 0, 1.4, 1.1, jarcia); brazo.rotation.x = 0.75;
+        caja(gr, 0.05, 2.2, 0.05, 0, 1.9, 3.05, jarcia); caja(gr, 0.5, 0.45, 0.5, 0, 1.45, 3.05, matLiso(0x8a6a48));
+      }
+      // astillero: un casco a medio hacer en la grada
+      const grada = new THREE.Group(); grada.position.set(14.6, aCota(0.9), 3.4); grada.rotation.y = 0.25; g.add(grada);
+      caja(grada, 2.6, 0.2, 7.5, 0, 0, 2.4, madera).rotation.x = 0.07;
+      for (let i = 0; i < 8; i++) for (const s of [-1, 1]) { const c = caja(grada, 0.12, 1.5, 0.12, s * 0.85, 0.3, -0.6 + i * 0.85, casco); c.rotation.z = -s * 0.35; }
+      caja(grada, 0.2, 0.2, 7.0, 0, 0.3, 2.4, casco);
+      // rompeolas de escollera que cierra la dársena, con su baliza
+      for (let i = 0; i < 22; i++) {
+        const t = i / 21, a = -0.25 + t * 1.75, x = -15.5 + Math.sin(a) * 9 - t * 1.5, z = 6 + (1 - Math.cos(a)) * 17 + t * 10;
+        const r = roca(g, 1.0 + rnd() * 0.7, x + (rnd() - 0.5), 0, z + (rnd() - 0.5), sillar, rnd); r.position.y = aCota(0.25 + rnd() * 0.4);
+        if (i === 21) { const bal = cil(g, 0.4, 2.6, x, 0, z, matPiedra(0xece8df, 1)); bal.position.y = aCota(2.0); const luz = pieza(g, gCil, new THREE.MeshStandardMaterial({ color: 0xfff1b0, emissive: 0xffc857, emissiveIntensity: 1.6 }), 0.3, 0.45, 0.3, x, aCota(3.5), z); }
       }
     }
     g.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });

@@ -5,6 +5,7 @@ import { crearTerreno, suave } from './terreno.js';
 import { crearLugares } from './lugares.js';
 import { crearAmbiente } from './ambiente.js';
 import { crearViajes } from './viaje.js';
+import { crearCiudad } from './ciudad.js';
 import { animar, actualizarAnimaciones, reducir, ease } from './anim.js';
 
 const $ = s => document.querySelector(s);
@@ -60,9 +61,10 @@ async function iniciar() {
   control.zoomToCursor = true;
   control.listenToKeyEvents(lienzo);
   control.keyPanSpeed = 28;
+  const limite = { x: W / 2, z: H / 2 };   // hasta dónde puede irse la cámara (cambia al entrar en una ciudad)
   control.addEventListener('change', () => {
-    control.target.x = THREE.MathUtils.clamp(control.target.x, -W / 2, W / 2);
-    control.target.z = THREE.MathUtils.clamp(control.target.z, -H / 2, H / 2);
+    control.target.x = THREE.MathUtils.clamp(control.target.x, -limite.x, limite.x);
+    control.target.z = THREE.MathUtils.clamp(control.target.z, -limite.z, limite.z);
     control.target.y = THREE.MathUtils.clamp(control.target.y, 0, 40);
   });
 
@@ -116,11 +118,12 @@ async function iniciar() {
   function colocarEtiquetas() {
     const w = innerWidth, a = innerHeight, lejos = camara.position.distanceTo(control.target);
     const umbral = w < 720 ? 620 : 1350;
-    for (const e of etiquetas) {
+    for (const e of (ciudad ? ciudad.etiquetas : etiquetas)) {
       v3.copy(e.pos).project(camara);
       let op = capas.nombres && v3.z < 1 && Math.abs(v3.x) < 1.15 && Math.abs(v3.y) < 1.15 ? 1 : 0;
       if (op) {
-        if (e.clase === 'region') op = w < 720 ? 0 : suave(umbral * 0.8, umbral, lejos);
+        if (e.clase === 'puerta') op = suave(ciudad.R * 4.2, ciudad.R * 3.4, lejos);
+        else if (e.clase === 'region') op = w < 720 ? 0 : suave(umbral * 0.8, umbral, lejos);
         else if (e.clase === 'geo') op = suave(170, 320, lejos);
         else if (e.clase === 'lugar' && e.lugar !== elegido) op = suave(umbral, umbral * 0.8, lejos);
       }
@@ -134,7 +137,9 @@ async function iniciar() {
   }
 
   /* ---------- selección ---------- */
-  let elegido = null, dentro = null, dentroListo = false;
+  let elegido = null, dentro = null, ciudad = null, guardado = null;
+  const ciudades = new Map(), velo = $('#velo'), titulo = $('.cabecera h1'), pista = $('#pista');
+  const espera = ms => new Promise(r => setTimeout(r, reducir ? 0 : ms));
   const anillo = new THREE.Mesh(new THREE.RingGeometry(0.94, 1, 64), new THREE.MeshBasicMaterial({ color: 0xffd35c, transparent: true, opacity: 0.75, side: THREE.DoubleSide, depthTest: false }));
   anillo.rotation.x = -Math.PI / 2; anillo.visible = false; anillo.renderOrder = 4; escena.add(anillo);
   const ficha = $('#ficha');
@@ -145,7 +150,7 @@ async function iniciar() {
     const l = porId[id];
     if (!l) return;
     if (elegido?.etiqueta) elegido.etiqueta.classList.remove('activa');
-    elegido = l; dentro = null;
+    elegido = l;
     l.etiqueta?.classList.add('activa');
     anillo.visible = true;
     anillo.position.set(l.base.x, Math.max(l.base.y, 0) + 0.8, l.base.z);
@@ -158,16 +163,38 @@ async function iniciar() {
     }
   }
   function cerrar() {
+    if (dentro) { salir(); return; }
     if (elegido?.etiqueta) elegido.etiqueta.classList.remove('activa');
-    elegido = null; dentro = null; anillo.visible = false; ficha.hidden = true; ficha.replaceChildren(); viajes.limpiar();
+    elegido = null; anillo.visible = false; ficha.hidden = true; ficha.replaceChildren(); viajes.limpiar();
   }
-  function entrar(l) {
-    dentro = l; dentroListo = false;
-    const az = control.getAzimuthalAngle(), polar = 1.0, d = l.radio * 4.2;
-    const pos = new THREE.Vector3(Math.sin(az) * Math.sin(polar) * d, Math.cos(polar) * d, Math.cos(az) * Math.sin(polar) * d).add(l.base);
-    volar(pos, l.base.clone().setY(l.base.y + 5), 1700).then(() => { dentroListo = true; });
-    pintarFicha();
-    ficha.querySelector('.gobierno')?.focus?.();
+  // Entrar en una capital: fundido, se levanta su interior (una vez; luego se reutiliza) y la cámara pasa a esa escena.
+  async function entrar(l) {
+    if (dentro) return;
+    velo.classList.add('puesto'); await espera(360);
+    if (!ciudades.has(l.datos.id)) ciudades.set(l.datos.id, crearCiudad(l.datos, mundo, { movil }));
+    const c = ciudades.get(l.datos.id);
+    guardado = { pos: camara.position.clone(), objetivo: control.target.clone(), min: control.minDistance, max: control.maxDistance };
+    vuelo++; viajes.limpiar();
+    for (const e of etiquetas) e.el.style.visibility = 'hidden';
+    for (const e of c.etiquetas) { e.el ??= h('div', { class: `etq etq-${e.clase}` }, e.nombre); capaEtq.append(e.el); }
+    dentro = l; ciudad = c;
+    camara.position.copy(c.vista.pos); control.target.copy(c.vista.objetivo);
+    control.minDistance = 20; control.maxDistance = c.R * 5; limite.x = limite.z = c.limite;
+    titulo.textContent = l.datos.nombre; pista.textContent = 'Interior de la ciudad · Esc para volver al mapa'; pista.classList.remove('fuera');
+    document.body.classList.add('en-ciudad');
+    pintarFicha(); velo.classList.remove('puesto');
+  }
+  async function salir() {
+    if (!dentro) return;
+    velo.classList.add('puesto'); await espera(360);
+    for (const e of ciudad.etiquetas) e.el.remove();
+    vuelo++; dentro = null; ciudad = null;
+    camara.position.copy(guardado.pos); control.target.copy(guardado.objetivo);
+    control.minDistance = guardado.min; control.maxDistance = guardado.max; limite.x = W / 2; limite.z = H / 2;
+    titulo.textContent = mundo.meta.nombre; pista.classList.add('fuera');
+    document.body.classList.remove('en-ciudad');
+    if (elegido) pintarFicha();
+    velo.classList.remove('puesto');
   }
 
   function pintarFicha() {
@@ -178,11 +205,13 @@ async function iniciar() {
       h('h2', {}, d.nombre),
       h('p', {}, d.desc),
     ];
-    if (d.gobierno) {
-      nodos.push(dentro === l
-        ? h('div', { class: 'gobierno', tabindex: -1 }, h('h3', {}, d.gobierno.titulo), h('p', {}, d.gobierno.texto))
-        : h('button', { class: 'accion', type: 'button', onclick: () => entrar(l) }, 'Entrar en la ciudad'));
+    if (dentro === l) {
+      if (d.gobierno) nodos.push(h('div', { class: 'gobierno' }, h('h3', {}, d.gobierno.titulo), h('p', {}, d.gobierno.texto)));
+      nodos.push(h('button', { class: 'accion', type: 'button', onclick: salir }, '← Volver al mapa'));
+      ficha.replaceChildren(...nodos); ficha.hidden = false;
+      return;
     }
+    if (d.tipo === 'capital') nodos.push(h('button', { class: 'accion', type: 'button', onclick: () => entrar(l) }, 'Entrar en la ciudad'));
     const viaje = h('div', { class: 'viaje' }, h('h3', {}, 'Viajar desde aquí'));
     if (!viajes.alcanzable(d.id)) {
       viaje.append(h('p', { class: 'nota' }, 'No hay camino conocido hasta este lugar.'));
@@ -219,6 +248,7 @@ async function iniciar() {
 
   const rayo = new THREE.Raycaster(), raton = new THREE.Vector2();
   function lugarEn(ev) {
+    if (dentro) return null;
     raton.set(ev.clientX / innerWidth * 2 - 1, -(ev.clientY / innerHeight) * 2 + 1);
     rayo.setFromCamera(raton, camara);
     return rayo.intersectObjects(lugares.dianas, false)[0]?.object.userData.id ?? null;
@@ -237,7 +267,7 @@ async function iniciar() {
     const id = lugarEn(ev);
     lienzo.style.cursor = id && !porId[id].datos.oculto ? 'pointer' : 'grab';
   });
-  addEventListener('keydown', ev => { if (ev.key === 'Escape' && elegido) cerrar(); });
+  addEventListener('keydown', ev => { if (ev.key === 'Escape' && (elegido || dentro)) cerrar(); });
 
   /* ---------- mandos ---------- */
   const reloj = $('#reloj'), barra = $('#hora'), texto = $('#horaTexto');
@@ -268,7 +298,7 @@ async function iniciar() {
   const ACCIONES = {
     mas: () => orbitar(0, 0.65), menos: () => orbitar(0, 1.5), izq: () => orbitar(-0.5, 1), der: () => orbitar(0.5, 1),
     norte: () => orbitar(-control.getAzimuthalAngle(), 1),
-    general: () => { const v = vistaGeneral(); volar(v.pos, v.objetivo, 1400); },
+    general: () => { const v = ciudad ? ciudad.vista : vistaGeneral(); volar(v.pos.clone(), v.objetivo.clone(), 1400); },
   };
   document.querySelectorAll('[data-cam]').forEach(b => b.addEventListener('click', () => ACCIONES[b.dataset.cam]()));
   const aguja = $('#brujula span');
@@ -282,12 +312,16 @@ async function iniciar() {
     actualizarAnimaciones(ahora);
     if (corriendo) { hora = (hora + dt * 24 / SEG_POR_DIA) % 24; barra.value = hora; pintarHora(); }
     control.update();
-    if (camara.position.y < 6) camara.position.y = 6;
-    ambiente.actualizar(t, dt, camara, control.target);
-    if (anillo.visible) { const r = anillo.userData.radio * (1 + 0.06 * Math.sin(t * 3)); anillo.scale.set(r, r, 1); }
-    if (dentro && dentroListo && camara.position.distanceTo(dentro.base) > dentro.radio * 9) { dentro = null; pintarFicha(); }
+    if (camara.position.y < (ciudad ? 3 : 6)) camara.position.y = ciudad ? 3 : 6;
     aguja.style.transform = `rotate(${control.getAzimuthalAngle()}rad)`;
-    renderer.render(escena, camara);
+    if (ciudad) {
+      ciudad.actualizar(t, ambiente.luz, ambiente.estado.noche);
+      renderer.render(ciudad.escena, camara);
+    } else {
+      ambiente.actualizar(t, dt, camara, control.target);
+      if (anillo.visible) { const r = anillo.userData.radio * (1 + 0.06 * Math.sin(t * 3)); anillo.scale.set(r, r, 1); }
+      renderer.render(escena, camara);
+    }
     colocarEtiquetas();
     requestAnimationFrame(cuadro);
   }
@@ -295,7 +329,7 @@ async function iniciar() {
   carga.classList.add('fuera');
   // Para trastear desde la consola: mapa.seleccionar('faro'), mapa.ponerHora(22)…
   window.mapa = {
-    seleccionar, entrar: id => entrar(porId[id]), camara, control,
+    seleccionar, entrar: id => entrar(porId[id]), salir, camara, control,
     ponerHora: v => { hora = v; ponerReloj(false); barra.value = v; pintarHora(); },
     enPantalla: id => { const v = porId[id].base.clone().project(camara); return [(v.x * 0.5 + 0.5) * innerWidth, (-v.y * 0.5 + 0.5) * innerHeight]; },
   };
