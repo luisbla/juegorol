@@ -13,6 +13,13 @@ const PERFIL = {
   solterra: { sede: 'Casa del señor', fuera: '#c6a14c', dentro: '#b39a6c', calle: '#d3c198', teja2: 0x8a5a30, arbol: 'hoja' },
   astravan: { sede: 'Casa del Consejo', fuera: '#56824c', dentro: '#a79f8e', calle: '#cdc6b6', teja2: 0x7a4a52, arbol: 'hoja' },
 };
+// Edificios singulares de cada capital, además de la plaza y la sede.
+const HITOS = {
+  valcoria: [['Cuartel de la guardia', 'cuartel'], ['Posada', 'posada'], ['Herrería', 'herreria'], ['Establos', 'establos'], ['Molino', 'molino']],
+  griselda: [['Salón de los clanes', 'salon'], ['Patio de armas', 'patio'], ['Armería', 'herreria'], ['Santuario del hielo', 'santuario']],
+  solterra: [['Molino', 'molino'], ['Lonja del grano', 'lonja'], ['Posada', 'posada'], ['Establos', 'establos']],
+  astravan: [['Lonja', 'lonja'], ['Casa de cambio', 'cambio'], ['Almacenes', 'almacenes'], ['Posada', 'posada'], ['Cuartel de la guardia', 'cuartel']],
+};
 const RUMBOS = ['este', 'sureste', 'sur', 'suroeste', 'oeste', 'noroeste', 'norte', 'noreste'];
 const difAng = (a, b) => Math.abs(((a - b + Math.PI * 3) % (Math.PI * 2)) - Math.PI);
 
@@ -87,11 +94,23 @@ export function crearCiudad(l, mundo, { movil = false } = {}) {
   const paso = 13, anillos = [], f1 = rnd() * 6.28, f2 = rnd() * 6.28;
   const onda = (a, r) => (Math.sin(a * 3 + f1) * 3.0 + Math.sin(a * 7 + f2) * 1.6) * Math.min(1, (r - 20) / 40) * Math.min(1, (R - 6 - r) / 14);
   for (let r = 27; r <= R - 11; r += paso) anillos.push(r);
+
+  // edificios singulares: se les busca hueco (lejos de avenidas, de la sede y entre sí) antes de repartir las casas
+  const hitos = [];
+  for (const [nombre, tipo] of HITOS[l.id] || []) {
+    let sitio = null, nota = -1;
+    for (let k = 1; k < anillos.length - 1; k++) for (let i = 0; i < 40; i++) {
+      const a = i / 40 * Math.PI * 2 + k, r = anillos[k], x = Math.cos(a) * r, z = Math.sin(a) * r;
+      const d = Math.min(...puertas.map(p => difAng(a, p.ang) * r - 9), Math.hypot(x - sede.x, z - sede.z) - rSede - 12, ...hitos.map(q => Math.hypot(x - q.x, z - q.z) - 26), 30) + rnd() * 4;
+      if (d > nota) { nota = d; sitio = { nombre, tipo, x, z, ang: a }; }
+    }
+    if (sitio && nota > 2) hitos.push(sitio);
+  }
   for (const r0 of anillos) {
     const n = Math.floor(2 * Math.PI * r0 / 6.7), giro = rnd() * 6.28, callejon = 5 + Math.floor(rnd() * 4);
     for (let i = 0; i < n; i++) {
       const a = i / n * Math.PI * 2 + giro, r = r0 + onda(a, r0) + (rnd() - 0.5) * 1.6, x = Math.cos(a) * r, z = Math.sin(a) * r;
-      if (cercaAvenida(a, r, 6.5) || enSede(x, z) || i % callejon === 0) continue;
+      if (cercaAvenida(a, r, 6.5) || enSede(x, z) || i % callejon === 0 || hitos.some(q => Math.hypot(x - q.x, z - q.z) < 10.5)) continue;
       const alto = 3.0 + rnd() * 1.6 + (1 - r / R) * 1.6 + (rnd() > 0.85 ? 1.8 : 0);
       casa(x, z, 4.6 + rnd() * 1.5, 4.3 + rnd() * 1.2, alto, paredes[rnd() > 0.5 ? 0 : 1], tejas[Math.floor(rnd() * 3)], -(a + Math.PI / 2) + (rnd() - 0.5) * 0.12, rnd() > 0.55);
       if (rnd() > 0.9 && humos.length < 14) humos.push(new THREE.Vector3(x, alto * 1.8, z));
@@ -173,6 +192,82 @@ export function crearCiudad(l, mundo, { movil = false } = {}) {
     const p = aMundo(...asta); bandera(p.x, p.y, p.z, colorRegion);
   }
   etiquetas.push({ nombre: perfil.sede, pos: new THREE.Vector3(sede.x, 34, sede.z), clase: 'ciudad' });
+
+  /* ---------- edificios singulares ---------- */
+  const despues = [], aspas = [];   // lo que necesita piezas que se crean más abajo (fuegos) o que se mueve (molino)
+  for (const q of hitos) {
+    const ry = -q.ang - Math.PI / 2, ejeY0 = new THREE.Vector3(0, 1, 0);
+    const fuera = (x, y, z) => new THREE.Vector3(x, y, z).applyAxisAngle(ejeY0, ry).add(new THREE.Vector3(q.x, 0, q.z));   // local → escena
+    let alto = 9;
+    conMarco(q.x, q.z, ry, () => {
+      const pared = paredes[0], teja = tejas[0], oscuro = matPared(0x6a5a48), tabla = matLiso(0x6a5039);
+      if (q.tipo === 'cuartel') {
+        caja(matPared(e.muro, { piedra: true }), 13, 6, 6, 0.5, 0, 0); poner(gDosAguas, teja, 0.5, 6, 0, 14.5, 3.4, 7.2);
+        torre(-7.2, -0.5, 2.1, 12, piedra, teja, true);
+        for (let i = 0; i < 5; i++) caja(tabla, 0.2, 1.6, 0.2, -4 + i * 2.2, 0, 5.2);   // lanceros en el patio
+        const p = fuera(-7.2, 13, -0.5); bandera(p.x, p.y, p.z, colorRegion); alto = 15;
+      } else if (q.tipo === 'posada') {
+        casa(0.5, -0.5, 11, 6.5, 6.4, pared, tejas[2], 0, true); casa(-6.6, 2.4, 5.2, 4.8, 4, pared, tejas[2], Math.PI / 2, false);
+        caja(tabla, 0.25, 4.2, 0.25, 6.6, 0, 4.2); caja(matLiso(0xb5652a), 2.0, 1.2, 0.2, 6.6, 3.0, 4.2);   // cartel
+        for (let i = 0; i < 4; i++) cil(matLiso(0x6a4a2e), 0.6, 1.1, 2 + i * 1.3, 0, 4.2);
+        alto = 11;
+      } else if (q.tipo === 'herreria') {
+        casa(0, 0, 9, 6, 4.2, oscuro, tejas[2], 0, false); caja(piedraClara, 2.0, 8.5, 2.0, 3.4, 0, -1.2);   // chimenea de la fragua
+        caja(matLiso(0x2b2b2e), 1.2, 0.9, 0.6, -1.5, 0, 4.4); caja(tabla, 3.2, 0.25, 1.4, 2.2, 0.9, 4.6);   // yunque y banco
+        const p = fuera(3.4, 9.5, -1.2), f = fuera(0.5, 2, 3.4); humos.push(p); despues.push(() => fuego(f.x, f.y, f.z, 15)); alto = 10;
+      } else if (q.tipo === 'establos') {
+        casa(0, -0.5, 15, 5, 3.2, matPared(0x8a6a48), tejas[2], 0, false);
+        for (let i = 0; i < 9; i++) { caja(tabla, 0.25, 1.3, 0.25, -8 + i * 2, 0, 5.4); if (i < 8) caja(tabla, 2, 0.16, 0.16, -7 + i * 2, 0.9, 5.4); }   // cercado
+        for (let i = 0; i < 3; i++) { const m = matLiso(0xd2aa4e); poner(gCil, m, -4 + i * 3.4, 0.9, 3.4, 0.9, 1.4, 0.9, 0, Math.PI / 2); }   // pacas
+        alto = 7;
+      } else if (q.tipo === 'salon') {
+        casa(0, 0, 16, 7.5, 5.5, matPared(0x4f4a44, { piedra: true }), matTejado(0x2c2f38), 0, false);
+        for (const s of [-1, 1]) { cil(tabla, 0.5, 8.5, s * 3.2, 0, 4.6); poner(gCono, tabla, s * 3.2, 9.3, 4.6, 0.7, 1.6, 0.7); }   // postes tallados
+        const a = fuera(-5.5, 2.4, 5.4), b = fuera(5.5, 2.4, 5.4); despues.push(() => { fuego(a.x, a.y, a.z, 14); fuego(b.x, b.y, b.z, 14); });
+        for (const s of [-5.5, 5.5]) cil(matLiso(0x2b2b2e), 0.7, 1.6, s, 0, 5.4);
+        alto = 12;
+      } else if (q.tipo === 'patio') {
+        for (let i = 0; i < 5; i++) { const x = -5.5 + i * 2.8; caja(tabla, 0.3, 2.6, 0.3, x, 0, -1); caja(tabla, 1.8, 0.3, 0.3, x, 1.7, -1); cil(matLiso(0xb09a6a), 0.5, 0.9, x, 1.9, -1); }   // peleles
+        caja(tabla, 4.5, 1.8, 0.6, 0, 0, 3.4); for (let i = 0; i < 6; i++) caja(matLiso(0x8a8e96), 0.12, 2.6, 0.12, -1.9 + i * 0.75, 0.2, 3.4, 0, 0.12);   // armero
+        for (let i = 0; i < 16; i++) { const a = i / 16 * 6.283; caja(tabla, 0.25, 1.1, 0.25, Math.cos(a) * 8, 0, Math.sin(a) * 5.2); }
+        alto = 6;
+      } else if (q.tipo === 'santuario') {
+        caja(matPiedra(0x565b67, 1), 7.5, 6.5, 7.5, 0, 0, 0); cono(matLiso(0xdfeaf2, { roughness: 0.25, metalness: 0.1 }), 3.2, 15, 0, 6.5, 0);   // aguja de hielo
+        for (let i = 0; i < 6; i++) { const a = i / 6 * 6.283 + 0.5; poner(gRoca, matLiso(0xcfdbe6, { roughness: 0.3 }), Math.cos(a) * 6.5, 1.8, Math.sin(a) * 5, 0.9, 2.6, 0.9, a, 0.15); }
+        const p = fuera(0, 9, 0); despues.push(() => fuego(p.x, p.y, p.z, 30, 0x8fd0ff)); alto = 23;
+      } else if (q.tipo === 'molino') {
+        poner(gCil, piedraClara, 0, 5.5, 0, 3.4, 11, 3.4); cono(tejas[2], 3.3, 4, 0, 11, 0);
+        casa(-5.6, 1.5, 4.5, 4, 3, pared, tejas[2], 0, false);
+        alto = 17;
+      } else if (q.tipo === 'lonja') {
+        caja(matPared(0xcbbf9f, { piedra: true }), 15, 5.5, 6, 0, 0, -0.8); poner(gDosAguas, teja, 0, 5.5, -0.8, 16.5, 3.4, 7.4);
+        for (let i = 0; i < 8; i++) cil(piedraClara, 0.4, 3.6, -6.3 + i * 1.8, 0, 3.6); caja(tabla, 14.5, 0.4, 2.4, 0, 3.6, 3.2);   // soportal
+        for (let i = 0; i < 6; i++) caja(matLiso(i % 2 ? 0x8a6a48 : 0xd2aa4e), 1.2, 0.9, 1.2, -5.5 + i * 2.2, 0, 5.4, i);
+        alto = 10;
+      } else if (q.tipo === 'cambio') {
+        caja(matPiedra(0xb9b3a4), 9.5, 7.5, 6.5, 0, 0, -0.5);
+        for (let i = 0; i < 5; i++) cil(piedraClara, 0.5, 6.2, -4 + i * 2, 0, 3.6); caja(piedraClara, 10.5, 1.0, 2.4, 0, 6.2, 3.3);
+        poner(gDosAguas, matTejado(0x3d4a5a), 0, 7.5, -0.2, 10.5, 2.6, 8.6);
+        alto = 12;
+      } else if (q.tipo === 'almacenes') {
+        for (let i = 0; i < 3; i++) casa(-5.4 + i * 5.4, 0, 6.6, 4.8, 4.6 + (i % 2) * 0.8, matPared(i % 2 ? 0x9a7a55 : 0x8a6a48), matTejado(0x5c3a2a), Math.PI / 2, false);
+        for (let i = 0; i < 7; i++) cil(matLiso(0x6a4a2e), 0.6, 1.1, -6 + i * 1.9, 0, 4.8);
+        alto = 9;
+      }
+    });
+    if (q.tipo === 'molino') {   // las aspas giran: van aparte de las mallas fundidas
+      const eje = new THREE.Group(), rueda = new THREE.Group(), p = fuera(0, 9.5, 3.7);
+      eje.position.copy(p); eje.rotation.y = ry; eje.add(rueda);
+      for (let i = 0; i < 4; i++) {
+        const brazo = new THREE.Group(); brazo.rotation.z = i * Math.PI / 2; rueda.add(brazo);
+        const palo = new THREE.Mesh(gCaja, matLiso(0x4a3a2a)); palo.scale.set(0.25, 8, 0.25); palo.position.y = 4; brazo.add(palo);
+        const lona = new THREE.Mesh(gCaja, matLiso(0xe6dcc6)); lona.scale.set(1.9, 6, 0.08); lona.position.set(1.0, 4.6, 0); brazo.add(lona);
+      }
+      rueda.traverse(o => { if (o.isMesh) o.castShadow = true; });
+      aspas.push(rueda); escena.add(eje);
+    }
+    etiquetas.push({ nombre: q.nombre, pos: new THREE.Vector3(q.x, alto + 5, q.z), clase: 'hito' });
+  }
 
   /* ---------- lo propio de cada ciudad ---------- */
   if (l.id === 'solterra') {
@@ -293,10 +388,11 @@ export function crearCiudad(l, mundo, { movil = false } = {}) {
   const bocanadas = [];
   for (const origen of humos) for (let k = 0; k < 5; k++) { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: blanda, transparent: true, depthWrite: false, color: 0xd9d4cc })); s.userData = { origen, fase: k / 5 + rnd() }; bocanadas.push(s); escena.add(s); }
   const antorchas = [];
-  const fuego = (x, y, z, t) => { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: blanda, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, color: 0xffb45e, opacity: 0, fog: false })); s.position.set(x, y, z); s.scale.set(t, t, 1); s.userData.f = rnd() * 6; antorchas.push(s); escena.add(s); };
+  const fuego = (x, y, z, t, color = 0xffb45e) => { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: blanda, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, color, opacity: 0, fog: false })); s.position.set(x, y, z); s.scale.set(t, t, 1); s.userData.f = rnd() * 6; antorchas.push(s); escena.add(s); };
   for (const p of puertas) fuego(Math.cos(p.ang) * (R - 4), 6, Math.sin(p.ang) * (R - 4), 26);
   for (let i = 0; i < 6; i++) fuego(Math.cos(i * 1.05) * 15, 4, Math.sin(i * 1.05) * 15, 22);
   fuego(sede.x, 8, sede.z, 46);
+  for (const f of despues) f();
 
   /* ---------- luz ---------- */
   const sol = new THREE.DirectionalLight(0xffffff, 2.5), luna = new THREE.DirectionalLight(0x8fa8ff, 0), cielo = new THREE.HemisphereLight(0xbfd8ff, 0x4a4030, 0.8);
@@ -326,6 +422,7 @@ export function crearCiudad(l, mundo, { movil = false } = {}) {
     for (const s of bocanadas) { const u = s.userData, k = (t * 0.12 + u.fase) % 1; s.position.set(u.origen.x + k * k * 14, u.origen.y + k * 20, u.origen.z + Math.sin(u.fase * 9) * k * 3); const tam = 2.5 + k * 11; s.scale.set(tam, tam, 1); s.material.opacity = Math.sin(k * Math.PI) * 0.4 * (0.35 + 0.65 * dia); }
     for (const s of antorchas) s.material.opacity = noche * (0.5 + 0.12 * Math.sin(t * 9 + s.userData.f) + 0.06 * Math.sin(t * 23 + s.userData.f));
     for (const b of banderas) { const p = b.geometry.attributes.position; for (let i = 0; i < p.count; i++) { const x = p.getX(i); p.setZ(i, Math.sin(x * 1.4 - t * 6) * 0.16 * x); } p.needsUpdate = true; }
+    for (const a of aspas) a.rotation.z = t * 0.7;
     if (agua) agua.material.roughness = 0.12 + 0.05 * Math.sin(t * 0.8);
   }
 

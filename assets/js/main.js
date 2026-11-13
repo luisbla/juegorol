@@ -122,7 +122,7 @@ async function iniciar() {
       v3.copy(e.pos).project(camara);
       let op = capas.nombres && v3.z < 1 && Math.abs(v3.x) < 1.15 && Math.abs(v3.y) < 1.15 ? 1 : 0;
       if (op) {
-        if (e.clase === 'puerta') op = suave(ciudad.R * 4.2, ciudad.R * 3.4, lejos);
+        if (e.clase === 'puerta' || e.clase === 'hito') op = suave(ciudad.R * 4.2, ciudad.R * 3.4, lejos);
         else if (e.clase === 'region') op = w < 720 ? 0 : suave(umbral * 0.8, umbral, lejos);
         else if (e.clase === 'geo') op = suave(170, 320, lejos);
         else if (e.clase === 'lugar' && e.lugar !== elegido) op = suave(umbral, umbral * 0.8, lejos);

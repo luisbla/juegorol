@@ -255,7 +255,7 @@ export function crearTerreno(mundo, { movil = false } = {}) {
       const wMa = pesoMarisma(x, y);
       r = mezcla(r, 54 + n * 26, wMa); v = mezcla(v, 68 + n * 24, wMa); b = mezcla(b, 42 + n * 10, wMa);
       // ribera de los ríos
-      const dr = distRio(x, y), rib = suave(19, 8, dr) * 0.6 * (1 - nieve * wT), grava = suave(9, 5, dr) * 0.8;
+      const dr = distRio(x, y), rib = suave(19, 8, dr) * 0.6 * (1 - nieve * wT) * (1 - wMa * 0.8), grava = suave(9, 5, dr) * 0.8 * (1 - suave(0.05, 0.5, wMa));   // en la marisma no hay ribera ni grava: solo fango
       r = mezcla(r, 70, rib); v = mezcla(v, 100, rib); b = mezcla(b, 56, rib);
       r = mezcla(r, 150 + g2 * 30, grava); v = mezcla(v, 142 + g2 * 26, grava); b = mezcla(b, 118 + g2 * 20, grava);   // lecho de grava
       // arena en la costa
@@ -404,7 +404,7 @@ export function crearTerreno(mundo, { movil = false } = {}) {
 
   /* ---------- cintas sobre el terreno: ríos, caminos y fronteras ---------- */
   function cinta(trazo, ancho, elev, suelo = 0, soloTierra = false, lamina = false, lejosDe = 0) {
-    const p = [], uvs = [], rap = [], ix = [], n = trazo.length;
+    const p = [], uvs = [], rap = [], turb = [], fin = [], ix = [], n = trazo.length;
     let largo = 0;
     for (let i = 0; i < n; i++) {
       const a = trazo[Math.max(0, i - 1)], b = trazo[Math.min(n - 1, i + 1)];
@@ -416,6 +416,7 @@ export function crearTerreno(mundo, { movil = false } = {}) {
       p.push(x + nx - cx, hc, y + ny - cz, x - nx - cx, hc, y - ny - cz);
       uvs.push(0, largo, 1, largo);
       const caida = Math.min(1, Math.abs(alturaEn(b[0], b[1]) - alturaEn(a[0], a[1])) / l * 5); rap.push(caida, caida);
+      const tm = suave(0.03, 0.55, pesoMarisma(x, y)); turb.push(tm, tm);   // empieza a enturbiarse ya en el borde
       // sobre el agua no se dibuja: una senda que acaba en un lago se queda en la orilla
       const seco = (!soloTierra || (alturaEn(x, y) > -0.05 && alturaEn(b[0], b[1]) > -0.05)) && (!lejosDe || distLugar(x, y) > lejosDe);
       if (i < n - 1 && seco) { const k = i * 2; ix.push(k, k + 2, k + 1, k + 1, k + 2, k + 3); }
@@ -423,7 +424,10 @@ export function crearTerreno(mundo, { movil = false } = {}) {
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.Float32BufferAttribute(p, 3));
     g.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+    for (let i = 0; i < n; i++) { const s = uvs[i * 4 + 1], f = Math.min(1, Math.min(s, largo - s) / 16); fin.push(f, f); }   // 0 en los extremos
     g.setAttribute('rapido', new THREE.Float32BufferAttribute(rap, 1));
+    g.setAttribute('turbia', new THREE.Float32BufferAttribute(turb, 1));
+    g.setAttribute('fin', new THREE.Float32BufferAttribute(fin, 1));
     g.setIndex(ix);
     g.computeVertexNormals();
     return g;
@@ -433,23 +437,24 @@ export function crearTerreno(mundo, { movil = false } = {}) {
   const matRio = new THREE.ShaderMaterial({
     uniforms: { uTiempo: uniformes.uTiempo, uLuz: uniformes.uLuz, uCielo: uAgua.uCielo },
     transparent: true, depthWrite: false, side: THREE.DoubleSide,
-    vertexShader: 'attribute float rapido; varying vec2 vUv; varying float vRap; void main(){ vUv = uv; vRap = rapido; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-    fragmentShader: `varying vec2 vUv; varying float vRap; uniform float uTiempo, uLuz; uniform vec3 uCielo;
+    vertexShader: 'attribute float rapido, turbia, fin; varying vec2 vUv; varying float vRap, vTurbia, vFin; void main(){ vUv = uv; vRap = rapido; vTurbia = turbia; vFin = fin; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+    fragmentShader: `varying vec2 vUv; varying float vRap, vTurbia, vFin; uniform float uTiempo, uLuz; uniform vec3 uCielo;
       ${RUIDO_GLSL}
       void main(){
         float c = abs(vUv.x - 0.5) * 2.0;                          // 0 en el centro, 1 en la orilla
-        float corre = uTiempo * (0.5 + vRap * 1.2) * (1.0 - 0.55 * c * c);   // el centro baja más deprisa
+        float corre = uTiempo * (0.5 + vRap * 1.2) * (1.0 - 0.55 * c * c) * (1.0 - vTurbia * 0.7);   // el centro baja más deprisa; en la marisma casi se para
         float y = vUv.y * 0.085 - corre;
         float veta = rN(vec2(vUv.x * 3.5, y * 2.6)) * 0.5 + rN(vec2(vUv.x * 8.0 + 3.0, y * 6.0)) * 0.32 + rN(vec2(vUv.x * 19.0, y * 13.0)) * 0.18;
         vec3 col = mix(vec3(0.012, 0.085, 0.17), vec3(0.04, 0.22, 0.30), veta);
         col = mix(col, vec3(0.09, 0.30, 0.31), c * c * 0.65);       // somero junto a la orilla
         col = mix(col, uCielo, 0.2);
+        col = mix(col, mix(vec3(0.030, 0.050, 0.028), uCielo, 0.045), vTurbia);   // dentro de la marisma es un canal más de agua de turbera
         float rizos = smoothstep(0.6, 0.8, veta) * (0.22 + vRap * 1.1);
         float orilla = smoothstep(0.72, 1.0, c) * smoothstep(0.42, 0.7, rN(vec2(vUv.x * 2.0, y * 5.0 + 9.0))) * 0.55;
         float destello = smoothstep(0.93, 1.0, rN(vec2(vUv.x * 30.0, y * 22.0 + uTiempo * 0.7))) * 0.5;
-        col = mix(col, vec3(0.9, 0.95, 0.97), clamp(rizos + orilla + destello, 0.0, 1.0));
+        col = mix(col, vec3(0.9, 0.95, 0.97), clamp(rizos + orilla + destello, 0.0, 1.0) * (1.0 - vTurbia * 0.9));
         float borde = smoothstep(0.0, 0.1, vUv.x) * smoothstep(1.0, 0.9, vUv.x);
-        gl_FragColor = vec4(col * uLuz, borde * 0.96);
+        gl_FragColor = vec4(col * uLuz, borde * 0.96 * smoothstep(0.0, 1.0, vFin));
         #include <tonemapping_fragment>
         #include <colorspace_fragment>
       }`,

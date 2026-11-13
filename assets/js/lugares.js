@@ -403,7 +403,7 @@ export function crearLugares(mundo, terreno) {
         const m = caja(g, 1.25, 0.3, largo, dx, 0, 5.4 + largo / 2, madera); m.position.y = aCota(0.85);
         for (let dz = 7; dz < 5.4 + largo; dz += 3.2) for (const s of [-0.55, 0.55]) { const p = caja(g, 0.26, 2.8, 0.26, dx + s, 0, dz, pilote); p.position.y = aCota(-0.5); }
         if (i !== 1) amarrado(dx + 2.1, 8.5 + largo * 0.45, 5.2 + (i % 3) * 1.1, (rnd() - 0.5) * 0.12);
-        if (i % 2 === 0) amarrado(dx - 1.9, 7.5 + largo * 0.3, 3.2, (rnd() - 0.5) * 0.2);
+        if (i % 2 === 0 && i > 0) amarrado(dx - 1.9, 7.5 + largo * 0.3, 3.2, (rnd() - 0.5) * 0.2);
       });
       // grúas de rueda sobre el muelle
       for (const dx of [-7.8, 3.0, 8.2]) {
@@ -419,7 +419,7 @@ export function crearLugares(mundo, terreno) {
       caja(grada, 0.2, 0.2, 7.0, 0, 0.3, 2.4, casco);
       // rompeolas de escollera que cierra la dársena, con su baliza
       for (let i = 0; i < 22; i++) {
-        const t = i / 21, a = -0.25 + t * 1.75, x = -15.5 + Math.sin(a) * 9 - t * 1.5, z = 6 + (1 - Math.cos(a)) * 17 + t * 10;
+        const t = i / 21, giro = Math.max(0, (t - 0.5) / 0.5), x = -19.5 + giro * giro * 13, z = 4.5 + t * 33;
         const r = roca(g, 1.0 + rnd() * 0.7, x + (rnd() - 0.5), 0, z + (rnd() - 0.5), sillar, rnd); r.position.y = aCota(0.25 + rnd() * 0.4);
         if (i === 21) { const bal = cil(g, 0.4, 2.6, x, 0, z, matPiedra(0xece8df, 1)); bal.position.y = aCota(2.0); const luz = pieza(g, gCil, new THREE.MeshStandardMaterial({ color: 0xfff1b0, emissive: 0xffc857, emissiveIntensity: 1.6 }), 0.3, 0.45, 0.3, x, aCota(3.5), z); }
       }
