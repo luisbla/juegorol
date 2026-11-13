@@ -1,0 +1,134 @@
+{
+  "meta": {
+    "nombre": "Tierras de Alden",
+    "ancho": 1536,
+    "alto": 1024,
+    "kmPorUnidad": 0.4845,
+    "kmPorDia": 38.6,
+    "notaRitmo": "ritmo normal a pie de D&D 5e: 24 millas al día"
+  },
+  "regiones": [
+    {
+      "id": "valcoria", "nombre": "Reino de Valcoria", "lema": "Tierras de los Robles", "color": "#4f8a3c",
+      "etiqueta": [250, 150],
+      "poligono": [[40,560],[60,250],[200,90],[450,50],[680,80],[800,160],[835,290],[880,400],[940,450],[900,520],[820,580],[700,570],[640,560],[400,545],[200,555]]
+    },
+    {
+      "id": "thraengarde", "nombre": "Dominio de Thraengarde", "lema": "Tierra de Clanes", "color": "#7fa6c9",
+      "etiqueta": [1380, 130],
+      "poligono": [[800,160],[870,80],[1000,40],[1250,35],[1480,60],[1500,300],[1490,440],[1380,430],[1200,400],[1050,410],[940,450],[880,400],[835,290]]
+    },
+    {
+      "id": "marendol", "nombre": "Señorío de Marendol", "lema": "Campos Dorados", "color": "#c79a3a",
+      "etiqueta": [170, 790],
+      "poligono": [[40,560],[200,555],[400,545],[640,560],[660,700],[650,850],[600,950],[420,975],[220,960],[70,900],[35,720]]
+    },
+    {
+      "id": "astravan", "nombre": "Confederación de Astravan", "lema": "Tierras de los Lagos", "color": "#7a63b8",
+      "etiqueta": [1390, 500],
+      "poligono": [[940,450],[1050,410],[1200,400],[1380,430],[1490,440],[1500,700],[1510,850],[1420,890],[1300,945],[1120,940],[980,905],[870,880],[760,930],[660,1010],[600,950],[650,850],[660,700],[640,560],[700,570],[820,580],[900,520]]
+    }
+  ],
+  "costa": [[0,1100],[560,1100],[660,1010],[760,930],[870,880],[980,905],[1120,940],[1300,945],[1420,890],[1536,850]],
+  "lagos": [
+    { "x": 1150, "y": 630, "rx": 125, "ry": 52 },
+    { "x": 1295, "y": 815, "rx": 80, "ry": 44 },
+    { "x": 1420, "y": 560, "rx": 42, "ry": 30 }
+  ],
+  "marisma": { "nombre": "Marisma Callada", "x": 770, "y": 488, "rx": 128, "ry": 88, "etiqueta": [730, 540] },
+  "rios": [
+    { "ancho": 3.6, "puntos": [[1000,340],[950,378],[895,420],[840,452],[790,468]] },
+    { "ancho": 4.2, "puntos": [[800,538],[850,572],[930,602],[1000,622],[1042,630]] },
+    { "ancho": 5.2, "puntos": [[1085,672],[1080,735],[1030,790],[960,838],[900,872],[884,902]] },
+    { "ancho": 3.4, "puntos": [[1245,676],[1262,720],[1278,772]] },
+    { "ancho": 2.6, "puntos": [[1382,574],[1325,598],[1272,620]] }
+  ],
+  "mar": { "nombre": "Mar del Sur", "etiqueta": [1180, 990] },
+  "lugares": [
+    { "id": "valcoria", "nombre": "Valcoria", "tipo": "capital", "region": "valcoria", "x": 430, "y": 300, "tamano": 1.55,
+      "desc": "Capital del Reino de Valcoria y la mayor ciudad de estas tierras, levantada entre robledales. Sus murallas han conocido tiempos mejores: las incursiones del norte llevan años vaciando las arcas.",
+      "gobierno": { "titulo": "Quién gobierna", "texto": "El rey Aldric Rovain III, tercero de su dinastía. Reina sobre un país más pequeño y más pobre que el que heredó." } },
+    { "id": "criptas", "nombre": "Las Criptas Silentes", "tipo": "ruina", "region": "valcoria", "x": 130, "y": 250,
+      "desc": "Ruinas al oeste del reino. En Valcoria se da por hecho que son la cripta de una dinastía antigua, y casi nadie se acerca." },
+    { "id": "roble", "nombre": "Puesto del Roble", "tipo": "posta", "region": "valcoria", "x": 272, "y": 288,
+      "desc": "Posta en el camino del oeste, a medio trayecto entre la capital y las Criptas Silentes." },
+    { "id": "villaverde", "nombre": "Villa Verde", "tipo": "pueblo", "region": "valcoria", "x": 412, "y": 452,
+      "desc": "Pueblo en el camino real que baja de Valcoria hacia Solterra. Última parada antes de los campos de Marendol." },
+    { "id": "vigia", "nombre": "Puesto de Vigía Quemado", "tipo": "quemado", "region": "valcoria", "x": 730, "y": 200,
+      "desc": "Lo que queda de una torre de vigilancia en la frontera con Thraengarde. Ardió en una incursión y nadie la ha reconstruido." },
+    { "id": "campamento", "nombre": "Campamento Abandonado", "tipo": "campamento", "region": "valcoria", "x": 758, "y": 292,
+      "desc": "Tiendas rotas y hogueras frías junto a la frontera. No está claro quién acampó aquí ni por qué se fue con tanta prisa." },
+    { "id": "palafitos", "nombre": "Los Palafitos", "tipo": "palafitos", "region": "valcoria", "x": 762, "y": 462, "suelo": "marisma",
+      "desc": "Cabañas sobre estacas en mitad de la Marisma Callada, medio hundidas y vacías. Nadie recuerda quién vivía aquí." },
+
+    { "id": "griselda", "nombre": "Fortaleza Griselda", "tipo": "capital", "region": "thraengarde", "x": 1040, "y": 270, "tamano": 1.15,
+      "desc": "Fortaleza de piedra oscura en un valle entre montañas nevadas. Desde aquí se gobierna a los clanes que antes guerreaban entre sí.",
+      "gobierno": { "titulo": "Quién gobierna", "texto": "Thraen, llamado Portavoz del Hielo. Unificó a los clanes por la fuerza y gobierna con el respaldo del culto a los demonios de hielo." } },
+    { "id": "cuervo", "nombre": "Puesto del Cuervo", "tipo": "posta", "region": "thraengarde", "x": 1220, "y": 108,
+      "desc": "Puesto de montaña al noreste de la fortaleza, el más alto y aislado del dominio." },
+    { "id": "cabana", "nombre": "La Cabaña del Renegado", "tipo": "cabana", "region": "thraengarde", "x": 1208, "y": 185,
+      "desc": "Una cabaña sola bajo el Puesto del Cuervo. Dicen que quien vive ahí rompió con el culto y con Thraen." },
+    { "id": "cuna", "nombre": "La Cuna de los Demonios", "tipo": "ruina", "region": "thraengarde", "x": 1340, "y": 290,
+      "desc": "Ruinas entre las cumbres del este. Para los clanes es suelo sagrado: aquí, cuentan, despertaron los demonios de hielo." },
+
+    { "id": "solterra", "nombre": "Solterra", "tipo": "capital", "region": "marendol", "x": 350, "y": 722, "tamano": 0.9,
+      "desc": "Sede del Señorío de Marendol, rodeada de trigales. Próspera y tranquila, sin más ejército que el que le presta Valcoria.",
+      "gobierno": { "titulo": "Quién gobierna", "texto": "El señor Beren Aldwyn, vasallo del rey de Valcoria." } },
+    { "id": "granja", "nombre": "Granja del Albo", "tipo": "granja", "region": "marendol", "x": 212, "y": 668,
+      "desc": "La granja más grande del señorío, a un paseo al oeste de Solterra." },
+    { "id": "viento", "nombre": "Posta del Viento", "tipo": "posta", "region": "marendol", "x": 300, "y": 852,
+      "desc": "Posta al sur de Solterra, en campo abierto y sin un árbol que pare el viento." },
+    { "id": "llanuras", "nombre": "Llanuras Doradas", "tipo": "pueblo", "region": "marendol", "x": 502, "y": 688,
+      "desc": "Pueblo agrícola al este de Solterra, entre los campos que dan nombre a la región." },
+    { "id": "taberna", "nombre": "La Taberna del Jabalí Contento", "tipo": "taberna", "region": "marendol", "x": 560, "y": 802,
+      "desc": "Taberna de camino entre Solterra y Puerto de Liria. Parada obligada de carreteros y viajeros." },
+    { "id": "sagrario", "nombre": "El Sagrario del Surco", "tipo": "ruina", "region": "marendol", "x": 432, "y": 892,
+      "desc": "Piedras viejas que asoman entre los cultivos del sur. Las encontró un arado, y el folclore local las tiene por un templo del campo." },
+
+    { "id": "astravan", "nombre": "Astravan", "tipo": "capital", "region": "astravan", "x": 1042, "y": 702, "tamano": 1.25,
+      "desc": "Capital de la Confederación, entre el lago grande y el río que baja al mar. Ciudad de mercaderes, almacenes y barcazas.",
+      "gobierno": { "titulo": "Quién gobierna", "texto": "El Consejo de las Tres Casas, con voto igual: Casa Ilvane (comercio marítimo), Casa Merrow (pesca y lagos) y Casa Draveth (banca y préstamos)." } },
+    { "id": "claro", "nombre": "Claro de Lunas", "tipo": "pueblo", "region": "astravan", "x": 1306, "y": 650,
+      "desc": "Pueblo de pescadores en la orilla este del lago grande." },
+    { "id": "liria", "nombre": "Puerto de Liria", "tipo": "puerto", "region": "astravan", "x": 858, "y": 866,
+      "desc": "El puerto de mar de la Confederación, en la desembocadura del río. Por sus muelles sale al Mar del Sur casi todo lo que Astravan vende." },
+    { "id": "faro", "nombre": "Faro de Astravan", "tipo": "faro", "region": "astravan", "x": 968, "y": 962, "suelo": "islote", "tamano": 1.35,
+      "desc": "Faro sobre un peñón frente a Puerto de Liria. Marca la entrada del puerto a los barcos que vienen del Mar del Sur." },
+    { "id": "ahogada", "nombre": "La Ciudad Ahogada", "tipo": "ruina", "region": "astravan", "x": 1295, "y": 812, "suelo": "agua",
+      "desc": "Torres rotas que asoman de un lago. Los pescadores la llaman así desde siempre y evitan echar las redes cerca." },
+    { "id": "torre", "nombre": "Torre de Aldrian", "tipo": "torre", "region": "astravan", "x": 1178, "y": 520, "oculto": true,
+      "desc": "Una torre entre los árboles, al norte del lago grande. En Astravan dicen que aquí vive el mago Aldrian, y que no recibe visitas." }
+  ],
+  "cruces": [
+    { "id": "x-lagos", "x": 1225, "y": 722 }
+  ],
+  "caminos": [
+    { "de": "criptas", "a": "roble", "tipo": "camino", "puntos": [[200,278]] },
+    { "de": "roble", "a": "valcoria", "tipo": "camino", "puntos": [[345,300]] },
+    { "de": "valcoria", "a": "villaverde", "tipo": "camino", "puntos": [[432,380]] },
+    { "de": "villaverde", "a": "solterra", "tipo": "camino", "puntos": [[392,545],[362,640]] },
+    { "de": "valcoria", "a": "vigia", "tipo": "camino", "puntos": [[540,270],[640,226]] },
+    { "de": "vigia", "a": "griselda", "tipo": "camino", "puntos": [[825,214],[930,256]] },
+    { "de": "vigia", "a": "campamento", "tipo": "senda", "puntos": [[750,245]] },
+    { "de": "griselda", "a": "cuervo", "tipo": "camino", "puntos": [[1120,215],[1170,140]] },
+    { "de": "cuervo", "a": "cabana", "tipo": "senda", "puntos": [[1218,145]] },
+    { "de": "griselda", "a": "cuna", "tipo": "senda", "puntos": [[1140,300],[1250,305]] },
+    { "de": "griselda", "a": "astravan", "tipo": "camino", "puntos": [[1085,340],[1075,430],[1030,520],[985,592],[992,655]] },
+    { "de": "solterra", "a": "granja", "tipo": "camino", "puntos": [[280,690]] },
+    { "de": "solterra", "a": "viento", "tipo": "camino", "puntos": [[318,790]] },
+    { "de": "solterra", "a": "llanuras", "tipo": "camino", "puntos": [[425,700]] },
+    { "de": "solterra", "a": "taberna", "tipo": "camino", "puntos": [[440,760]] },
+    { "de": "solterra", "a": "sagrario", "tipo": "senda", "puntos": [[385,810]] },
+    { "de": "taberna", "a": "liria", "tipo": "camino", "puntos": [[680,848],[780,868]] },
+    { "de": "liria", "a": "astravan", "tipo": "camino", "puntos": [[918,812],[985,752]] },
+    { "de": "astravan", "a": "x-lagos", "tipo": "camino", "puntos": [[1120,738],[1180,730]] },
+    { "de": "x-lagos", "a": "claro", "tipo": "camino", "puntos": [[1280,702]] },
+    { "de": "x-lagos", "a": "ahogada", "tipo": "senda", "puntos": [[1248,765]] },
+    { "de": "liria", "a": "faro", "tipo": "barca", "puntos": [[905,925]] }
+  ],
+  "rutasBarcos": [
+    { "en": "mar", "puntos": [[892,912],[900,988],[1100,1002],[1300,996],[1460,942],[1380,988],[1150,994],[1040,1000]] },
+    { "en": "mar", "puntos": [[872,902],[800,962],[722,1004],[770,1012],[880,1008],[900,975]] },
+    { "en": "lago", "puntos": [[1080,630],[1150,612],[1225,630],[1150,648]] }
+  ]
+}
