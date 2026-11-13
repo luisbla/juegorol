@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Tierras de Alden · Mapa</title>
+  <meta name="description" content="Mapa interactivo en relieve de las Tierras de Alden.">
+  <meta name="theme-color" content="#12141a">
+  <link rel="icon" href="assets/img/icono.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/css/app.css">
+  <script type="importmap">
+  { "imports": {
+      "three": "./assets/vendor/three/three.module.min.js",
+      "three/addons/": "./assets/vendor/three/addons/"
+  } }
+  </script>
+</head>
+<body>
+  <canvas id="lienzo" tabindex="0" aria-label="Mapa en relieve de las Tierras de Alden. Arrastra para moverte, rueda para acercar, botón derecho para girar. Los lugares están también en la lista de nombres, accesibles con Tab."></canvas>
+  <div id="etiquetas"></div>
+
+  <header class="cabecera">
+    <h1>Tierras de Alden</h1>
+    <p id="pista">Arrastra para moverte · rueda para acercar · botón derecho para girar</p>
+  </header>
+
+  <div class="mandos" role="group" aria-label="Hora y capas">
+    <div class="hora">
+      <button id="reloj" type="button" aria-pressed="true" title="Pausar o reanudar el paso del día">Pausar</button>
+      <label for="hora" class="oculto-visual">Hora del día</label>
+      <input id="hora" type="range" min="0" max="24" step="0.25" value="9.5">
+      <output id="horaTexto" for="hora">09:30</output>
+    </div>
+    <details class="capas">
+      <summary>Capas</summary>
+      <label><input type="checkbox" data-capa="nombres" checked> Nombres</label>
+      <label><input type="checkbox" data-capa="fronteras" checked> Fronteras</label>
+      <label><input type="checkbox" data-capa="caminos" checked> Caminos</label>
+      <label><input type="checkbox" data-capa="clima" checked> Nubes, nieve y niebla</label>
+    </details>
+  </div>
+
+  <div class="camara" role="group" aria-label="Cámara">
+    <button type="button" data-cam="norte" id="brujula" title="Orientar al norte" aria-label="Orientar al norte"><span>N</span></button>
+    <button type="button" data-cam="mas" aria-label="Acercar">+</button>
+    <button type="button" data-cam="menos" aria-label="Alejar">−</button>
+    <button type="button" data-cam="izq" aria-label="Girar a la izquierda">⟲</button>
+    <button type="button" data-cam="der" aria-label="Girar a la derecha">⟳</button>
+    <button type="button" data-cam="general" class="ancho">Vista general</button>
+  </div>
+
+  <aside id="ficha" hidden aria-live="polite"></aside>
+
+  <div id="carga" role="status">
+    <p>Levantando el terreno…</p>
+  </div>
+
+  <script type="module" src="assets/js/main.js"></script>
+</body>
+</html>
