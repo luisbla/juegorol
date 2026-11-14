@@ -9,6 +9,7 @@ import { crearCiudad } from './ciudad.js';
 import { crearPartida } from './partida.js';
 import { crearMusica } from './musica.js';
 import { crearInterior } from './interior.js';
+import { crearSala } from './salas.js';
 import { cargarModelos } from './modelos.js';
 import { animar, actualizarAnimaciones, reducir, ease } from './anim.js';
 
@@ -213,8 +214,8 @@ async function iniciar() {
   // Entrar en un edificio de la ciudad (de momento, la posada).
   async function entrarEdificio(e) {
     const clave = `${dentro.datos.id}-${e.interior}`;
-    if (!ciudades.has(clave)) ciudades.set(clave, crearInterior({ id: clave, trofeo: false }));
-    await abrir(ciudades.get(clave), `${e.nombre} de ${dentro.datos.nombre}`, 'taberna');
+    if (!ciudades.has(clave)) ciudades.set(clave, e.interior === 'posada' ? crearInterior({ id: clave, trofeo: false }) : crearSala(e.interior, clave));
+    await abrir(ciudades.get(clave), `${e.nombre} de ${dentro.datos.nombre}`, e.interior === 'posada' ? 'taberna' : 'ciudad');
   }
   async function salir() {
     if (!pila.length) return;
@@ -235,8 +236,10 @@ async function iniciar() {
   // Señalar un edificio: la cámara se acerca a él y la ficha dice qué es.
   function senalar(e) {
     hito = e;
-    const grande = ciudad.R > 40, objetivo = new THREE.Vector3(e.pos.x, grande ? 3 : e.pos.y * 0.35, e.pos.z);
-    volar(objetivo.clone().add(camara.position.clone().sub(control.target).setLength(grande ? 60 : 24)), objetivo, 1100);
+    // en la ciudad se mira el edificio de frente y algo desde arriba; en un interior, basta con acercarse
+    const objetivo = e.frente ? new THREE.Vector3(e.suelo.x, 3, e.suelo.z) : new THREE.Vector3(e.pos.x, e.pos.y * 0.35, e.pos.z);
+    const desde = e.frente ? objetivo.clone().addScaledVector(e.frente, 30).setY(26) : objetivo.clone().add(camara.position.clone().sub(control.target).setLength(24));
+    volar(desde, objetivo, 1100);
     pintarFicha();
   }
 
@@ -253,7 +256,7 @@ async function iniciar() {
       if (enEdificio) nodos.splice(1, 3, h('p', { class: 'tipo' }, d.nombre), h('h2', {}, pila[pila.length - 1].nombre));
       else if (d.gobierno) nodos.push(h('div', { class: 'gobierno' }, h('h3', {}, d.gobierno.titulo), h('p', {}, d.gobierno.texto)));
       if (hito) nodos.push(h('div', { class: 'gobierno' }, h('h3', {}, 'Estás mirando'), h('p', {}, hito.nombre)));
-      if (hito?.interior && !enEdificio) nodos.push(h('button', { class: 'accion', type: 'button', onclick: () => entrarEdificio(hito) }, `Entrar en la ${hito.nombre.toLowerCase()}`));
+      if (hito?.interior && !enEdificio) nodos.push(h('button', { class: 'accion', type: 'button', onclick: () => entrarEdificio(hito) }, 'Ver por dentro'));
       if (ciudad.plantas) nodos.push(h('div', { class: 'plantas', role: 'group', 'aria-label': 'Planta' }, ...ciudad.plantas.map((p, i) =>
         h('button', { type: 'button', 'aria-pressed': String(ciudad.planta === i), onclick: () => { ciudad.verPlanta(i); hito = null; pintarFicha(); } }, p.nombre))));
       nodos.push(h('button', { class: 'accion', type: 'button', onclick: salir }, enEdificio ? `← Volver a ${d.nombre}` : '← Volver al mapa'));

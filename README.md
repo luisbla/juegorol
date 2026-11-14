@@ -27,7 +27,8 @@ assets/
   js/terreno.js        alturas, textura, agua, ríos, puentes, caminos, fronteras, árboles
   js/lugares.js        modelos y texturas de cada tipo de lugar
   js/ciudad.js         interior de las capitales y del puerto: barrios, muralla, puertas según los caminos reales
-  js/interior.js       interior de la taberna
+  js/interior.js       interior de la taberna y de las posadas (sala común y planta de habitaciones)
+  js/salas.js          interior de herrerías, cuarteles y lonjas de las ciudades
   js/modelos.js        carga opcional de modelos glTF de artista
   js/ambiente.js       cielo, sombras, nubes, nieve, niebla, humo, barcos, pájaros, faro, luces de noche
   js/viaje.js          rutas y viajero

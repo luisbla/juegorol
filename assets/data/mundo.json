@@ -13,7 +13,7 @@
     "ciudad": "mercader.mp3",
     "tipos": { "taberna": "taberna.mp3", "ruina": "mazmorra.mp3", "puerto": "mercader.mp3", "quemado": "tension.mp3", "campamento": "tension.mp3", "palafitos": "tension.mp3", "pasarela": "tension.mp3", "pecio": "tension.mp3" }
   },
-  "modelos": { "carpeta": "assets/modelos/", "lugares": { "taberna": { "archivo": "kaykit/building_tavern_yellow.gltf", "ancho": 15, "giro": 0 } } },
+  "modelos": { "carpeta": "assets/modelos/", "lugares": {} },
   "encuentros": {
     "nota": "Regla casera, pendiente del máster: por cada día de viaje se tira 1d20 y hay encuentro si sale el umbral de la zona o más. Las tablas son genéricas.",
     "zonas": {

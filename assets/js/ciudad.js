@@ -153,7 +153,7 @@ export function crearCiudad(l, mundo, { movil = false } = {}) {
     for (let i = 0; i < n; i++) {
       const a = i / n * Math.PI * 2 + giro, sc = sectorDe(a), b = BARRIOS[sc.clase];
       const r = Math.min(R - 9, r0 + sc.desfase * Math.min(1, (r0 - 20) / 30) + onda(a, r0) + (rnd() - 0.5) * 1.8), x = Math.cos(a) * r, z = Math.sin(a) * r;
-      if (cercaAvenida(a, r, 6.5) || enSede(x, z) || enMar(x, z, 11) || i % callejon === 0 || rnd() < b.hueco || hitos.some(q => Math.hypot(x - q.x, z - q.z) < 10.5) || claros.some(q => Math.hypot(x - q.x, z - q.z) < 9)) continue;
+      if (cercaAvenida(a, r, 6.5) || enSede(x, z) || enMar(x, z, 11) || i % callejon === 0 || rnd() < b.hueco || hitos.some(q => Math.hypot(x - q.x, z - q.z) < 16) || claros.some(q => Math.hypot(x - q.x, z - q.z) < 9)) continue;
       const alto = (3.0 + rnd() * 1.6 + (1 - r / R) * 1.4 + (rnd() > 0.85 ? 1.6 : 0)) * b.alto;
       casa(x, z, (4.6 + rnd() * 1.5) * b.w, (4.3 + rnd() * 1.2) * b.w, alto, b.paredes[Math.floor(rnd() * b.paredes.length)], b.tejas[Math.floor(rnd() * b.tejas.length)], -(a + Math.PI / 2) + (rnd() - 0.5) * (sc.clase === 'arrabal' ? 0.5 : 0.14), rnd() < b.chim);
       if (rnd() > 0.9 && humos.length < 14) humos.push(new THREE.Vector3(x, alto * 1.8, z));
@@ -314,7 +314,8 @@ export function crearCiudad(l, mundo, { movil = false } = {}) {
       rueda.traverse(o => { if (o.isMesh) o.castShadow = true; });
       aspas.push(rueda); escena.add(eje);
     }
-    etiquetas.push({ nombre: q.nombre, pos: new THREE.Vector3(q.x, alto + 5, q.z), clase: 'hito', interior: q.tipo === 'posada' ? 'posada' : null });
+    etiquetas.push({ nombre: q.nombre, pos: new THREE.Vector3(q.x, alto + 5, q.z), clase: 'hito', suelo: new THREE.Vector3(q.x, 0, q.z), frente: new THREE.Vector3(0, 0, 1).applyAxisAngle(ejeY0, ry),
+      interior: ['posada', 'herreria', 'lonja'].includes(q.tipo) || (q.tipo === 'cuartel' && q.nombre.startsWith('Cuartel')) ? q.tipo : null });
   }
 
   /* ---------- lo propio de cada ciudad ---------- */
@@ -460,7 +461,8 @@ export function crearCiudad(l, mundo, { movil = false } = {}) {
       for (let i = 0; i <= 40; i++) { const a = q.a0 + (q.a1 - q.a0) * i / 40, r = Math.min(R - 4, r0 + paso / 2 + d + onda(a, r0 + paso / 2)); x.lineTo(px(Math.cos(a) * r), px(Math.sin(a) * r)); }
       x.stroke();
     }
-    x.fillStyle = perfil.calle; for (const c of claros) { x.beginPath(); x.arc(px(c.x), px(c.z), 8.5 * k, 0, 6.283); x.fill(); }
+    x.fillStyle = perfil.calle; for (const q of hitos) { x.beginPath(); x.arc(px(q.x), px(q.z), 14.5 * k, 0, 6.283); x.fill(); }   // plazuela delante de cada edificio singular
+    for (const c of claros) { x.beginPath(); x.arc(px(c.x), px(c.z), 8.5 * k, 0, 6.283); x.fill(); }
     x.lineWidth = 2.6 * k;   // callejones entre anillos
     for (let i = 0; i < 46 * tam; i++) { const a = rnd() * 6.283, r = 24 + rnd() * (R - 36); x.beginPath(); x.moveTo(px(Math.cos(a) * r), px(Math.sin(a) * r)); x.lineTo(px(Math.cos(a) * (r + paso)), px(Math.sin(a) * (r + paso))); x.stroke(); }
     for (const p of puertas) { x.lineWidth = 8.5 * k; x.beginPath(); x.moveTo(px(0), px(0)); x.lineTo(px(Math.cos(p.ang) * (R + 2)), px(Math.sin(p.ang) * (R + 2))); x.stroke(); }
