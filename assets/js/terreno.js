@@ -205,6 +205,45 @@ export function crearTerreno(mundo, { movil = false } = {}) {
     return Math.sqrt(a * a + b * b) / (2 * paso);
   };
 
+  /* ---------- decorado sin nombre ---------- */
+  // Aldeas, atalayas, fuertes, minas... que dan cuerpo a una región. No son lugares: no tienen ficha, etiqueta ni nombre.
+  // Se reparten con semilla donde el terreno lo permite, según mundo.decorado: { región: [[tipo, cuántos, { junto, tamano }], ...] }.
+  const decorado = [];
+  {
+    // por tipo: pendiente máxima, distancia mínima y máxima al camino, lejos de lugares, separación entre iguales y radio que despeja de árboles
+    const REGLAS = {
+      aldea: [0.22, 7, 46, 24, 30, 9], granja: [0.22, 6, 60, 22, 24, 7], molino: [0.3, 6, 50, 22, 30, 5], ermita: [0.3, 8, 40, 26, 40, 5],
+      casafuerte: [0.25, 8, 50, 34, 60, 8], atalaya: [0.6, 5, 16, 34, 55, 4], fuerte: [0.25, 7, 44, 40, 60, 10], campamento: [0.25, 6, 34, 30, 40, 8],
+      mina: [1.3, 0, 999, 30, 55, 7], almenara: [2.5, 0, 999, 30, 60, 4], menhires: [0.3, 14, 999, 30, 70, 6], arrabal: [0.3, 0, 999, 0, 13, 7],
+    };
+    let semilla = 1;
+    for (const [idRegion, lista] of Object.entries(mundo.decorado || {})) {
+      const reg = mundo.regiones.find(r => r.id === idRegion);
+      if (!reg || !Array.isArray(lista)) continue;
+      const xs = reg.poligono.map(p => p[0]), ys = reg.poligono.map(p => p[1]), x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+      const cotas = [];   // qué es "alto" en esta región
+      for (let k = 0; k < 400; k++) { const x = x0 + azar(k, 401) * (x1 - x0), y = y0 + azar(k, 409) * (y1 - y0); if (dentroDe(reg.poligono, x, y) && alturaEn(x, y) > 0.7) cotas.push(alturaEn(x, y)); }
+      cotas.sort((a, b) => a - b);
+      const cota = f => cotas[Math.floor(cotas.length * f)] ?? 0;
+      for (const [tipo, n, extra = {}] of lista) {
+        const [pend, cMin, cMax, lejos, sep, radio] = REGLAS[tipo] || REGLAS.aldea, junto = extra.junto ? porId[extra.junto] : null;
+        for (let k = 0, puestos = 0; k < 8000 && puestos < n; k++) {
+          semilla++;
+          let x = x0 + azar(semilla, 11) * (x1 - x0), y = y0 + azar(semilla, 29) * (y1 - y0);
+          if (junto) { const a = azar(semilla, 3) * 6.283, d = radioDe(junto) + 4 + azar(semilla, 5) * 13; x = junto.x + Math.cos(a) * d; y = junto.y + Math.sin(a) * d; }
+          if (x < 10 || y < 10 || x > W - 10 || y > H - 10 || !dentroDe(reg.poligono, x, y)) continue;
+          const h = alturaEn(x, y), p = pendienteEn(x, y), dc = distCamino(x, y);
+          if (h < 0.7 || p > pend || pesoMarisma(x, y) > 0.08 || distRio(x, y) < 9 || dc < cMin || dc > cMax) continue;
+          if (junto ? dc < 5 : distLugar(x, y) < lejos) continue;
+          if ((tipo === 'almenara' && h < cota(0.8)) || (tipo === 'mina' && (h < cota(0.45) || p < 0.3))) continue;
+          if (decorado.some(d => Math.hypot(d.x - x, d.y - y) < (d.tipo === tipo ? Math.max(sep, d.sep) : Math.max(sep, d.sep) * 0.45))) continue;
+          decorado.push({ id: 'decorado-' + decorado.length, tipo, x, y, region: idRegion, radio, sep, giro: azar(semilla, 7) * 6.283, tamano: extra.tamano });
+          puestos++;
+        }
+      }
+    }
+  }
+
   /* ---------- textura de color ---------- */
   const lienzo = document.createElement('canvas');
   lienzo.width = TW; lienzo.height = TH;
@@ -531,7 +570,7 @@ export function crearTerreno(mundo, { movil = false } = {}) {
       const dado = azar((jx * 3.1) | 0, (jy * 2.7) | 0);
       const esc = 0.75 + azar((jx * 1.7) | 0, (jy * 5.3) | 0) * 0.6;
       if (wMa > 0.45) { if (dado < 0.22) secos.push([jx, h, jy, esc]); else if (h < 1.1 && dado < 0.75) juncos.push([jx, h, jy, esc]); continue; }
-      if (lugarCerca < 8) continue;
+      if (lugarCerca < 8 || decorado.some(d => Math.abs(d.x - jx) < d.radio && Math.abs(d.y - jy) < d.radio)) continue;
       if (haciaCosta(jx, jy) < 9 || pendienteEn(jx, jy) > 1.1 || pesoIslote(jx, jy) > 0.05) continue;
       const densidad = wV * suave(0.2, 0.55, mancha) * 0.95 + wA * suave(0.25, 0.6, mancha) * 0.85 + wM * suave(0.66, 0.8, mancha) * 0.4
         + fuera * suave(0.3, 0.6, mancha) * 0.5 + wT * suave(30, 12, h) * suave(0.45, 0.7, mancha) * 0.45;
@@ -634,7 +673,7 @@ export function crearTerreno(mundo, { movil = false } = {}) {
 
   return {
     grupo, malla, agua, caminos, fronteras, arboles,
-    alturaEn, pendienteEn, distCamino, distLugar, aMundo,
+    alturaEn, pendienteEn, distCamino, distLugar, aMundo, decorado,
     // zona para las tablas de encuentros: marisma, mar o la región que más pesa en ese punto
     zonaEn: (x, y) => (pesoMarisma(x, y) > 0.5 ? 'marisma' : alturaEn(x, y) < 0 ? 'mar' : ids.reduce((m, id, i) => (peso(i, x, y) > peso(ids.indexOf(m), x, y) ? id : m), ids[0])),
     uniformes, uAgua, W, H, cx, cz, porId,

@@ -214,8 +214,8 @@ async function iniciar() {
   // Entrar en un edificio de la ciudad (de momento, la posada).
   async function entrarEdificio(e) {
     const clave = `${dentro.datos.id}-${e.interior}`;
-    if (!ciudades.has(clave)) ciudades.set(clave, e.interior === 'posada' ? crearInterior({ id: clave, trofeo: false }) : crearSala(e.interior, clave));
-    await abrir(ciudades.get(clave), `${e.nombre} de ${dentro.datos.nombre}`, e.interior === 'posada' ? 'taberna' : 'ciudad');
+    if (!ciudades.has(clave)) ciudades.set(clave, e.interior === 'posada' ? crearInterior({ id: clave, trofeo: false }) : crearSala(e.interior, clave, { color: new THREE.Color(mundo.regiones.find(r => r.id === dentro.datos.region)?.color ?? '#7a2e2a').getHex() }));
+    await abrir(ciudades.get(clave), `${e.nombre} · ${dentro.datos.nombre}`, e.interior === 'posada' ? 'taberna' : 'ciudad');
   }
   async function salir() {
     if (!pila.length) return;

@@ -5,6 +5,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { kit } from './lugares.js';
 import { azarDe } from './ruido.js';
 import { crearEdificios } from './edificios.js';
+import { crearBarcoModelo } from './barco.js';
 
 const { matPared, matPiedra, matTejado, matLiso, gCaja, gCil, gCono, gRoca, gDosAguas, gCasco, ESTILOS } = kit;
 
@@ -102,7 +103,7 @@ export function crearCiudad(l, mundo, { movil = false } = {}) {
   const piedra = matPiedra(e.muro), piedraClara = matPiedra(0x8d8676, 1), madera = matLiso(0x6b5440);
   const paredes = [matPared(e.pared, { entramado: e.entramado, piedra: e.fortaleza }), matPared(new THREE.Color(e.pared).multiplyScalar(0.82).getHex(), { entramado: e.entramado, piedra: e.fortaleza })];
   const tejas = [matTejado(e.teja), matTejado(e.teja), matTejado(perfil.teja2)];
-  const banderas = [], humos = [];
+  const banderas = [], humos = [], flota = [];   // flota: barcos que se mecen
 
   const colorRegion = mundo.regiones.find(r => r.id === l.region)?.color ?? '#cccccc';
   const despues = [], aspas = [];
@@ -233,7 +234,8 @@ export function crearCiudad(l, mundo, { movil = false } = {}) {
     const k = rSede / 22, asta = { griselda: [-9 * k, 28.5, -12 * k], solterra: [9 * k, 18.5, 3 * k], liria: [9 * k, 18.5, 3 * k] }[l.id] || [-9.5 * k, 29, -9.5 * k];
     const p = aMundo(...asta); bandera(p.x, p.y, p.z, colorRegion);
   }
-  etiquetas.push({ nombre: perfil.sede, pos: new THREE.Vector3(sede.x, 34, sede.z), clase: 'ciudad', suelo: new THREE.Vector3(sede.x, 0, sede.z), frente: new THREE.Vector3(-sede.x, 0, -sede.z).normalize(), picado: true });
+  etiquetas.push({ nombre: perfil.sede, pos: new THREE.Vector3(sede.x, 34, sede.z), clase: 'ciudad', suelo: new THREE.Vector3(sede.x, 0, sede.z), frente: new THREE.Vector3(-sede.x, 0, -sede.z).normalize(), picado: true,
+    interior: { griselda: 'homenaje', astravan: 'consejo', solterra: 'senor' }[l.id] || (l.tipo === 'puerto' ? 'capitania' : 'trono') });
 
   /* ---------- edificios singulares ---------- */
   for (const q of hitos) {
@@ -287,16 +289,8 @@ export function crearCiudad(l, mundo, { movil = false } = {}) {
     for (let x = -ancho; x <= ancho; x += 7) caja(sillar, 1.0, 0.9, 1.0, x, 1.2, c + 6.4);       // norays
     // barco: casco afilado, cubierta, castillo de popa y dos palos; con las velas dadas si está fondeado
     const barco = (x, z, eslora, ry, velas) => {
-      const ax = Math.cos(ry), az = -Math.sin(ry);
-      poner(gCasco, casco, x, 0.8, z, eslora * 0.13, eslora, eslora * 0.19, ry, Math.PI / 2);
-      caja(madera, eslora * 0.62, 0.22, eslora * 0.2, x, eslora * 0.13 + 0.7, z, ry);
-      caja(casco, eslora * 0.2, eslora * 0.09, eslora * 0.19, x - ax * eslora * 0.3, eslora * 0.13 + 0.8, z - az * eslora * 0.3, ry);
-      for (const d of [-0.12, 0.2]) {
-        const mx = x + ax * eslora * d, mz = z + az * eslora * d, pie = eslora * 0.13 + 0.8;
-        cil(jarcia, 0.18, eslora * 0.85, mx, pie, mz); caja(jarcia, 0.22, 0.22, eslora * 0.45, mx, pie + eslora * 0.62, mz, ry);
-        if (velas) caja(lona, 0.12, eslora * 0.42, eslora * 0.42, mx + ax * 0.5, pie + eslora * 0.2, mz + az * 0.5, ry);
-        else caja(lona, 0.4, 0.7, eslora * 0.4, mx, pie + eslora * 0.57, mz, ry);
-      }
+      const m = crearBarcoModelo({ eslora, palos: eslora > 15 ? 3 : 2, velas: velas ? 'dadas' : 'recogidas', color: [0x5a3f2b, 0x4a3a30, 0x6a4a2e][Math.floor(rnd() * 3)], gallardete: [0xb23a2e, 0x2f6aa0, 0xd9a23a, 0x3f8a54][Math.floor(rnd() * 4)] });
+      m.position.set(x, 0.3, z); m.rotation.y = ry; escena.add(m); flota.push({ m, f: rnd() * 6.28, ry });
     };
     // espigones con barcos amarrados y grúas de rueda en el muelle
     const nEsp = Math.floor((ancho * 2 - 20) / 21);
@@ -351,11 +345,9 @@ export function crearCiudad(l, mundo, { movil = false } = {}) {
       const largo = 26 + Math.abs(s) * 0.4, bx = ux * (orilla + largo / 2 - 4) + tx * s, bz = uz * (orilla + largo / 2 - 4) + tz * s;
       caja(madera, largo, 0.5, 2.6, bx, 1.0, bz, -lago.ang);
       for (let d = 2; d < largo; d += 5) caja(matLiso(0x4a3a2a), 0.5, 3.4, 0.5, ux * (orilla + d - 4) + tx * (s + 1.2), -1.4, uz * (orilla + d - 4) + tz * (s + 1.2));
-      // barco amarrado: casco afilado, cubierta y dos palos con la vela recogida
-      const bx2 = ux * (orilla + largo * 0.68) + tx * (s - 3.6), bz2 = uz * (orilla + largo * 0.68) + tz * (s - 3.6), eslora = lago.mar ? 13 : 9, jarcia = matLiso(0x3a2c20);
-      poner(gCasco, matLiso(0x5a3f2b), bx2, 0.7, bz2, 1.7, eslora, 2.3, -lago.ang, Math.PI / 2);
-      caja(madera, eslora * 0.62, 0.2, 2.6, bx2, 1.75, bz2, -lago.ang);
-      for (const d of [-0.2, 0.16]) { const mx = bx2 + ux * eslora * d, mz = bz2 + uz * eslora * d; cil(jarcia, 0.16, eslora * 0.8, mx, 1.8, mz); caja(jarcia, 0.2, 0.2, eslora * 0.42, mx, 1.8 + eslora * 0.6, mz, -lago.ang); caja(matLiso(0xe6dcc6), 0.34, 0.6, eslora * 0.38, mx, 1.8 + eslora * 0.56, mz, -lago.ang); }
+      // barco amarrado, con las velas recogidas
+      const bx2 = ux * (orilla + largo * 0.68) + tx * (s - 3.6), bz2 = uz * (orilla + largo * 0.68) + tz * (s - 3.6), eslora = lago.mar ? 13 : 9;
+      const m = crearBarcoModelo({ eslora, palos: lago.mar ? 2 : 1, velas: 'recogidas', lona: 0xd9cfb8 }); m.position.set(bx2, 0.28, bz2); m.rotation.y = -lago.ang; escena.add(m); flota.push({ m, f: rnd() * 6.28, ry: -lago.ang });
     }
     for (let i = 0; i < (lago.mar ? 11 : 7); i++) { const s = (lago.mar ? -58 : -36) + i * 11; casa(ux * (orilla - 9) + tx * s, uz * (orilla - 9) + tz * s, 8, 5.5, 4.5 + (i % 2), matPared(i % 2 ? 0x9a7a55 : 0x8a6a48), matTejado(0x5c3a2a), -lago.ang + Math.PI / 2, false); }
     if (!p.lago) etiquetas.push({ nombre: lago.nombre, pos: new THREE.Vector3(ux * (orilla + 6), 12, uz * (orilla + 6)), clase: 'ciudad' });
@@ -541,6 +533,7 @@ export function crearCiudad(l, mundo, { movil = false } = {}) {
     for (const b of banderas) { const p = b.geometry.attributes.position; for (let i = 0; i < p.count; i++) { const x = p.getX(i); p.setZ(i, Math.sin(x * 1.4 - t * 6) * 0.16 * x); } p.needsUpdate = true; }
     for (const a of aspas) a.rotation.z = t * 0.7;
     vidrio.emissiveIntensity = noche * 0.9; farolM.emissiveIntensity = 0.1 + noche * 2.4; brasaM.emissiveIntensity = 1.8 + 0.4 * Math.sin(t * 2.3);
+    for (const b of flota) { b.m.position.y = 0.29 + Math.sin(t * 0.9 + b.f) * 0.07; b.m.rotation.set(Math.sin(t * 0.7 + b.f) * 0.025, b.ry, Math.sin(t * 0.55 + b.f * 2) * 0.03, 'YXZ'); }
     if (agua) agua.material.roughness = 0.12 + 0.05 * Math.sin(t * 0.8);
   }
 

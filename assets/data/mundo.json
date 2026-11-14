@@ -83,7 +83,7 @@
     { "id": "barcaza", "nombre": "La Barcaza Hundida", "tipo": "pecio", "region": "valcoria", "x": 838, "y": 512, "suelo": "marisma",
       "desc": "El casco de una barcaza de carga, escorado en el fango cerca de donde la marisma desagua hacia los lagos." },
 
-    { "id": "griselda", "nombre": "Fortaleza Griselda", "tipo": "capital", "region": "thraengarde", "x": 1040, "y": 270, "tamano": 1.15,
+    { "id": "griselda", "nombre": "Fortaleza Griselda", "tipo": "capital", "region": "thraengarde", "x": 1040, "y": 270, "tamano": 1.35,
       "desc": "Fortaleza de piedra oscura en un valle entre montañas nevadas. Desde aquí se gobierna a los clanes que antes guerreaban entre sí.",
       "gobierno": { "titulo": "Quién gobierna", "texto": "Thraen, llamado Portavoz del Hielo. Unificó a los clanes por la fuerza y gobierna con el respaldo del culto a los demonios de hielo." } },
     { "id": "cuervo", "nombre": "Puesto del Cuervo", "tipo": "posta", "region": "thraengarde", "x": 1220, "y": 108,
@@ -148,6 +148,11 @@
     { "de": "x-lagos", "a": "ahogada", "tipo": "senda", "puntos": [[1248,765]] },
     { "de": "liria", "a": "faro", "tipo": "barca", "puntos": [[905,925]] }
   ],
+  "decorado": {
+    "nota": "Ambiente sin nombre ni ficha, repartido con semilla: [tipo, cuántos, opciones]. No es canon; quita o cambia lo que no encaje.",
+    "valcoria": [["arrabal", 8, { "junto": "valcoria", "tamano": 0.75 }], ["casafuerte", 5], ["aldea", 14], ["atalaya", 10], ["molino", 4], ["granja", 8], ["ermita", 3]],
+    "thraengarde": [["arrabal", 4, { "junto": "griselda", "tamano": 0.75 }], ["fuerte", 6], ["almenara", 8], ["mina", 5], ["campamento", 5], ["menhires", 3], ["aldea", 6]]
+  },
   "rutasBarcos": [
     { "en": "mar", "puntos": [[892,912],[900,988],[1100,1002],[1300,996],[1460,942],[1380,988],[1150,994],[1040,1000]] },
     { "en": "mar", "puntos": [[872,902],[800,962],[722,1004],[770,1012],[880,1008],[900,975]] },

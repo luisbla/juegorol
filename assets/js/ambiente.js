@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { suave, suavizar } from './terreno.js';
 import { crearRuido } from './ruido.js';
+import { crearBarcoModelo } from './barco.js';
 
 function texturaSuave(nucleo = 0.0, color = '255,255,255') {
   const c = document.createElement('canvas'); c.width = c.height = 128;
@@ -204,36 +205,16 @@ export function crearAmbiente(escena, renderer, mundo, terreno, lugares, { movil
 
   /* ---------- barcos ---------- */
   const barcos = [];
-  function crearBarco(pequeno) {
-    const g = new THREE.Group(), madera = new THREE.MeshStandardMaterial({ color: 0x5a3f2b, roughness: 0.9 });
-    // casco: un cilindro aplastado y afilado en proa y popa
-    const gc = new THREE.CylinderGeometry(1.25, 0.7, 6.8, 10, 6), pc = gc.attributes.position;
-    for (let i = 0; i < pc.count; i++) { const k = 1 - Math.pow(Math.abs(pc.getY(i)) / 3.4, 2.2) * 0.85; pc.setX(i, pc.getX(i) * k); pc.setZ(i, pc.getZ(i) * k * 0.8); }
-    gc.computeVertexNormals();
-    const casco = new THREE.Mesh(gc, madera); casco.rotation.z = Math.PI / 2; casco.position.y = 0.45; g.add(casco);
-    const cubierta = new THREE.Mesh(new THREE.BoxGeometry(4.6, 0.12, 1.5), new THREE.MeshStandardMaterial({ color: 0x8a6a48, roughness: 1 })); cubierta.position.y = 1.02; g.add(cubierta);
-    const lona = new THREE.MeshStandardMaterial({ color: pequeno ? 0xd9cfb8 : 0xefe7d4, side: THREE.DoubleSide, roughness: 1 });
-    const mastil = (x, alto, ancho) => {
-      const palo = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.13, alto, 6), madera); palo.position.set(x, 1 + alto / 2, 0); g.add(palo);
-      const gv = new THREE.PlaneGeometry(ancho, alto * 0.62, 6, 4), pv = gv.attributes.position;
-      for (let i = 0; i < pv.count; i++) pv.setZ(i, Math.sin((pv.getX(i) / ancho + 0.5) * Math.PI) * Math.sin((pv.getY(i) / (alto * 0.62) + 0.5) * Math.PI) * 0.9);   // vela hinchada
-      gv.computeVertexNormals();
-      const vela = new THREE.Mesh(gv, lona); vela.position.set(x + 0.25, 1 + alto * 0.6, 0); vela.rotation.y = Math.PI / 2; g.add(vela);
-      const verga = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, ancho * 1.05, 5), madera); verga.rotation.x = Math.PI / 2; verga.position.set(x + 0.1, 1 + alto * 0.92, 0); g.add(verga);
-    };
-    mastil(0.4, 6.4, 3.4);
-    if (!pequeno) mastil(-1.9, 4.8, 2.6);
-    g.traverse(o => { if (o.isMesh) o.castShadow = true; });
-    g.scale.setScalar(pequeno ? 0.75 : 1.5);
-    return g;
-  }
+  const crearBarco = pequeno => crearBarcoModelo(pequeno
+    ? { eslora: 5.4, palos: 1, velas: 'dadas', lona: 0xd9cfb8, color: 0x6a4a2e }
+    : { eslora: 11, palos: 3, velas: 'dadas' });
   (mundo.rutasBarcos || []).forEach((ruta, n) => {
     const trazo = suavizar([...ruta.puntos, ruta.puntos[0]], 4).slice(0, -1);   // circuito cerrado
     const acum = [0];
     for (let i = 1; i <= trazo.length; i++) { const a = trazo[i - 1], b = trazo[i % trazo.length]; acum.push(acum[i - 1] + Math.hypot(b[0] - a[0], b[1] - a[1])); }
     const g = crearBarco(ruta.en === 'lago');
     // estela
-    const estela = new THREE.Sprite(new THREE.SpriteMaterial({ map: blanda, transparent: true, opacity: 0.35, depthWrite: false })); estela.scale.set(9, 3, 1); estela.position.set(-4.2, 0.1, 0); g.add(estela);
+    const estela = new THREE.Sprite(new THREE.SpriteMaterial({ map: blanda, transparent: true, opacity: 0.35, depthWrite: false })); estela.scale.set(ruta.en === 'lago' ? 7 : 14, ruta.en === 'lago' ? 2.2 : 4.4, 1); estela.position.set(ruta.en === 'lago' ? -3.4 : -7, 0.1, 0); g.add(estela);
     escena.add(g);
     barcos.push({ g, trazo, acum, total: acum[acum.length - 1], v: ruta.en === 'lago' ? 3.2 : 7.5, desfase: n * 137, pequeno: ruta.en === 'lago' });
   });
