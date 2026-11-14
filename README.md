@@ -31,8 +31,9 @@ assets/
   js/salas.js          interior de herrerías, cuarteles y lonjas de las ciudades
   js/edificios.js      exterior detallado de los edificios singulares (posada, cuartel, herrería, establos, molino, lonja...)
   js/barco.js          el velero (casco, castillos, arboladura y velas) que usan el mar, el puerto y las ciudades
-  js/ruinas.js         el paraje y la entrada de cada ruina (nunca el interior)
+  js/ruinas.js         parajes: la vista de cerca de ruinas (solo el exterior y la entrada), pueblos, postas, faro, torre...
   js/sonido.js         ambiente sonoro sin archivos: viento, mar, gentío, fuego, grillos y pájaros
+  js/campo.js          trigo y hierba: matas instanciadas que se mecen con el viento
   js/modelos.js        carga opcional de modelos glTF de artista
   js/ambiente.js       cielo, sombras, nubes, nieve, niebla, humo, barcos, pájaros, faro, luces de noche
   js/viaje.js          rutas y viajero

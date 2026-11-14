@@ -31,6 +31,8 @@
       <input id="hora" type="range" min="0" max="24" step="0.25" value="9.5">
       <output id="horaTexto" for="hora">09:30</output>
     </div>
+    <input id="buscar" type="search" list="lugaresLista" placeholder="Buscar lugar…" aria-label="Buscar un lugar por su nombre" autocomplete="off">
+    <datalist id="lugaresLista"></datalist>
     <button id="musica" type="button" class="suelto" aria-pressed="false" title="Poner música" aria-label="Música">♪</button>
     <details class="capas" id="partida">
       <summary>Partida</summary>
@@ -42,6 +44,7 @@
       <label><input type="checkbox" data-capa="fronteras" checked> Fronteras</label>
       <label><input type="checkbox" data-capa="caminos" checked> Caminos</label>
       <label><input type="checkbox" data-capa="clima" checked> Nubes, nieve y niebla</label>
+      <label class="calidad">Calidad <select id="calidad"><option value="auto">Automática</option><option value="alta">Alta</option><option value="media">Media</option><option value="baja">Baja</option></select></label>
     </details>
   </div>
 

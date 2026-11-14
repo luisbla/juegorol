@@ -6,6 +6,7 @@ import { kit } from './lugares.js';
 import { azarDe } from './ruido.js';
 import { crearEdificios } from './edificios.js';
 import { crearBarcoModelo } from './barco.js';
+import { crearMatas } from './campo.js';
 
 const { matPared, matPiedra, matTejado, matLiso, gCaja, gCil, gCono, gRoca, gDosAguas, gCasco, ESTILOS } = kit;
 
@@ -353,6 +354,9 @@ export function crearCiudad(l, mundo, { movil = false } = {}) {
     if (!p.lago) etiquetas.push({ nombre: lago.nombre, pos: new THREE.Vector3(ux * (orilla + 6), 12, uz * (orilla + 6)), clase: 'ciudad' });
   }
 
+  // Solterra: los trigales llegan hasta el pie de la muralla
+  let trigo = null;
+  if (l.id === 'solterra') { trigo = crearMatas({ tipo: 'trigo', n: movil ? 1500 : 6000, rnd, desde: R + 7, hasta: L - 8, hueco: (x, z) => cercaAvenida(Math.atan2(z, x), Math.hypot(x, z), 7) }); escena.add(trigo.malla); }
   /* ---------- arbolado ---------- */
   const verdes = [matLiso(0x3f6a2e), matLiso(0x4d7a36), matLiso(0x35582a)], nevado = matLiso(0x5f7a6a), troncoM = matLiso(0x5a4330);
   const arbol = (x, z, s) => {
@@ -532,6 +536,7 @@ export function crearCiudad(l, mundo, { movil = false } = {}) {
     for (const s of antorchas) s.material.opacity = noche * (0.5 + 0.12 * Math.sin(t * 9 + s.userData.f) + 0.06 * Math.sin(t * 23 + s.userData.f));
     for (const b of banderas) { const p = b.geometry.attributes.position; for (let i = 0; i < p.count; i++) { const x = p.getX(i); p.setZ(i, Math.sin(x * 1.4 - t * 6) * 0.16 * x); } p.needsUpdate = true; }
     for (const a of aspas) a.rotation.z = t * 0.7;
+    trigo?.actualizar(t);
     vidrio.emissiveIntensity = noche * 0.9; farolM.emissiveIntensity = 0.1 + noche * 2.4; brasaM.emissiveIntensity = 1.8 + 0.4 * Math.sin(t * 2.3);
     for (const b of flota) { b.m.position.y = 0.29 + Math.sin(t * 0.9 + b.f) * 0.07; b.m.rotation.set(Math.sin(t * 0.7 + b.f) * 0.025, b.ry, Math.sin(t * 0.55 + b.f * 2) * 0.03, 'YXZ'); }
     if (agua) agua.material.roughness = 0.12 + 0.05 * Math.sin(t * 0.8);

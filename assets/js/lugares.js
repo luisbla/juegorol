@@ -357,23 +357,46 @@ const CONSTRUCTORES = {
     for (let i = 0; i < 4; i++) cil(g, 0.32, 0.6, -2 + rnd() * 5, -0.1, 2 + rnd() * 1.5, matLiso(0x5a4630));   // barriles en el fango
     return { humos: [], luz: 0, alto: 4 };
   },
+  // Cada ruina tiene su propia traza: nada en el mapa debe hacer pensar que son lo mismo.
   ruina(g, l, rnd) {
-    const k = l.suelo === 'agua' ? 1.9 : 1, piedra = matPiedra(0x67635c, 1), oscura = matPiedra(0x4a4742, 1);
-    // gradas circulares, columnas rotas y el arco de entrada
-    cil(g, 4.4, 0.35 * k, 0, 0, 0, piedra); cil(g, 3.6, 0.35 * k, 0, 0.35 * k, 0, oscura);
-    for (let i = 0; i < 10; i++) {
-      const a = i / 10 * Math.PI * 2, alto = (1.1 + rnd() * 3.6) * k, x = Math.cos(a) * 3.3, z = Math.sin(a) * 3.3;
-      if (i === 2 || i === 3) continue;
-      const c = cil(g, 0.42, alto, x, 0.7 * k, z, i % 2 ? piedra : oscura); c.rotation.z = (rnd() - 0.5) * 0.14;
-      if (alto > 3.6 * k) caja(g, 1.0, 0.3, 1.0, x, 0.7 * k + alto, z, oscura, rnd());   // capitel
+    if (l.id === 'cuna') {   // una grieta entre peñas negras, con los pebeteros de los clanes
+      const basalto = matPiedra(0x2e3138, 1), frio = new THREE.MeshStandardMaterial({ color: 0x0a1420, emissive: 0x58b8ff, emissiveIntensity: 2 });
+      for (let i = 0; i < 9; i++) { const a = -Math.PI / 2 + (i / 8 - 0.5) * 2.8, r = roca(g, 2.2 + rnd() * 1.4, Math.cos(a) * 3.6, 1.8 + rnd() * 1.6, Math.sin(a) * 3.6 - 0.6, basalto, rnd); r.scale.y *= 2.2; }
+      caja(g, 1.2, 3.6, 1.4, 0, 0, -2.6, matLiso(0x08090c)); const d = caja(g, 3.4, 0.6, 1.4, 0, 3.6, -2.4, basalto); d.rotation.z = 0.08;
+      for (const s of [-1, 1]) { cil(g, 0.1, 0.9, s * 1.9, 0, 0.6, matLiso(0x2b2b2e)); cil(g, 0.36, 0.2, s * 1.9, 0.9, 0.6, matLiso(0x2b2b2e)); cil(g, 0.28, 0.08, s * 1.9, 1.1, 0.6, frio); for (let i = 0; i < 3; i++) { caja(g, 0.07, 1.7, 0.07, s * (2.8 + i * 0.9), 0, 1.6 + i * 1.1, matLiso(0x3a3028)); caja(g, 0.4, 0.14, 0.03, s * (2.8 + i * 0.9) + 0.2, 1.4, 1.6 + i * 1.1, matLiso([0x7a2e2a, 0x2f4a6a, 0xd8d0c0][i])); } }
+      return { humos: [], luz: 0, alto: 7 };
     }
-    const tirada = cil(g, 0.42, 2.6, 4.6, 0, 1.8, piedra); tirada.rotation.z = Math.PI / 2; tirada.position.y = 0.42; tirada.rotation.y = 0.5;
-    caja(g, 0.8, 3.8 * k, 0.8, -1.3, 0.7 * k, 1.6, piedra); caja(g, 0.8, 3.8 * k, 0.8, 1.3, 0.7 * k, 1.6, piedra);
-    caja(g, 3.8, 0.7, 0.9, 0, 0.7 * k + 3.8 * k, 1.6, oscura);
-    caja(g, 3.2, 2.4 * k, 2.6, 0, 0.7 * k, -1.2, oscura);   // cella
-    for (let i = 0; i < 9; i++) roca(g, 0.35 + rnd() * 0.5, (rnd() - 0.5) * 11, 0.2, (rnd() - 0.5) * 11, piedra, rnd);
-    if (l.suelo === 'agua') { torreon(g, -4.0, -3.0, 0.9, 7.8, oscura, matTejado(0x3b3a42), true); cil(g, 0.8, 5.6, 3.8, 0, -3.4, piedra); cil(g, 0.7, 4.4, -1.6, 0, 4.6, oscura); }
-    return { humos: [], luz: 0, brillo: true, alto: 5 * k };
+    if (l.id === 'sagrario') {   // muros de un cenobio a media altura, hundidos en el labrantío
+      const arenisca = matPiedra(0xbfae8a, 1), tierra = matLiso(0x6a4e32);
+      cil(g, 5.2, 0.12, 0, 0, 0, tierra);
+      for (const [x, z, w, d, h] of [[0, -2.6, 3.4, 0.4, 1.9], [-1.7, 0, 0.4, 5.2, 1.3], [1.7, -0.9, 0.4, 3.4, 1.6], [1.7, 2.1, 0.4, 1.0, 0.6], [0, 2.6, 1.0, 0.4, 0.8], [-1.0, 2.6, 0.9, 0.4, 1.5]]) caja(g, w, h, d, x, 0, z, arenisca);
+      caja(g, 1.0, 3.4, 0.5, 0, 0, -2.9, arenisca); caja(g, 0.4, 0.9, 0.5, -0.3, 3.4, -2.9, arenisca);   // lo que queda de la espadaña
+      for (let i = 0; i < 4; i++) { cil(g, 0.2, 1.3 + (i % 2) * 0.5, 2.6 + (i % 2) * 1.3, 0, -0.6 + Math.floor(i / 2) * 1.6, arenisca); }
+      for (const s of [0, 1]) { caja(g, 0.3, 1.5, 0.3, 2.6 + s * 1.3, 0, 2.2, arenisca); } caja(g, 1.9, 0.3, 0.34, 3.25, 1.5, 2.2, arenisca);
+      caja(g, 1.0, 0.1, 1.5, 0, 0.14, 0.2, matLiso(0x0c0a08));   // la boca de la escalera
+      for (let i = 0; i < 12; i++) roca(g, 0.25 + rnd() * 0.35, (rnd() - 0.5) * 9, 0.18, (rnd() - 0.5) * 9, arenisca, rnd);
+      return { humos: [], luz: 0, alto: 5 };
+    }
+    if (l.suelo === 'agua') {   // torres desmochadas que asoman del lago
+      const cal = matPiedra(0xb9b6ac, 1), verdin = matPiedra(0x5a6a52, 1);
+      for (const [x, z, r, h] of [[0, 0, 1.3, 11], [-3.6, -2.2, 1.0, 8], [3.2, -2.8, 1.1, 9.5], [-1.4, -5.6, 0.85, 6.8], [5.6, 0.8, 0.8, 6], [-5.8, 1.6, 0.85, 5.6], [1.8, 4.2, 0.9, 6.4]]) {
+        cil(g, r, h, x, 0, z, cal); cil(g, r * 1.06, 2.3, x, 0, z, verdin);
+        for (let i = 0; i < 7; i++) { const a = i / 7 * 6.283; if ((i * 5) % 3 === 0) continue; caja(g, r * 0.5, 0.35 + ((i * 3) % 3) * 0.3, r * 0.34, x + Math.cos(a) * r * 0.9, h, z + Math.sin(a) * r * 0.9, cal, -a + Math.PI / 2); }
+      }
+      for (const [x, z, w, ry] of [[-1.8, -1.1, 3.4, 0.55], [1.6, -1.4, 3.2, -0.72], [2.5, 0.7, 3.2, 1.0]]) caja(g, w, 4.9, 0.5, x, 0, z, cal, ry);
+      return { humos: [], luz: 0, alto: 11 };
+    }
+    // Las Criptas: una puerta de sillería en la ladera de un otero, bajo árboles viejos
+    const sillar = matPiedra(0x7b7f72, 1), musgo = matLiso(0x55653c), losa = matPiedra(0x60645c, 1);
+    for (let i = 0; i < 7; i++) { const a = -Math.PI / 2 + (i / 6 - 0.5) * 2.4, r = roca(g, 2.6 + rnd(), Math.cos(a) * 3.2, 1.0, Math.sin(a) * 3.2 - 1.4, musgo, rnd); r.scale.y *= 1.3; }
+    roca(g, 4.2, 0, 1.2, -3.6, musgo, rnd);
+    for (const s of [-1, 1]) { caja(g, 0.8, 4.2, 1.0, s * 1.7, 0, 0.6, sillar); cil(g, 0.36, 3.6, s * 3.0, 0, 1.0, sillar); }
+    caja(g, 4.6, 0.9, 1.2, 0, 4.2, 0.6, sillar); caja(g, 5.0, 0.2, 1.4, 0, 5.1, 0.6, musgo); pieza(g, gDosAguas, sillar, 5.0, 1.1, 1.2, 0, 5.3, 0.6);
+    caja(g, 2.6, 4.0, 0.3, 0, 0, 0.5, losa); caja(g, 0.08, 4.0, 0.34, 0, 0, 0.52, matLiso(0x3a3e38));
+    for (let i = 0; i < 3; i++) caja(g, 3.6 + i * 0.6, 0.18, 0.5, 0, 0.36 - i * 0.18, 1.4 + i * 0.5, sillar);
+    const tirada = cil(g, 0.36, 2.8, 3.6, 0, 2.6, sillar); tirada.rotation.z = Math.PI / 2; tirada.position.y = 0.36; tirada.rotation.y = 0.5;
+    for (let i = 0; i < 6; i++) { const a = rnd() * 6.283, d = 5 + rnd() * 2, t = cil(g, 0.16, 2.6 + rnd(), Math.cos(a) * d, 0, Math.sin(a) * d * 0.6 - 2, matLiso(0x3a2a1c)); roca(g, 1.3 + rnd() * 0.5, t.position.x, 3.6 + rnd(), t.position.z, matLiso(0x2f4a2a), rnd); }
+    return { humos: [], luz: 0, alto: 6.5 };
   },
   torre(g) {
     const piedra = matPiedra(0x6f7568, 1);

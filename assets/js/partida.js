@@ -6,7 +6,7 @@ import * as THREE from 'three';
 const CLAVE = 'alden-partida';
 const VACIA = { niebla: false, dia: 1, grupo: null, descubiertos: [], diario: [], notas: {}, marcas: [] };
 
-export async function crearPartida({ mundo, terreno, lugares, escena, viajes, h, cuerpo, alCambiar, centro }) {
+export async function crearPartida({ mundo, terreno, lugares, escena, viajes, h, cuerpo, alCambiar, pedirPunto }) {
   const { W, H, cx, cz } = terreno;
   let base = VACIA;
   try { const r = await fetch('assets/data/partida.json', { cache: 'no-store' }); if (r.ok) base = { ...VACIA, ...(await r.json()) }; } catch { /* sin archivo: partida vacía */ }
@@ -103,7 +103,7 @@ export async function crearPartida({ mundo, terreno, lugares, escena, viajes, h,
     }
   }
   const anotar = (id, texto) => { if (texto.trim()) estado.notas[id] = texto.trim(); else delete estado.notas[id]; cambiar(); };
-  const marcar = texto => { const [x, y] = centro(); estado.marcas.push({ x: Math.round(x), y: Math.round(y), texto: texto.trim().slice(0, 60) }); cambiar(); };
+  const marcar = async texto => { const p = await pedirPunto(); if (!p) return; estado.marcas.push({ x: Math.round(p[0]), y: Math.round(p[1]), texto: texto.trim().slice(0, 60) }); cambiar(); };
 
   function aplicar() {
     nubes.visible = estado.niebla;
@@ -169,11 +169,11 @@ export async function crearPartida({ mundo, terreno, lugares, escena, viajes, h,
         h('button', { type: 'button', 'aria-label': 'Un día más', onclick: () => { estado.dia++; cambiar(); } }, '+')),
       h('p', { class: 'rotulo' }, 'El grupo está en'), sel,
       marca('Niebla de guerra', estado.niebla, v => { estado.niebla = v; cambiar(); }),
-      marca('Modo edición (viajar y colocar desde las fichas)', edicion, v => { edicion = v; alCambiar?.(); }),
+      marca('Modo edición (viajar y colocar desde las fichas)', edicion, v => { edicion = v; pintarPanel(); alCambiar?.(); }),
       diario.length ? h('p', { class: 'rotulo' }, 'Diario') : null, diario.length ? h('ul', {}, ...diario) : null,
-      estado.marcas.length || edicion ? h('p', { class: 'rotulo' }, 'Marcas en el mapa') : null,
+      estado.marcas.length || edicion ? h('p', { class: 'rotulo' }, edicion ? 'Marcas en el mapa (escribe, pulsa Marcar y luego el sitio)' : 'Marcas en el mapa') : null,
       estado.marcas.length ? h('ul', { class: 'marcas' }, ...estado.marcas.map((m, i) => h('li', {}, m.texto, edicion ? h('button', { type: 'button', 'aria-label': `Quitar la marca «${m.texto}»`, onclick: () => { estado.marcas.splice(i, 1); cambiar(); } }, '×') : null))) : null,
-      edicion ? (() => { const campo = h('input', { type: 'text', maxlength: '60', placeholder: 'Aquí nos emboscaron…', 'aria-label': 'Texto de la marca' }); const poner = () => { if (campo.value.trim()) marcar(campo.value); }; campo.addEventListener('keydown', ev => { if (ev.key === 'Enter') poner(); }); return h('div', { class: 'fila' }, campo, h('button', { type: 'button', class: 'ancho', onclick: poner }, 'Marcar el centro')); })() : null,
+      edicion ? (() => { const campo = h('input', { type: 'text', maxlength: '60', placeholder: 'Aquí nos emboscaron…', 'aria-label': 'Texto de la marca' }); const poner = () => { if (campo.value.trim()) marcar(campo.value); }; campo.addEventListener('keydown', ev => { if (ev.key === 'Enter') poner(); }); return h('div', { class: 'fila' }, campo, h('button', { type: 'button', class: 'ancho', onclick: poner }, 'Marcar…')); })() : null,
       h('button', { type: 'button', class: 'ancho', onclick: descargar }, 'Descargar partida.json'),
       borrador ? h('button', { type: 'button', class: 'ancho', onclick: descartar }, 'Descartar mis cambios') : null,
       h('p', { class: 'nota' }, borrador ? 'Hay cambios guardados solo en este navegador. Para que los vea el resto, sube el archivo descargado a assets/data/. Ojo: notas y marcas van dentro y las leerá cualquiera que abra el mapa.' : 'Mostrando la partida publicada.'),

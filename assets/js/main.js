@@ -40,11 +40,14 @@ async function iniciar() {
     carga.querySelector('p').textContent = 'Este navegador no puede mostrar el mapa en 3D (WebGL no está disponible).';
     return;
   }
-  renderer.setPixelRatio(Math.min(devicePixelRatio, matchMedia('(max-width: 720px)').matches ? 1.5 : 2));
+  // calidad: alta, media o baja; "auto" deja que decida el tamaño de pantalla. Se guarda en este navegador.
+  let calidad = 'auto';
+  try { calidad = localStorage.getItem('alden-calidad') || 'auto'; } catch { /* sin almacenamiento */ }
+  renderer.setPixelRatio(Math.min(devicePixelRatio, { alta: 2, media: 1.25, baja: 1 }[calidad] ?? (matchMedia('(max-width: 720px)').matches ? 1.5 : 2)));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.0;
 
-  const movil = matchMedia('(max-width: 720px), (pointer: coarse)').matches;
+  const movil = calidad === 'baja' || (calidad === 'auto' && matchMedia('(max-width: 720px), (pointer: coarse)').matches);
   const mundo = await (await fetch('assets/data/mundo.json')).json();
   await new Promise(r => setTimeout(r, 30));   // deja pintar el aviso de carga antes del cálculo
 
@@ -55,10 +58,12 @@ async function iniciar() {
   escena.add(lugares.grupo);
   const ambiente = crearAmbiente(escena, renderer, mundo, terreno, lugares, { movil });
   const viajes = crearViajes(escena, mundo, terreno);
+  if (calidad === 'baja') renderer.shadowMap.enabled = false;
   const musica = crearMusica(mundo.musica), sonido = crearSonido();
   cargarModelos(mundo.modelos, lugares, ambiente.barcos);
   // qué lugares tienen interior y cómo se llama el botón
-  const INTERIOR = { capital: 'Entrar en la ciudad', puerto: 'Entrar en el puerto', taberna: 'Entrar en la taberna', ruina: 'Acercarse a la entrada' };
+  const INTERIOR = { capital: 'Entrar en la ciudad', puerto: 'Entrar en el puerto', taberna: 'Entrar en la taberna', ruina: 'Acercarse a la entrada',
+    pueblo: 'Acercarse', posta: 'Acercarse', quemado: 'Acercarse', campamento: 'Acercarse', palafitos: 'Acercarse', pasarela: 'Acercarse', pecio: 'Acercarse', cabana: 'Acercarse', granja: 'Acercarse', faro: 'Acercarse', torre: 'Acercarse' };
   const { W, H } = terreno;
 
   /* ---------- cámara ---------- */
@@ -197,9 +202,9 @@ async function iniciar() {
     titulo.textContent = nombre; pista.textContent = `Interior · Esc para volver ${pila.length > 1 ? 'atrás' : 'al mapa'}`; pista.classList.remove('fuera');
     document.body.classList.add('en-ciudad'); musica.ambiente(clave);
   }
-  async function abrir(c, nombre, clave) {
+  async function abrir(c, nombre, clave, antes) {
     velo.classList.add('puesto'); await espera(360);
-    pila.push({ c, nombre, clave, pos: camara.position.clone(), objetivo: control.target.clone(), min: control.minDistance, max: control.maxDistance, hito });
+    pila.push({ c, nombre, clave, pos: antes?.pos ?? camara.position.clone(), objetivo: antes?.objetivo ?? control.target.clone(), min: control.minDistance, max: control.maxDistance, hito });
     vuelo++; viajes.limpiar(); hito = null;
     if (ciudad) for (const e of ciudad.etiquetas) e.el?.remove(); else for (const e of etiquetas) e.el.style.visibility = 'hidden';
     montar(c, nombre, clave);
@@ -210,8 +215,15 @@ async function iniciar() {
   async function entrar(l) {
     if (dentro) return;
     dentro = l;
-    if (!ciudades.has(l.datos.id)) ciudades.set(l.datos.id, l.datos.tipo === 'taberna' ? crearInterior(l.datos) : l.datos.tipo === 'ruina' ? crearEntrada(l.datos) : crearCiudad(l.datos, mundo, { movil }));
-    await abrir(ciudades.get(l.datos.id), l.datos.nombre, l.datos.tipo === 'taberna' ? 'taberna' : l.datos.tipo === 'ruina' ? 'ruina' : 'ciudad');
+    if (!ciudades.has(l.datos.id)) ciudades.set(l.datos.id, l.datos.tipo === 'taberna' ? crearInterior(l.datos) : l.datos.tipo === 'capital' || l.datos.tipo === 'puerto' ? crearCiudad(l.datos, mundo, { movil }) : crearEntrada(l.datos));
+    // la cámara se echa encima del lugar antes del fundido; al volver se recupera la vista que había
+    const antes = { pos: camara.position.clone(), objetivo: control.target.clone() };
+    if (!reducir) {
+      const obj = l.base.clone(); obj.y = Math.max(obj.y, 0) + 2;
+      volar(obj.clone().add(camara.position.clone().sub(control.target).setLength(Math.max(control.minDistance + 4, l.radio * 1.6))), obj, 950);
+      await espera(680);
+    }
+    await abrir(ciudades.get(l.datos.id), l.datos.nombre, l.datos.tipo === 'capital' || l.datos.tipo === 'puerto' ? 'ciudad' : l.datos.tipo, antes);
   }
   // Entrar en un edificio de la ciudad (de momento, la posada).
   async function entrarEdificio(e) {
@@ -347,25 +359,27 @@ async function iniciar() {
     rayo.setFromCamera(raton, camara);
     return rayo.intersectObjects(lugares.dianas, false).map(i => i.object.userData.id).find(id => !porId[id].tapado) ?? null;
   }
-  let ticSonido = 0;
-  const partida = await crearPartida({ mundo, terreno, lugares, escena, viajes, h, cuerpo: $('#partidaCuerpo'), centro: () => [control.target.x + terreno.cx, control.target.z + terreno.cz], alCambiar: () => { if (elegido?.tapado) cerrar(); else if (elegido && !dentro) pintarFicha(); } });
+  let ticSonido = 0, esperaPunto = null;   // esperaPunto: alguien aguarda a que se pulse un sitio del mapa
+  const soltarPunto = p => { const si = esperaPunto; esperaPunto = null; lienzo.style.cursor = 'grab'; pista.classList.add('fuera'); si?.(p); };
+  const partida = await crearPartida({ mundo, terreno, lugares, escena, viajes, h, cuerpo: $('#partidaCuerpo'), pedirPunto: () => new Promise(si => { esperaPunto?.(null); esperaPunto = si; lienzo.style.cursor = 'crosshair'; $('#partida').open = false; pista.textContent = 'Pulsa en el mapa donde quieras clavar la marca · Esc para dejarlo'; pista.classList.remove('fuera'); }), alCambiar: () => { if (elegido?.tapado) cerrar(); else if (elegido && !dentro) pintarFicha(); } });
   const botonMusica = $('#musica');
   botonMusica.addEventListener('click', () => { musica.activar(!musica.activa); sonido.activar(musica.activa); botonMusica.setAttribute('aria-pressed', String(musica.activa)); botonMusica.title = musica.activa ? 'Quitar la música' : 'Poner música'; });
   let pulsado = null;
   lienzo.addEventListener('pointerdown', ev => { pulsado = { x: ev.clientX, y: ev.clientY, t: performance.now() }; });
   lienzo.addEventListener('pointerup', ev => {
     if (!pulsado || Math.hypot(ev.clientX - pulsado.x, ev.clientY - pulsado.y) > 6 || performance.now() - pulsado.t > 600) return;
+    if (esperaPunto) { raton.set(ev.clientX / innerWidth * 2 - 1, -(ev.clientY / innerHeight) * 2 + 1); rayo.setFromCamera(raton, camara); const toque = rayo.intersectObject(terreno.malla, false)[0]; soltarPunto(toque ? [toque.point.x + terreno.cx, toque.point.z + terreno.cz] : null); return; }
     const id = lugarEn(ev);
     if (id) seleccionar(id, true);
   });
   let ultimoHover = 0;
   lienzo.addEventListener('pointermove', ev => {
-    if (ev.pointerType !== 'mouse' || ev.buttons || performance.now() - ultimoHover < 60) return;
+    if (ev.pointerType !== 'mouse' || ev.buttons || esperaPunto || performance.now() - ultimoHover < 60) return;
     ultimoHover = performance.now();
     const id = lugarEn(ev);
     lienzo.style.cursor = id && !porId[id].datos.oculto ? 'pointer' : 'grab';
   });
-  addEventListener('keydown', ev => { if (ev.key === 'Escape' && (elegido || dentro)) cerrar(); });
+  addEventListener('keydown', ev => { if (ev.key !== 'Escape') return; if (esperaPunto) soltarPunto(null); else if (elegido || dentro) cerrar(); });
 
   /* ---------- mandos ---------- */
   const reloj = $('#reloj'), barra = $('#hora'), texto = $('#horaTexto');
@@ -380,6 +394,14 @@ async function iniciar() {
   barra.addEventListener('input', () => { hora = Number(barra.value); ponerReloj(false); pintarHora(); });
   ponerReloj(corriendo); pintarHora();
 
+  const selCalidad = $('#calidad'); selCalidad.value = calidad;
+  selCalidad.addEventListener('change', () => { try { localStorage.setItem('alden-calidad', selCalidad.value); } catch { /* no se puede guardar */ } location.reload(); });
+  // buscador: escribe el nombre de un lugar y el mapa vuela hasta él
+  const buscar = $('#buscar'), sinTildes = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const visibles = () => lugares.lista.filter(l => !l.datos.oculto && !l.tapado);
+  buscar.addEventListener('focus', () => $('#lugaresLista').replaceChildren(...visibles().map(l => h('option', { value: l.datos.nombre }))));
+  const irA = () => { const q = sinTildes(buscar.value.trim()); if (!q || dentro) return; const l = visibles().find(o => sinTildes(o.datos.nombre) === q) || visibles().find(o => sinTildes(o.datos.nombre).includes(q)); if (l) { seleccionar(l.datos.id, true); buscar.value = ''; buscar.blur(); } };
+  buscar.addEventListener('change', irA); buscar.addEventListener('keydown', ev => { if (ev.key === 'Enter') irA(); });
   document.querySelectorAll('[data-capa]').forEach(c => c.addEventListener('change', () => {
     capas[c.dataset.capa] = c.checked;
     terreno.fronteras.visible = capas.fronteras;
