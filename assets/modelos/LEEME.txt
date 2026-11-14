@@ -1,0 +1,20 @@
+Modelos 3D opcionales (glTF: .gltf con su .bin y texturas, o .glb). Se declaran en assets/data/mundo.json, apartado "modelos":
+
+  "modelos": {
+    "carpeta": "assets/modelos/",
+    "lugares": {
+      "taberna": { "archivo": "taberna/tavern.gltf", "ancho": 16, "giro": 180 },
+      "posta":   "torre/watchtower.gltf"
+    },
+    "barco": { "archivo": "barco/ship.gltf", "largo": 12, "giro": 90 }
+  }
+
+- En "lugares" la clave es el id de un lugar (solo ese) o un tipo (todos los de ese tipo: taberna, posta, pueblo, granja, cabana, faro...).
+- "ancho" es el lado mayor del modelo en unidades del mapa; si se omite, se ajusta al tamaño del lugar.
+- "giro" son grados alrededor del eje vertical, por si el modelo mira hacia otro lado.
+- Cada modelo sustituye entero al generado. Si el archivo falla, se queda el generado.
+- Las capitales y el puerto se pueden sustituir, pero un solo edificio no hace una ciudad: mejor dejarlos.
+
+Packs de dominio público (CC0) que encajan:
+- KayKit Medieval Hexagon Pack: edificios enteros (taberna, molino, herrería, iglesia, casas, cuartel). https://kaylousberg.itch.io/kaykit-medieval-hexagon
+- Kenney Pirate Kit: barcos. https://opengameart.org/content/pirate-kit

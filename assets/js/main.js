@@ -8,6 +8,8 @@ import { crearViajes } from './viaje.js';
 import { crearCiudad } from './ciudad.js';
 import { crearPartida } from './partida.js';
 import { crearMusica } from './musica.js';
+import { crearInterior } from './interior.js';
+import { cargarModelos } from './modelos.js';
 import { animar, actualizarAnimaciones, reducir, ease } from './anim.js';
 
 const $ = s => document.querySelector(s);
@@ -51,6 +53,9 @@ async function iniciar() {
   const ambiente = crearAmbiente(escena, renderer, mundo, terreno, lugares, { movil });
   const viajes = crearViajes(escena, mundo, terreno);
   const musica = crearMusica(mundo.musica);
+  cargarModelos(mundo.modelos, lugares, ambiente.barcos);
+  // qué lugares tienen interior y cómo se llama el botón
+  const INTERIOR = { capital: 'Entrar en la ciudad', puerto: 'Entrar en el puerto', taberna: 'Entrar en la taberna' };
   const { W, H } = terreno;
 
   /* ---------- cámara ---------- */
@@ -126,6 +131,7 @@ async function iniciar() {
       let op = capas.nombres && v3.z < 1 && Math.abs(v3.x) < 1.15 && Math.abs(v3.y) < 1.15 ? 1 : 0;
       if (op) {
         if (e.clase === 'puerta' || e.clase === 'hito') op = suave(ciudad.R * 4.2, ciudad.R * 3.4, lejos);
+        else if (e.clase === 'barrio') op = suave(ciudad.R * 1.3, ciudad.R * 2.0, lejos) * 0.9;   // los barrios se leen de lejos
         else if (e.clase === 'region') op = w < 720 ? 0 : suave(umbral * 0.8, umbral, lejos);
         else if (e.clase === 'geo') op = suave(170, 320, lejos);
         else if (e.clase === 'lugar' && e.lugar !== elegido) op = suave(umbral, umbral * 0.8, lejos);
@@ -176,7 +182,7 @@ async function iniciar() {
   async function entrar(l) {
     if (dentro) return;
     velo.classList.add('puesto'); await espera(360);
-    if (!ciudades.has(l.datos.id)) ciudades.set(l.datos.id, crearCiudad(l.datos, mundo, { movil }));
+    if (!ciudades.has(l.datos.id)) ciudades.set(l.datos.id, l.datos.tipo === 'taberna' ? crearInterior(l.datos) : crearCiudad(l.datos, mundo, { movil }));
     const c = ciudades.get(l.datos.id);
     guardado = { pos: camara.position.clone(), objetivo: control.target.clone(), min: control.minDistance, max: control.maxDistance };
     vuelo++; viajes.limpiar();
@@ -184,9 +190,9 @@ async function iniciar() {
     for (const e of c.etiquetas) { e.el ??= h('div', { class: `etq etq-${e.clase}` }, e.nombre); capaEtq.append(e.el); }
     dentro = l; ciudad = c;
     camara.position.copy(c.vista.pos); control.target.copy(c.vista.objetivo);
-    control.minDistance = 20; control.maxDistance = c.R * 5; limite.x = limite.z = c.limite;
-    titulo.textContent = l.datos.nombre; pista.textContent = 'Interior de la ciudad · Esc para volver al mapa'; pista.classList.remove('fuera');
-    document.body.classList.add('en-ciudad'); musica.ambiente('ciudad');
+    control.minDistance = c.minDist ?? 20; control.maxDistance = c.R * 5; limite.x = limite.z = c.limite;
+    titulo.textContent = l.datos.nombre; pista.textContent = 'Interior · Esc para volver al mapa'; pista.classList.remove('fuera');
+    document.body.classList.add('en-ciudad'); musica.ambiente(l.datos.tipo === 'taberna' ? 'taberna' : 'ciudad');
     pintarFicha(); velo.classList.remove('puesto');
   }
   async function salir() {
@@ -217,7 +223,7 @@ async function iniciar() {
       return;
     }
     if (partida.estado.grupo === d.id) nodos.push(h('p', { class: 'aqui' }, `El grupo está aquí · día ${partida.estado.dia}`));
-    if (d.tipo === 'capital' || d.tipo === 'puerto') nodos.push(h('button', { class: 'accion', type: 'button', onclick: () => entrar(l) }, d.tipo === 'puerto' ? 'Entrar en el puerto' : 'Entrar en la ciudad'));
+    if (INTERIOR[d.tipo]) nodos.push(h('button', { class: 'accion', type: 'button', onclick: () => entrar(l) }, INTERIOR[d.tipo]));
     if (partida.edicion && partida.estado.grupo !== d.id && !d.oculto) nodos.push(h('button', { class: 'accion', type: 'button', onclick: () => partida.ponerGrupo(d.id) }, 'Poner aquí al grupo'));
     const viaje = h('div', { class: 'viaje' }, h('h3', {}, 'Viajar desde aquí'));
     if (!viajes.alcanzable(d.id)) {
@@ -352,7 +358,7 @@ async function iniciar() {
   carga.classList.add('fuera');
   // Para trastear desde la consola: mapa.seleccionar('faro'), mapa.ponerHora(22)…
   window.mapa = {
-    seleccionar, entrar: id => entrar(porId[id]), salir, camara, control, partida,
+    seleccionar, entrar: id => { seleccionar(id, false); return entrar(porId[id]); }, salir, camara, control, partida,
     ponerHora: v => { hora = v; ponerReloj(false); barra.value = v; pintarHora(); },
     enPantalla: id => { const v = porId[id].base.clone().project(camara); return [(v.x * 0.5 + 0.5) * innerWidth, (-v.y * 0.5 + 0.5) * innerHeight]; },
   };

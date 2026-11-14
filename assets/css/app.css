@@ -106,6 +106,7 @@ button.etq:hover, button.etq.activa { border-color: var(--oro); background: rgba
 .etq-ciudad, .etq-puerta, .etq-hito { background: rgba(14, 16, 21, 0.66); border-radius: 999px; padding: 2px 10px 3px; font: 600 0.85rem/1.25 var(--serif); color: var(--crema); letter-spacing: 0.04em; }
 .etq-puerta { font-weight: 400; font-style: italic; font-size: 0.76rem; color: #e3d9c2; }
 .etq-hito { font-weight: 500; font-size: 0.78rem; }
+.etq-barrio { font: 600 0.82rem var(--serif); letter-spacing: 0.2em; text-transform: uppercase; color: #fff; text-shadow: 0 1px 3px #000, 0 0 10px rgba(0, 0, 0, 0.9); }
 .en-ciudad .capas label:nth-of-type(n+2) { display: none; }
 
 /* ---------- carga ---------- */

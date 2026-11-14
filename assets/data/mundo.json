@@ -9,10 +9,11 @@
   },
   "musica": {
     "carpeta": "assets/audio/",
-    "mapa": "bosque.mp3",
-    "ciudad": "mercader.mp3",
-    "tipos": { "taberna": "taberna.mp3", "ruina": "mazmorra.mp3", "puerto": "mercader.mp3", "quemado": "tension.mp3", "campamento": "tension.mp3", "palafitos": "tension.mp3", "pasarela": "tension.mp3", "pecio": "tension.mp3" }
+    "mapa": "bosque.mp4",
+    "ciudad": "mercader.mp4",
+    "tipos": { "taberna": "taberna.mp4", "ruina": "mazmorra.mp4", "puerto": "mercader.mp4", "quemado": "tension.mp4", "campamento": "tension.mp4", "palafitos": "tension.mp4", "pasarela": "tension.mp4", "pecio": "tension.mp4" }
   },
+  "modelos": { "carpeta": "assets/modelos/", "lugares": {} },
   "encuentros": {
     "nota": "Regla casera, pendiente del máster: por cada día de viaje se tira 1d20 y hay encuentro si sale el umbral de la zona o más. Las tablas son genéricas.",
     "zonas": {

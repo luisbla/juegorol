@@ -22,10 +22,13 @@ assets/
   data/mundo.json      regiones, costa, lagos, marisma, ríos, lugares, caminos, rutas de barcos, música y encuentros
   data/partida.json    estado publicado de la partida (opcional; si falta, partida vacía)
   audio/               pistas de música (ver LEEME.txt)
+  modelos/             modelos glTF opcionales (ver LEEME.txt)
   js/main.js           arranque, cámara, etiquetas, fichas, mandos
   js/terreno.js        alturas, textura, agua, ríos, puentes, caminos, fronteras, árboles
   js/lugares.js        modelos y texturas de cada tipo de lugar
-  js/ciudad.js         interior de las capitales, generado a partir de los caminos que llegan a cada una
+  js/ciudad.js         interior de las capitales y del puerto: barrios, muralla, puertas según los caminos reales
+  js/interior.js       interior de la taberna
+  js/modelos.js        carga opcional de modelos glTF de artista
   js/ambiente.js       cielo, sombras, nubes, nieve, niebla, humo, barcos, pájaros, faro, luces de noche
   js/viaje.js          rutas y viajero
   js/partida.js        día, grupo, diario, niebla de guerra y encuentros
@@ -50,6 +53,7 @@ Todo se edita en `assets/data/mundo.json`. Las coordenadas van en una rejilla de
 - **Lagos, marisma, costa y fronteras**: elipses y listas de puntos; el relieve y el agua se recalculan al recargar.
 - **Ritmo de viaje**: `kmPorDia`.
 - **Música**: `musica` asigna un archivo de `assets/audio/` al mapa, a las ciudades y a cada tipo de lugar.
+- **Modelos de artista**: `modelos.lugares` asigna un glTF a un lugar o a un tipo de lugar, y `modelos.barco` a los barcos. Formato y packs recomendados, en `assets/modelos/LEEME.txt`.
 - **Encuentros**: `encuentros.zonas` tiene, por región, el umbral del d20 y la tabla. Es una regla casera; cámbiala o borra el apartado para no tirar.
 
 ## La partida

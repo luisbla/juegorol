@@ -55,13 +55,20 @@ export function crearCiudad(l, mundo, { movil = false } = {}) {
   // frente de agua: en Astravan, el lago grande donde está en el mapa; en un puerto, el mar al sur
   let lago = null;
   const frente = l.id === 'astravan' && mundo.lagos?.length ? { ang: Math.atan2(mundo.lagos[0].y - l.y, mundo.lagos[0].x - l.x), r: 190, nombre: 'Muelles del lago' }
-    : l.tipo === 'puerto' ? { ang: Math.PI / 2, r: 900, nombre: 'Muelles', mar: true } : null;
-  if (frente) {
-    lago = { ...frente, margen: frente.mar ? 15 : 34 };
+    : l.tipo === 'puerto' ? { ang: Math.PI / 2, nombre: 'Muelles', mar: true } : null;
+  if (frente?.mar) {
+    // puerto: la ciudad es una media luna abierta al mar. La orilla corta el círculo, no hay muralla por ese lado
+    // y la sede (la capitanía) va junto al muelle.
+    lago = { ...frente, corte: R * 0.2, r: 5000, x: 0 }; lago.z = lago.corte + lago.r;
+    puertas = puertas.filter(p => Math.sin(p.ang) * R < lago.corte - 14);
+    sede.x = R * 0.44; sede.z = lago.corte - rSede - 15; angSede = Math.atan2(sede.z, sede.x);
+  } else if (frente) {
+    lago = { ...frente, margen: 34 };
     lago.x = Math.cos(lago.ang) * (R + lago.margen + lago.r); lago.z = Math.sin(lago.ang) * (R + lago.margen + lago.r);
     if (!puertas.some(p => difAng(p.ang, lago.ang) < 0.5)) puertas.push({ ang: lago.ang, nombre: lago.nombre, principal: true, lago: true });
   }
   const enLago = (x, z, margen = 0) => lago && Math.hypot(x - lago.x, z - lago.z) < lago.r + margen;
+  const enMar = (x, z, margen = 0) => !!lago?.mar && z > lago.corte - margen;
 
   /* ---------- lotes: todo lo fijo se funde por material (un puñado de mallas para cientos de casas) ---------- */
   const lotes = new Map(), M = new THREE.Matrix4(), Q = new THREE.Quaternion(), P = new THREE.Vector3(), S = new THREE.Vector3(), E = new THREE.Euler();
@@ -105,27 +112,64 @@ export function crearCiudad(l, mundo, { movil = false } = {}) {
     let sitio = null, nota = -1;
     for (let k = 1; k < anillos.length - 1; k++) for (let i = 0; i < 40; i++) {
       const a = i / 40 * Math.PI * 2 + k, r = anillos[k], x = Math.cos(a) * r, z = Math.sin(a) * r;
-      const d = Math.min(...puertas.map(p => difAng(a, p.ang) * r - 9), Math.hypot(x - sede.x, z - sede.z) - rSede - 12, ...hitos.map(q => Math.hypot(x - q.x, z - q.z) - 26), 30) + rnd() * 4;
+      const d = Math.min(...puertas.map(p => difAng(a, p.ang) * r - 9), Math.hypot(x - sede.x, z - sede.z) - rSede - 12, ...hitos.map(q => Math.hypot(x - q.x, z - q.z) - 26), enMar(x, z, 18) ? -99 : 30) + rnd() * 4;
       if (d > nota) { nota = d; sitio = { nombre, tipo, x, z, ang: a }; }
     }
     if (sitio && nota > 2) hitos.push(sitio);
   }
+  // barrios: cada sector entre avenidas tiene su carácter (tamaño de casa, materiales, apretura) y sus calles
+  // no casan con las del sector vecino, para que la ciudad no sea una diana.
+  const dosPi = Math.PI * 2, norma = a => ((a % dosPi) + dosPi) % dosPi;
+  let lindes = puertas.map(p => norma(p.ang)).sort((a, b) => a - b);
+  if (!lindes.length) lindes = [0];
+  for (let pasada = 0; pasada < 3; pasada++) {   // parte los sectores demasiado anchos
+    const mas = [];
+    lindes.forEach((a, i) => { const sig = i + 1 < lindes.length ? lindes[i + 1] : lindes[0] + dosPi; if (sig - a > 1.7) mas.push(norma((a + sig) / 2)); });
+    lindes = [...lindes, ...mas].sort((a, b) => a - b);
+  }
+  const BARRIOS = {
+    alto: { nombre: 'Barrio alto', w: 1.28, alto: 1.3, paredes: [matPared(e.fortaleza ? 0x777b86 : 0xd6cfbf, { piedra: true })], tejas: [matTejado(e.fortaleza ? 0x2c2f38 : 0x4a5263)], hueco: 0.16, chim: 0.75 },
+    mercaderes: { nombre: 'Barrio de mercaderes', w: 1.0, alto: 1.5, paredes: [paredes[0]], tejas: [tejas[0], tejas[2]], hueco: 0.0, chim: 0.5 },
+    artesanos: { nombre: 'Barrio de artesanos', w: 1.06, alto: 1.0, paredes, tejas: [tejas[2]], hueco: 0.05, chim: 0.95 },
+    arrabal: { nombre: 'Arrabal', w: 0.76, alto: 0.7, paredes: [matPared(0x8a7558), matPared(0x76644c)], tejas: [matTejado(0x8a7a4a), matTejado(0x74683f)], hueco: 0.04, chim: 0.2 },
+  };
+  const ORDEN = ['mercaderes', 'artesanos', 'arrabal'];
+  const sectores = lindes.map((a0, i) => {
+    const a1 = i + 1 < lindes.length ? lindes[i + 1] : lindes[0] + dosPi;
+    return { a0, a1, medio: (a0 + a1) / 2, desfase: (rnd() - 0.5) * 7, clase: null };
+  });
+  sectores.reduce((m, q) => (difAng(q.medio, angSede) < difAng(m.medio, angSede) ? q : m)).clase = 'alto';   // el de la sede
+  let turno = 0;
+  for (const q of sectores) if (!q.clase) q.clase = ORDEN[turno++ % 3];
+  const sectorDe = a => { const n = norma(a); return sectores.find(q => (n >= q.a0 && n < q.a1) || (n + dosPi >= q.a0 && n + dosPi < q.a1)) || sectores[0]; };
+  // una plazuela por barrio, con su pozo
+  const claros = [];
+  for (const q of sectores) {
+    const r = R * (0.55 + rnd() * 0.15), x = Math.cos(q.medio) * r, z = Math.sin(q.medio) * r;
+    if (!enSede(x, z, 14) && !enMar(x, z, 20) && !hitos.some(k => Math.hypot(x - k.x, z - k.z) < 18)) claros.push({ x, z, sector: q });
+  }
   for (const r0 of anillos) {
     const n = Math.floor(2 * Math.PI * r0 / 6.7), giro = rnd() * 6.28, callejon = 5 + Math.floor(rnd() * 4);
     for (let i = 0; i < n; i++) {
-      const a = i / n * Math.PI * 2 + giro, r = r0 + onda(a, r0) + (rnd() - 0.5) * 1.6, x = Math.cos(a) * r, z = Math.sin(a) * r;
-      if (cercaAvenida(a, r, 6.5) || enSede(x, z) || i % callejon === 0 || hitos.some(q => Math.hypot(x - q.x, z - q.z) < 10.5)) continue;
-      const alto = 3.0 + rnd() * 1.6 + (1 - r / R) * 1.6 + (rnd() > 0.85 ? 1.8 : 0);
-      casa(x, z, 4.6 + rnd() * 1.5, 4.3 + rnd() * 1.2, alto, paredes[rnd() > 0.5 ? 0 : 1], tejas[Math.floor(rnd() * 3)], -(a + Math.PI / 2) + (rnd() - 0.5) * 0.12, rnd() > 0.55);
+      const a = i / n * Math.PI * 2 + giro, sc = sectorDe(a), b = BARRIOS[sc.clase];
+      const r = Math.min(R - 9, r0 + sc.desfase * Math.min(1, (r0 - 20) / 30) + onda(a, r0) + (rnd() - 0.5) * 1.8), x = Math.cos(a) * r, z = Math.sin(a) * r;
+      if (cercaAvenida(a, r, 6.5) || enSede(x, z) || enMar(x, z, 11) || i % callejon === 0 || rnd() < b.hueco || hitos.some(q => Math.hypot(x - q.x, z - q.z) < 10.5) || claros.some(q => Math.hypot(x - q.x, z - q.z) < 9)) continue;
+      const alto = (3.0 + rnd() * 1.6 + (1 - r / R) * 1.4 + (rnd() > 0.85 ? 1.6 : 0)) * b.alto;
+      casa(x, z, (4.6 + rnd() * 1.5) * b.w, (4.3 + rnd() * 1.2) * b.w, alto, b.paredes[Math.floor(rnd() * b.paredes.length)], b.tejas[Math.floor(rnd() * b.tejas.length)], -(a + Math.PI / 2) + (rnd() - 0.5) * (sc.clase === 'arrabal' ? 0.5 : 0.14), rnd() < b.chim);
       if (rnd() > 0.9 && humos.length < 14) humos.push(new THREE.Vector3(x, alto * 1.8, z));
     }
+  }
+  for (const c of claros) {
+    cil(piedraClara, 1.5, 1.1, c.x, 0, c.z); cil(matLiso(0x1c2a30), 1.2, 0.1, c.x, 1.05, c.z);
+    for (const s of [-1.3, 1.3]) caja(madera, 0.22, 2.6, 0.22, c.x + s, 1.1, c.z); caja(madera, 3.0, 0.25, 0.4, c.x, 3.6, c.z);
+    if (!etiquetas.some(q => q.nombre === BARRIOS[c.sector.clase].nombre)) etiquetas.push({ nombre: BARRIOS[c.sector.clase].nombre, pos: new THREE.Vector3(c.x, 16, c.z), clase: 'barrio' });
   }
 
   /* ---------- muralla, torres y puertas ---------- */
   const N = Math.round(2 * Math.PI * R / 9), tramo = 2 * Math.PI * R / N;
   for (let i = 0; i < N; i++) {
     const a = i / N * Math.PI * 2;
-    if (cercaAvenida(a, R, 7.5)) continue;
+    if (cercaAvenida(a, R, 7.5) || enMar(Math.cos(a) * R, Math.sin(a) * R, 3)) continue;
     const x = Math.cos(a) * R, z = Math.sin(a) * R, ry = -(a + Math.PI / 2);
     caja(piedra, tramo * 1.05, 7, 2.2, x, 0, z, ry);
     for (const s of [-0.28, 0.28]) caja(piedra, tramo * 0.26, 1.1, 2.3, x + Math.cos(a + Math.PI / 2) * tramo * s, 7, z + Math.sin(a + Math.PI / 2) * tramo * s, ry);
@@ -292,7 +336,71 @@ export function crearCiudad(l, mundo, { movil = false } = {}) {
       cono(roca, ancho, alto, x, -2, z); cono(nieve, ancho * 0.52, alto * 0.5, x, alto * 0.5 - 1.6, z);
     }
   }
-  if (lago) {
+  if (lago?.mar) {
+    const c = lago.corte, ancho = Math.sqrt(R * R - c * c) - 4, sillar = matPiedra(0x8d897f, 1), casco = matLiso(0x5a3f2b), jarcia = matLiso(0x3a2c20), lona = matLiso(0xe6dcc6);
+    for (const s of [-1, 1]) torre(s * (ancho + 4), c - 1, 4.2, 15, piedra, tejas[0], true);   // la muralla muere en dos torres junto al agua
+    caja(sillar, ancho * 2 + 6, 2.4, 10, 0, -1.2, c + 2);                                    // muelle de piedra
+    for (let x = -ancho; x <= ancho; x += 7) caja(sillar, 1.0, 0.9, 1.0, x, 1.2, c + 6.4);       // norays
+    // barco: casco afilado, cubierta, castillo de popa y dos palos; con las velas dadas si está fondeado
+    const barco = (x, z, eslora, ry, velas) => {
+      const ax = Math.cos(ry), az = -Math.sin(ry);
+      poner(gCasco, casco, x, 0.8, z, eslora * 0.13, eslora, eslora * 0.19, ry, Math.PI / 2);
+      caja(madera, eslora * 0.62, 0.22, eslora * 0.2, x, eslora * 0.13 + 0.7, z, ry);
+      caja(casco, eslora * 0.2, eslora * 0.09, eslora * 0.19, x - ax * eslora * 0.3, eslora * 0.13 + 0.8, z - az * eslora * 0.3, ry);
+      for (const d of [-0.12, 0.2]) {
+        const mx = x + ax * eslora * d, mz = z + az * eslora * d, pie = eslora * 0.13 + 0.8;
+        cil(jarcia, 0.18, eslora * 0.85, mx, pie, mz); caja(jarcia, 0.22, 0.22, eslora * 0.45, mx, pie + eslora * 0.62, mz, ry);
+        if (velas) caja(lona, 0.12, eslora * 0.42, eslora * 0.42, mx + ax * 0.5, pie + eslora * 0.2, mz + az * 0.5, ry);
+        else caja(lona, 0.4, 0.7, eslora * 0.4, mx, pie + eslora * 0.57, mz, ry);
+      }
+    };
+    // espigones con barcos amarrados y grúas de rueda en el muelle
+    const nEsp = Math.floor((ancho * 2 - 20) / 21);
+    for (let i = 0; i < nEsp; i++) {
+      const x = -ancho + 16 + i * 21, largo = 30 + (i % 3) * 11;
+      caja(madera, 3.0, 0.5, largo, x, 1.0, c + 7 + largo / 2);
+      for (let d = 4; d < largo; d += 5) for (const s of [-1.3, 1.3]) caja(matLiso(0x4a3a2a), 0.5, 3.6, 0.5, x + s, -1.6, c + 7 + d);
+      barco(x + 5.2, c + 9 + largo * 0.55, 14 + (i % 2) * 4, Math.PI / 2, false);
+      if (i % 3 === 1) barco(x - 4.6, c + 8 + largo * 0.35, 9, Math.PI / 2, false);
+      if (i % 2 === 0) {
+        caja(matPared(0x8a6a48), 2.6, 2.4, 2.6, x - 7, 1.2, c + 1.5); cono(matTejado(0x5c3a2a), 2.1, 1.8, x - 7, 3.6, c + 1.5);
+        poner(gCaja, jarcia, x - 7, 6.2, c + 4.6, 0.42, 9, 0.42, 0, 0, 0.75);
+        caja(jarcia, 0.1, 4.2, 0.1, x - 7, 4.6, c + 7.7); caja(matLiso(0x8a6a48), 1.1, 1.0, 1.1, x - 7, 3.6, c + 7.7);
+      }
+    }
+    // almacenes de cara al muelle (la plaza del mercado se abre al agua y queda libre)
+    for (let x = -ancho + 8; x <= ancho - 8; x += 9.5) {
+      if (Math.abs(x) < 25 || enSede(x, c - 10, 6) || hitos.some(q => Math.hypot(x - q.x, c - 10 - q.z) < 11)) continue;
+      casa(x, c - 10, 6.4, 8.5, 5 + ((x | 0) % 2), matPared((x | 0) % 2 ? 0x9a7a55 : 0x8a6a48), matTejado(0x5c3a2a), Math.PI / 2, false);
+    }
+    // puestos de pescado y mercancía apilada en el muelle
+    for (let i = 0; i < 9; i++) { const x = -18 + i * 4.5; caja(madera, 2.4, 1.0, 1.5, x, 1.2, c + 1); poner(gDosAguas, matLiso(TOLDOS[i % 5], { side: THREE.DoubleSide }), x, 3.7, c + 1, 3.0, 0.8, 2.3); for (const s of [-1.1, 1.1]) caja(madera, 0.14, 2.5, 0.14, x + s, 1.2, c + 1.6); }
+    for (let i = 0; i < 40; i++) { const x = (rnd() - 0.5) * ancho * 1.8, z = c + rnd() * 4.5; if (Math.abs(x) < 21) continue; if (rnd() > 0.5) cil(matLiso(0x6a4a2e), 0.6, 1.2, x, 1.2, z); else caja(matLiso(rnd() > 0.5 ? 0x8a6a48 : 0x7a5a3a), 1.2, 0.9 + rnd(), 1.2, x, 1.2, z, rnd()); }
+    // astillero al este: un casco en grada, con las cuadernas al aire
+    const ax0 = ancho - 13;
+    poner(gCaja, madera, ax0, 0.9, c + 16, 6.5, 0.5, 26, 0, 0, 0.06);
+    caja(casco, 0.6, 0.6, 22, ax0, 1.6, c + 15);
+    for (let i = 0; i < 11; i++) for (const s of [-1, 1]) poner(gCaja, casco, ax0 + s * 1.9, 3.3, c + 5 + i * 2, 0.3, 4.2, 0.3, 0, -s * 0.38);
+    etiquetas.push({ nombre: 'Astillero', pos: new THREE.Vector3(ax0, 12, c + 12), clase: 'hito' });
+    etiquetas.push({ nombre: 'Muelles', pos: new THREE.Vector3(-ancho * 0.45, 13, c + 16), clase: 'ciudad' });
+    // dos rompeolas de escollera cierran la dársena; en cada punta, una baliza
+    const roquedo = matPiedra(0x77736c, 1);
+    for (const s of [-1, 1]) {
+      let bx = 0, bz = 0;
+      for (let i = 0; i <= 26; i++) { const t = i / 26; bx = s * (ancho + 9 - t * t * ancho * 0.62); bz = c + 5 + t * 104; poner(gRoca, roquedo, bx + (rnd() - 0.5) * 2, 0.8 + rnd() * 0.8, bz + (rnd() - 0.5) * 2, 3.4 + rnd() * 1.6, 2.4 + rnd(), 3.4 + rnd() * 1.6, rnd() * 6, rnd()); }
+      cil(piedraClara, 1.5, 7.5, bx, 2.2, bz); cono(matLiso(0xa3382c), 1.8, 1.8, bx, 9.7, bz);
+      despues.push(() => fuego(bx, 9.2, bz, 20, s > 0 ? 0x7dffb0 : 0xff6a5a));   // verde y roja, como entrada de puerto
+    }
+    // barcos fondeados en la bahía, con las velas dadas
+    barco(-34, c + 86, 19, 0.5, true); barco(30, c + 122, 22, -0.7, true); barco(66, c + 74, 16, 2.4, true);
+    // el Faro de Astravan, en su peñón frente al puerto
+    const fx = ancho * 0.72, fz = c + 158;
+    for (let i = 0; i < 14; i++) poner(gRoca, roquedo, fx + (rnd() - 0.5) * 16, 0.6 + rnd() * 2, fz + (rnd() - 0.5) * 16, 4 + rnd() * 4, 3 + rnd() * 2.4, 4 + rnd() * 4, rnd() * 6, rnd());
+    poner(gCil, matPiedra(0xece8df, 1), fx, 13, fz, 2.3, 20, 2.3); cil(matLiso(0xa3382c), 2.45, 3, fx, 10, fz); cil(matLiso(0x3a3a3f), 2.9, 0.5, fx, 23, fz); cono(matLiso(0xa3382c), 2.2, 2.4, fx, 25.6, fz);
+    cil(matLiso(0xfff1b0, { emissive: 0xffd76a, emissiveIntensity: 1.6 }), 1.4, 2.2, fx, 23.5, fz);
+    despues.push(() => fuego(fx, 24.5, fz, 60));
+    etiquetas.push({ nombre: 'Faro de Astravan', pos: new THREE.Vector3(fx, 32, fz), clase: 'hito' });
+  } else if (lago) {
     const p = puertas.find(q => q.lago) || puertas.reduce((m, q) => difAng(q.ang, lago.ang) < difAng(m.ang, lago.ang) ? q : m);
     const ux = Math.cos(lago.ang), uz = Math.sin(lago.ang), tx = -uz, tz = ux, orilla = R + lago.margen;
     for (const s of (lago.mar ? [-58, -40, -22, -4, 14, 32, 50] : [-28, -12, 6, 22])) {   // espigones con barcos amarrados
@@ -346,17 +454,23 @@ export function crearCiudad(l, mundo, { movil = false } = {}) {
     }
     x.fillStyle = perfil.dentro; x.beginPath(); x.arc(px(0), px(0), (R + 1) * k, 0, 6.283); x.fill();
     x.strokeStyle = perfil.calle;
-    for (const r0 of anillos) {
-      x.lineWidth = 5.2 * k; x.beginPath();
-      for (let i = 0; i <= 180; i++) { const a = i / 180 * 6.2832, r = r0 + paso / 2 + onda(a, r0 + paso / 2); x.lineTo(px(Math.cos(a) * r), px(Math.sin(a) * r)); }
+    for (const r0 of anillos) for (const q of sectores) {   // cada barrio dibuja sus propios arcos de calle
+      x.lineWidth = (q.clase === 'arrabal' ? 3.6 : 5.2) * k; x.beginPath();
+      const d = q.desfase * Math.min(1, (r0 - 20) / 30);
+      for (let i = 0; i <= 40; i++) { const a = q.a0 + (q.a1 - q.a0) * i / 40, r = Math.min(R - 4, r0 + paso / 2 + d + onda(a, r0 + paso / 2)); x.lineTo(px(Math.cos(a) * r), px(Math.sin(a) * r)); }
       x.stroke();
     }
+    x.fillStyle = perfil.calle; for (const c of claros) { x.beginPath(); x.arc(px(c.x), px(c.z), 8.5 * k, 0, 6.283); x.fill(); }
     x.lineWidth = 2.6 * k;   // callejones entre anillos
     for (let i = 0; i < 46 * tam; i++) { const a = rnd() * 6.283, r = 24 + rnd() * (R - 36); x.beginPath(); x.moveTo(px(Math.cos(a) * r), px(Math.sin(a) * r)); x.lineTo(px(Math.cos(a) * (r + paso)), px(Math.sin(a) * (r + paso))); x.stroke(); }
     for (const p of puertas) { x.lineWidth = 8.5 * k; x.beginPath(); x.moveTo(px(0), px(0)); x.lineTo(px(Math.cos(p.ang) * (R + 2)), px(Math.sin(p.ang) * (R + 2))); x.stroke(); }
     x.fillStyle = perfil.calle; x.beginPath(); x.arc(px(0), px(0), 21 * k, 0, 6.283); x.fill();
     x.strokeStyle = 'rgba(0,0,0,0.12)'; x.lineWidth = 1.2; for (let r = 4; r < 21; r += 2.4) { x.beginPath(); x.arc(px(0), px(0), r * k, 0, 6.283); x.stroke(); }   // empedrado
     x.fillStyle = perfil.calle; x.beginPath(); x.arc(px(sede.x), px(sede.z), (rSede + 1) * k, 0, 6.283); x.fill();
+    if (lago?.mar) {   // el mar se come la media luna sur; delante, la franja del muelle
+      x.fillStyle = '#2a5d78'; x.fillRect(0, px(lago.corte + 6), T, T);
+      x.fillStyle = '#a9a295'; x.fillRect(px(-R), px(lago.corte - 4), 2 * R * k, 10.5 * k);
+    }
     for (let i = 0; i < 9000; i++) { const a = rnd() * 6.283, r = Math.sqrt(rnd()) * R, s = 1 + rnd() * 5; x.fillStyle = rnd() > 0.5 ? `rgba(255,255,255,${rnd() * 0.08})` : `rgba(0,0,0,${rnd() * 0.1})`; x.fillRect(px(Math.cos(a) * r), px(Math.sin(a) * r), s, s); }
   }
   const texSuelo = new THREE.CanvasTexture(lienzo); texSuelo.colorSpace = THREE.SRGBColorSpace; texSuelo.anisotropy = 8;
@@ -364,8 +478,9 @@ export function crearCiudad(l, mundo, { movil = false } = {}) {
   suelo.rotation.x = -Math.PI / 2; suelo.receiveShadow = true; escena.add(suelo);
   let agua = null;
   if (lago) {
-    agua = new THREE.Mesh(new THREE.CircleGeometry(lago.r, 128), new THREE.MeshStandardMaterial({ color: 0x236a8e, roughness: 0.2, metalness: 0.25, transparent: true, opacity: 0.92 }));
-    agua.rotation.x = -Math.PI / 2; agua.position.set(lago.x, 0.25, lago.z); escena.add(agua);
+    agua = new THREE.Mesh(lago.mar ? new THREE.PlaneGeometry(2 * L, L - lago.corte - 6) : new THREE.CircleGeometry(lago.r, 128), new THREE.MeshStandardMaterial({ color: 0x236a8e, roughness: 0.2, metalness: 0.25, transparent: true, opacity: 0.92 }));
+    agua.rotation.x = -Math.PI / 2; escena.add(agua);
+    if (lago.mar) agua.position.set(0, 0.3, (L + lago.corte + 6) / 2); else agua.position.set(lago.x, 0.25, lago.z);
   }
 
   for (const [material, geos] of lotes) {
@@ -417,10 +532,10 @@ export function crearCiudad(l, mundo, { movil = false } = {}) {
     escena.background.copy(luz.horizonte).lerp(luz.arriba, 0.3); escena.fog.color.copy(luz.horizonte);
     // de noche la mayoría se recoge
     andares.forEach((a, i) => {
-      const fuera = noche > 0.6 && i % 4 !== 0;
-      let x, z, rumbo;
+      let fuera = noche > 0.6 && i % 4 !== 0, x, z, rumbo;
       if (a.tipo === 'avenida') { const s = Math.sin(t * a.v + a.f), r = 22 + (s * 0.5 + 0.5) * (R - 28); x = Math.cos(a.ang) * r - Math.sin(a.ang) * a.lado; z = Math.sin(a.ang) * r + Math.cos(a.ang) * a.lado; rumbo = -a.ang + (Math.cos(t * a.v + a.f) > 0 ? 0 : Math.PI); }
-      else { const ang = a.f + t * a.v / a.r, r = a.r + (a.r > 22 ? onda(ang, a.r) : 0); x = Math.cos(ang) * r; z = Math.sin(ang) * r; rumbo = -ang - Math.PI / 2 * Math.sign(a.v); }
+      else { const ang = a.f + t * a.v / a.r, r = a.r + (a.r > 22 ? onda(ang, a.r) + sectorDe(ang).desfase * Math.min(1, (a.r - 20) / 30) : 0); x = Math.cos(ang) * r; z = Math.sin(ang) * r; rumbo = -ang - Math.PI / 2 * Math.sign(a.v); }
+      if (enMar(x, z, 2)) fuera = true;
       pos.set(x, 0.95 + Math.abs(Math.sin(t * 7 + a.f)) * 0.12, z);
       mat.compose(pos, q.setFromAxisAngle(ejeY, rumbo), fuera ? nada : esc);
       gente.setMatrixAt(i, mat); cabezas.setMatrixAt(i, mat);
@@ -436,7 +551,7 @@ export function crearCiudad(l, mundo, { movil = false } = {}) {
 
   return {
     escena, etiquetas, R, actualizar,
-    vista: { pos: new THREE.Vector3(0, R * 1.5, R * (lago?.mar ? 2.9 : 2.15)), objetivo: new THREE.Vector3(0, 0, R * (lago?.mar ? 0.35 : 0.1)) },
+    vista: { pos: new THREE.Vector3(0, R * 1.35, R * (lago?.mar ? 3.1 : 2.15)), objetivo: new THREE.Vector3(0, 0, R * (lago?.mar ? 0.45 : 0.1)) },
     limite: R + 70,
   };
 }

@@ -235,7 +235,7 @@ export function crearAmbiente(escena, renderer, mundo, terreno, lugares, { movil
     // estela
     const estela = new THREE.Sprite(new THREE.SpriteMaterial({ map: blanda, transparent: true, opacity: 0.35, depthWrite: false })); estela.scale.set(9, 3, 1); estela.position.set(-4.2, 0.1, 0); g.add(estela);
     escena.add(g);
-    barcos.push({ g, trazo, acum, total: acum[acum.length - 1], v: ruta.en === 'lago' ? 3.2 : 7.5, desfase: n * 137 });
+    barcos.push({ g, trazo, acum, total: acum[acum.length - 1], v: ruta.en === 'lago' ? 3.2 : 7.5, desfase: n * 137, pequeno: ruta.en === 'lago' });
   });
   function puntoEn(b, s) {
     s = ((s % b.total) + b.total) % b.total;
@@ -348,5 +348,5 @@ export function crearAmbiente(escena, renderer, mundo, terreno, lugares, { movil
   }
 
   ponerHora(estado.hora);
-  return { estado, ponerHora, actualizar, sol, luz: { sol, luna, luzCielo, dirSol, dirLuna, horizonte: uCielo.uHorizonte.value, arriba: uCielo.uArriba.value } };
+  return { estado, ponerHora, actualizar, sol, barcos, luz: { sol, luna, luzCielo, dirSol, dirLuna, horizonte: uCielo.uHorizonte.value, arriba: uCielo.uArriba.value } };
 }

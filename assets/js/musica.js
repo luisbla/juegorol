@@ -3,7 +3,7 @@
 export function crearMusica(cfg) {
   if (!cfg) return { activar() {}, ambiente() {}, get activa() { return false; } };
   const pistas = new Map(), rotas = new Set(), VOLUMEN = 0.7, FUNDIDO = 1400;
-  let activa = false, actual = null, pedida = null, reloj = 0;
+  let activa = false, actual = null, pedida = cfg.mapa || null, reloj = 0;   // de entrada, la pista del mapa
 
   function pista(archivo) {
     if (!pistas.has(archivo)) {
@@ -15,20 +15,20 @@ export function crearMusica(cfg) {
     return pistas.get(archivo);
   }
 
+  // Fundido con temporizador propio (no depende del ritmo de dibujo del mapa).
   function fundir() {
-    cancelAnimationFrame(reloj);
+    clearInterval(reloj);
     let antes = performance.now();
-    const paso = ahora => {
-      const d = (ahora - antes) / FUNDIDO * VOLUMEN; antes = ahora;
+    reloj = setInterval(() => {
+      const ahora = performance.now(), d = (ahora - antes) / FUNDIDO * VOLUMEN; antes = ahora;
       let quedan = false;
       for (const [archivo, a] of pistas) {
-        const meta = activa && archivo === actual ? VOLUMEN : 0;
-        if (Math.abs(a.volume - meta) > 0.005) { a.volume = Math.min(1, Math.max(0, a.volume + Math.sign(meta - a.volume) * Math.min(d, Math.abs(meta - a.volume)))); quedan = true; }
-        else { a.volume = meta; if (meta === 0 && !a.paused) a.pause(); }
+        const meta = activa && archivo === actual ? VOLUMEN : 0, falta = meta - a.volume;
+        if (Math.abs(falta) <= d) { a.volume = meta; if (meta === 0 && !a.paused) a.pause(); }
+        else { a.volume += Math.sign(falta) * d; quedan = true; }
       }
-      if (quedan) reloj = requestAnimationFrame(paso);
-    };
-    reloj = requestAnimationFrame(paso);
+      if (!quedan) clearInterval(reloj);
+    }, 40);
   }
 
   function sonar() {
@@ -42,6 +42,6 @@ export function crearMusica(cfg) {
     get activa() { return activa; },
     activar(v) { activa = v; sonar(); },
     // clave: tipo de lugar, 'ciudad' o null (mapa general)
-    ambiente(clave) { pedida = (clave && (cfg.tipos?.[clave] || cfg[clave])) || cfg.mapa || null; if (pedida !== actual) sonar(); },
+    ambiente(clave) { pedida = (clave && (cfg.tipos?.[clave] || (clave === 'ciudad' && cfg.ciudad))) || cfg.mapa || null; if (pedida !== actual) sonar(); },
   };
 }

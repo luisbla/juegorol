@@ -1,9 +1,9 @@
 Pistas de música. El mapa busca estos nombres (se cambian en assets/data/mundo.json, apartado "musica"):
 
-  bosque.mp3     mapa general
-  taberna.mp3    La Taberna del Jabalí Contento
-  mercader.mp3   interior de ciudades y Puerto de Liria
-  mazmorra.mp3   ruinas
-  tension.mp3    Puesto de Vigía Quemado, Campamento Abandonado y lugares de la marisma
+  bosque.mp4     mapa general
+  taberna.mp4    La Taberna del Jabalí Contento
+  mercader.mp4   interior de ciudades y Puerto de Liria
+  mazmorra.mp4   ruinas
+  tension.mp4    Puesto de Vigía Quemado, Campamento Abandonado y lugares de la marisma
 
 Si falta un archivo, esa zona queda en silencio. Conviene que cada pista esté pensada para sonar en bucle.
