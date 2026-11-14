@@ -5,11 +5,19 @@ export function crearMusica(cfg) {
   const pistas = new Map(), rotas = new Set(), VOLUMEN = 0.7, FUNDIDO = 1400;
   let activa = false, actual = null, pedida = cfg.mapa || null, reloj = 0;   // de entrada, la pista del mapa
 
+  // Si el archivo no está con la extensión declarada, se prueba con las demás antes de darlo por perdido.
+  const EXTENSIONES = ['.mp3', '.mp4', '.m4a', '.ogg'];
   function pista(archivo) {
     if (!pistas.has(archivo)) {
-      const a = new Audio(cfg.carpeta + archivo);
+      const base = archivo.replace(/\.[a-z0-9]+$/i, ''), ext = (archivo.match(/\.[a-z0-9]+$/i) || [''])[0].toLowerCase();
+      const candidatos = [archivo, ...EXTENSIONES.filter(e => e !== ext).map(e => base + e)];
+      const a = new Audio(cfg.carpeta + candidatos.shift());
       a.loop = true; a.volume = 0; a.preload = 'none';
-      a.addEventListener('error', () => rotas.add(archivo));
+      a.addEventListener('error', () => {
+        if (!candidatos.length) { rotas.add(archivo); return; }
+        a.src = cfg.carpeta + candidatos.shift();
+        if (activa && archivo === actual) a.play().catch(() => {});
+      });
       pistas.set(archivo, a);
     }
     return pistas.get(archivo);
@@ -34,7 +42,7 @@ export function crearMusica(cfg) {
   function sonar() {
     const archivo = pedida && !rotas.has(pedida) ? pedida : null;
     actual = archivo;
-    if (activa && archivo) pista(archivo).play().catch(() => rotas.add(archivo));   // sin archivo o sin permiso: silencio
+    if (activa && archivo) pista(archivo).play().catch(() => {});   // si falla la carga, el propio audio prueba otra extensión
     fundir();
   }
 

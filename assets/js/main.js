@@ -130,7 +130,8 @@ async function iniciar() {
       v3.copy(e.pos).project(camara);
       let op = capas.nombres && v3.z < 1 && Math.abs(v3.x) < 1.15 && Math.abs(v3.y) < 1.15 ? 1 : 0;
       if (op) {
-        if (e.clase === 'puerta' || e.clase === 'hito') op = suave(ciudad.R * 4.2, ciudad.R * 3.4, lejos);
+        if (e.oculta) op = 0;   // etiqueta de otra planta
+        else if (e.clase === 'puerta' || e.clase === 'hito') op = suave(ciudad.R * 4.2, ciudad.R * 3.4, lejos);
         else if (e.clase === 'barrio') op = suave(ciudad.R * 1.3, ciudad.R * 2.0, lejos) * 0.9;   // los barrios se leen de lejos
         else if (e.clase === 'region') op = w < 720 ? 0 : suave(umbral * 0.8, umbral, lejos);
         else if (e.clase === 'geo') op = suave(170, 320, lejos);
@@ -147,7 +148,7 @@ async function iniciar() {
   }
 
   /* ---------- selección ---------- */
-  let elegido = null, dentro = null, ciudad = null, guardado = null;
+  let elegido = null, dentro = null, ciudad = null;
   const ciudades = new Map(), velo = $('#velo'), titulo = $('.cabecera h1'), pista = $('#pista');
   const espera = ms => new Promise(r => setTimeout(r, reducir ? 0 : ms));
   const anillo = new THREE.Mesh(new THREE.RingGeometry(0.94, 1, 64), new THREE.MeshBasicMaterial({ color: 0xffd35c, transparent: true, opacity: 0.75, side: THREE.DoubleSide, depthTest: false }));
@@ -178,34 +179,65 @@ async function iniciar() {
     if (elegido?.etiqueta) elegido.etiqueta.classList.remove('activa');
     elegido = null; anillo.visible = false; ficha.hidden = true; ficha.replaceChildren(); viajes.limpiar(); musica.ambiente(null);
   }
-  // Entrar en una capital: fundido, se levanta su interior (una vez; luego se reutiliza) y la cámara pasa a esa escena.
-  async function entrar(l) {
-    if (dentro) return;
-    velo.classList.add('puesto'); await espera(360);
-    if (!ciudades.has(l.datos.id)) ciudades.set(l.datos.id, l.datos.tipo === 'taberna' ? crearInterior(l.datos) : crearCiudad(l.datos, mundo, { movil }));
-    const c = ciudades.get(l.datos.id);
-    guardado = { pos: camara.position.clone(), objetivo: control.target.clone(), min: control.minDistance, max: control.maxDistance };
-    vuelo++; viajes.limpiar();
-    for (const e of etiquetas) e.el.style.visibility = 'hidden';
-    for (const e of c.etiquetas) { e.el ??= h('div', { class: `etq etq-${e.clase}` }, e.nombre); capaEtq.append(e.el); }
-    dentro = l; ciudad = c;
-    camara.position.copy(c.vista.pos); control.target.copy(c.vista.objetivo);
+  // Escenas anidadas: mapa → ciudad o taberna → edificio de la ciudad. Cada nivel guarda cómo estaba la cámara para volver.
+  const pila = [];
+  let hito = null;   // edificio señalado dentro de una ciudad
+  function montar(c, nombre, clave) {
+    ciudad = c;
+    for (const e of c.etiquetas) {
+      e.el ??= e.clase === 'hito' || e.clase === 'ciudad'
+        ? h('button', { class: `etq etq-${e.clase}`, type: 'button', onclick: () => senalar(e) }, e.nombre)
+        : h('div', { class: `etq etq-${e.clase}` }, e.nombre);
+      capaEtq.append(e.el);
+    }
     control.minDistance = c.minDist ?? 20; control.maxDistance = c.R * 5; limite.x = limite.z = c.limite;
-    titulo.textContent = l.datos.nombre; pista.textContent = 'Interior · Esc para volver al mapa'; pista.classList.remove('fuera');
-    document.body.classList.add('en-ciudad'); musica.ambiente(l.datos.tipo === 'taberna' ? 'taberna' : 'ciudad');
+    titulo.textContent = nombre; pista.textContent = `Interior · Esc para volver ${pila.length > 1 ? 'atrás' : 'al mapa'}`; pista.classList.remove('fuera');
+    document.body.classList.add('en-ciudad'); musica.ambiente(clave);
+  }
+  async function abrir(c, nombre, clave) {
+    velo.classList.add('puesto'); await espera(360);
+    pila.push({ c, nombre, clave, pos: camara.position.clone(), objetivo: control.target.clone(), min: control.minDistance, max: control.maxDistance, hito });
+    vuelo++; viajes.limpiar(); hito = null;
+    if (ciudad) for (const e of ciudad.etiquetas) e.el?.remove(); else for (const e of etiquetas) e.el.style.visibility = 'hidden';
+    montar(c, nombre, clave);
+    camara.position.copy(c.vista.pos); control.target.copy(c.vista.objetivo);
     pintarFicha(); velo.classList.remove('puesto');
   }
+  // Entrar en un lugar con interior: se levanta una vez y luego se reutiliza.
+  async function entrar(l) {
+    if (dentro) return;
+    dentro = l;
+    if (!ciudades.has(l.datos.id)) ciudades.set(l.datos.id, l.datos.tipo === 'taberna' ? crearInterior(l.datos) : crearCiudad(l.datos, mundo, { movil }));
+    await abrir(ciudades.get(l.datos.id), l.datos.nombre, l.datos.tipo === 'taberna' ? 'taberna' : 'ciudad');
+  }
+  // Entrar en un edificio de la ciudad (de momento, la posada).
+  async function entrarEdificio(e) {
+    const clave = `${dentro.datos.id}-${e.interior}`;
+    if (!ciudades.has(clave)) ciudades.set(clave, crearInterior({ id: clave, trofeo: false }));
+    await abrir(ciudades.get(clave), `${e.nombre} de ${dentro.datos.nombre}`, 'taberna');
+  }
   async function salir() {
-    if (!dentro) return;
+    if (!pila.length) return;
     velo.classList.add('puesto'); await espera(360);
     for (const e of ciudad.etiquetas) e.el.remove();
-    vuelo++; dentro = null; ciudad = null;
-    camara.position.copy(guardado.pos); control.target.copy(guardado.objetivo);
-    control.minDistance = guardado.min; control.maxDistance = guardado.max; limite.x = W / 2; limite.z = H / 2;
-    titulo.textContent = mundo.meta.nombre; pista.classList.add('fuera');
-    document.body.classList.remove('en-ciudad'); musica.ambiente(elegido ? elegido.datos.tipo : null);
+    const nivel = pila.pop(); vuelo++;
+    if (pila.length) { const padre = pila[pila.length - 1]; montar(padre.c, padre.nombre, padre.clave); hito = nivel.hito; }
+    else {
+      dentro = null; ciudad = null; hito = null;
+      control.minDistance = nivel.min; control.maxDistance = nivel.max; limite.x = W / 2; limite.z = H / 2;
+      titulo.textContent = mundo.meta.nombre; pista.classList.add('fuera');
+      document.body.classList.remove('en-ciudad'); musica.ambiente(elegido ? elegido.datos.tipo : null);
+    }
+    camara.position.copy(nivel.pos); control.target.copy(nivel.objetivo);
     if (elegido) pintarFicha();
     velo.classList.remove('puesto');
+  }
+  // Señalar un edificio: la cámara se acerca a él y la ficha dice qué es.
+  function senalar(e) {
+    hito = e;
+    const grande = ciudad.R > 40, objetivo = new THREE.Vector3(e.pos.x, grande ? 3 : e.pos.y * 0.35, e.pos.z);
+    volar(objetivo.clone().add(camara.position.clone().sub(control.target).setLength(grande ? 60 : 24)), objetivo, 1100);
+    pintarFicha();
   }
 
   function pintarFicha() {
@@ -217,8 +249,14 @@ async function iniciar() {
       h('p', {}, d.desc),
     ];
     if (dentro === l) {
-      if (d.gobierno) nodos.push(h('div', { class: 'gobierno' }, h('h3', {}, d.gobierno.titulo), h('p', {}, d.gobierno.texto)));
-      nodos.push(h('button', { class: 'accion', type: 'button', onclick: salir }, '← Volver al mapa'));
+      const enEdificio = pila.length > 1;
+      if (enEdificio) nodos.splice(1, 3, h('p', { class: 'tipo' }, d.nombre), h('h2', {}, pila[pila.length - 1].nombre));
+      else if (d.gobierno) nodos.push(h('div', { class: 'gobierno' }, h('h3', {}, d.gobierno.titulo), h('p', {}, d.gobierno.texto)));
+      if (hito) nodos.push(h('div', { class: 'gobierno' }, h('h3', {}, 'Estás mirando'), h('p', {}, hito.nombre)));
+      if (hito?.interior && !enEdificio) nodos.push(h('button', { class: 'accion', type: 'button', onclick: () => entrarEdificio(hito) }, `Entrar en la ${hito.nombre.toLowerCase()}`));
+      if (ciudad.plantas) nodos.push(h('div', { class: 'plantas', role: 'group', 'aria-label': 'Planta' }, ...ciudad.plantas.map((p, i) =>
+        h('button', { type: 'button', 'aria-pressed': String(ciudad.planta === i), onclick: () => { ciudad.verPlanta(i); hito = null; pintarFicha(); } }, p.nombre))));
+      nodos.push(h('button', { class: 'accion', type: 'button', onclick: salir }, enEdificio ? `← Volver a ${d.nombre}` : '← Volver al mapa'));
       ficha.replaceChildren(...nodos); ficha.hidden = false;
       return;
     }

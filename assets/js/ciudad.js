@@ -314,7 +314,7 @@ export function crearCiudad(l, mundo, { movil = false } = {}) {
       rueda.traverse(o => { if (o.isMesh) o.castShadow = true; });
       aspas.push(rueda); escena.add(eje);
     }
-    etiquetas.push({ nombre: q.nombre, pos: new THREE.Vector3(q.x, alto + 5, q.z), clase: 'hito' });
+    etiquetas.push({ nombre: q.nombre, pos: new THREE.Vector3(q.x, alto + 5, q.z), clase: 'hito', interior: q.tipo === 'posada' ? 'posada' : null });
   }
 
   /* ---------- lo propio de cada ciudad ---------- */

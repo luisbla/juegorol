@@ -9,11 +9,11 @@
   },
   "musica": {
     "carpeta": "assets/audio/",
-    "mapa": "bosque.mp4",
-    "ciudad": "mercader.mp4",
-    "tipos": { "taberna": "taberna.mp4", "ruina": "mazmorra.mp4", "puerto": "mercader.mp4", "quemado": "tension.mp4", "campamento": "tension.mp4", "palafitos": "tension.mp4", "pasarela": "tension.mp4", "pecio": "tension.mp4" }
+    "mapa": "bosque.mp3",
+    "ciudad": "mercader.mp3",
+    "tipos": { "taberna": "taberna.mp3", "ruina": "mazmorra.mp3", "puerto": "mercader.mp3", "quemado": "tension.mp3", "campamento": "tension.mp3", "palafitos": "tension.mp3", "pasarela": "tension.mp3", "pecio": "tension.mp3" }
   },
-  "modelos": { "carpeta": "assets/modelos/", "lugares": {} },
+  "modelos": { "carpeta": "assets/modelos/", "lugares": { "taberna": { "archivo": "kaykit/building_tavern_yellow.gltf", "ancho": 15, "giro": 0 } } },
   "encuentros": {
     "nota": "Regla casera, pendiente del máster: por cada día de viaje se tira 1d20 y hay encuentro si sale el umbral de la zona o más. Las tablas son genéricas.",
     "zonas": {
@@ -112,7 +112,7 @@
       "gobierno": { "titulo": "Quién gobierna", "texto": "El Consejo de las Tres Casas, con voto igual: Casa Ilvane (comercio marítimo), Casa Merrow (pesca y lagos) y Casa Draveth (banca y préstamos)." } },
     { "id": "claro", "nombre": "Claro de Lunas", "tipo": "pueblo", "region": "astravan", "x": 1306, "y": 650,
       "desc": "Pueblo de pescadores en la orilla este del lago grande." },
-    { "id": "liria", "nombre": "Puerto de Liria", "tipo": "puerto", "region": "astravan", "x": 852, "y": 862, "tamano": 1.45,
+    { "id": "liria", "nombre": "Puerto de Liria", "tipo": "puerto", "region": "astravan", "x": 852, "y": 873, "tamano": 1.45,
       "desc": "El gran puerto de mar de la Confederación, en la desembocadura del río. Muelles, grúas, lonja y almacenes: por aquí sale al Mar del Sur casi todo lo que Astravan vende, y entra casi todo lo que compra." },
     { "id": "faro", "nombre": "Faro de Astravan", "tipo": "faro", "region": "astravan", "x": 968, "y": 962, "suelo": "islote", "tamano": 1.35,
       "desc": "Faro sobre un peñón frente a Puerto de Liria. Marca la entrada del puerto a los barcos que vienen del Mar del Sur." },

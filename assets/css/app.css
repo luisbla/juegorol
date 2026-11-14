@@ -96,6 +96,9 @@ button.etq:hover, button.etq.activa { border-color: var(--oro); background: rgba
 #partidaCuerpo .rotulo { margin: 4px 0 -4px; font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--tenue); }
 #partidaCuerpo ul { margin: 0; padding-left: 16px; display: grid; gap: 4px; color: #ddd4c0; }
 #partidaCuerpo .nota { margin: 0; font-size: 0.72rem; color: var(--tenue); line-height: 1.35; }
+#ficha .plantas { display: flex; gap: 6px; margin: 0 0 12px; }
+#ficha .plantas button { flex: 1; padding: 7px 6px; background: none; border: 1px solid var(--borde); border-radius: 7px; font-size: 0.84rem; }
+#ficha .plantas button[aria-pressed="true"] { border-color: var(--oro); color: var(--oro); background: rgba(224, 184, 94, 0.1); }
 #ficha .aqui { color: var(--oro); font-weight: 600; margin-bottom: 10px; }
 #ficha .encuentros { margin: 8px 0; padding-left: 18px; font-size: 0.86rem; line-height: 1.45; color: #ddd4c0; }
 .en-ciudad #partida { display: none; }
