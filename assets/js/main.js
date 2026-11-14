@@ -238,7 +238,19 @@ async function iniciar() {
     hito = e;
     // en la ciudad se mira el edificio de frente y algo desde arriba; en un interior, basta con acercarse
     const objetivo = e.frente ? new THREE.Vector3(e.suelo.x, 3, e.suelo.z) : new THREE.Vector3(e.pos.x, e.pos.y * 0.35, e.pos.z);
-    const desde = e.frente ? objetivo.clone().addScaledVector(e.frente, 30).setY(26) : objetivo.clone().add(camara.position.clone().sub(control.target).setLength(24));
+    let desde;
+    if (e.frente) {
+      // de frente, y más lejos cuanto más alto el edificio; si en ese sitio hay otro edificio singular, se mira en escorzo
+      const alto = e.pos.y - 5, lejos = 22 + alto * 0.9, otros = ciudad.etiquetas.filter(o => o.suelo && o !== e);
+      let mejor = -1;
+      for (const giro of [0, 0.7, -0.7, 1.3, -1.3]) {
+        const p = objetivo.clone().addScaledVector(e.frente.clone().applyAxisAngle(camara.up, giro), lejos);
+        const libre = Math.min(99, ...otros.map(o => Math.min(o.suelo.distanceTo(p), o.suelo.distanceTo(p.clone().lerp(objetivo, 0.35)))));
+        if (libre > mejor) { mejor = libre; desde = p; }
+        if (libre > 17) break;
+      }
+      desde.y = 9 + alto * 0.55;
+    } else desde = objetivo.clone().add(camara.position.clone().sub(control.target).setLength(24));
     volar(desde, objetivo, 1100);
     pintarFicha();
   }
@@ -398,7 +410,7 @@ async function iniciar() {
   requestAnimationFrame(cuadro);
   carga.classList.add('fuera');
   // Para trastear desde la consola: mapa.seleccionar('faro'), mapa.ponerHora(22)…
-  window.mapa = {
+  window.mapa = { get interior() { return ciudad; },
     seleccionar, entrar: id => { seleccionar(id, false); return entrar(porId[id]); }, salir, camara, control, partida,
     ponerHora: v => { hora = v; ponerReloj(false); barra.value = v; pintarHora(); },
     enPantalla: id => { const v = porId[id].base.clone().project(camara); return [(v.x * 0.5 + 0.5) * innerWidth, (-v.y * 0.5 + 0.5) * innerHeight]; },

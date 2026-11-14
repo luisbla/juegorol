@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { kit } from './lugares.js';
 import { azarDe } from './ruido.js';
+import { crearEdificios } from './edificios.js';
 
 const { matPared, matPiedra, matTejado, matLiso, gCaja, gCil, gCono, gRoca, gDosAguas, gCasco, ESTILOS } = kit;
 
@@ -81,6 +82,8 @@ export function crearCiudad(l, mundo, { movil = false } = {}) {
     lotes.get(material).push(g);
   }
   const conMarco = (x, z, ry, fn) => { marco = new THREE.Matrix4().makeRotationY(ry).setPosition(x, 0, z); fn(); marco = null; };
+  // sub: un marco dentro del marco, para piezas que se repiten giradas (ventanas, puertas, carros)
+  const sub = (x, z, ry, fn) => { const antes = marco; marco = antes.clone().multiply(new THREE.Matrix4().makeRotationY(ry).setPosition(x, 0, z)); fn(); marco = antes; };
   const caja = (m, w, h, d, x, y, z, ry = 0) => poner(gCaja, m, x, y + h / 2, z, w, h, d, ry);
   const cil = (m, r, h, x, y, z) => poner(gCil, m, x, y + h / 2, z, r, h, r);
   const cono = (m, r, h, x, y, z) => poner(gCono, m, x, y + h / 2, z, r, h, r);
@@ -153,7 +156,7 @@ export function crearCiudad(l, mundo, { movil = false } = {}) {
     for (let i = 0; i < n; i++) {
       const a = i / n * Math.PI * 2 + giro, sc = sectorDe(a), b = BARRIOS[sc.clase];
       const r = Math.min(R - 9, r0 + sc.desfase * Math.min(1, (r0 - 20) / 30) + onda(a, r0) + (rnd() - 0.5) * 1.8), x = Math.cos(a) * r, z = Math.sin(a) * r;
-      if (cercaAvenida(a, r, 6.5) || enSede(x, z) || enMar(x, z, 11) || i % callejon === 0 || rnd() < b.hueco || hitos.some(q => Math.hypot(x - q.x, z - q.z) < 16) || claros.some(q => Math.hypot(x - q.x, z - q.z) < 9)) continue;
+      if (cercaAvenida(a, r, 6.5) || enSede(x, z) || enMar(x, z, 11) || i % callejon === 0 || rnd() < b.hueco || hitos.some(q => Math.hypot(x - q.x, z - q.z) < 17.5) || claros.some(q => Math.hypot(x - q.x, z - q.z) < 9)) continue;
       const alto = (3.0 + rnd() * 1.6 + (1 - r / R) * 1.4 + (rnd() > 0.85 ? 1.6 : 0)) * b.alto;
       casa(x, z, (4.6 + rnd() * 1.5) * b.w, (4.3 + rnd() * 1.2) * b.w, alto, b.paredes[Math.floor(rnd() * b.paredes.length)], b.tejas[Math.floor(rnd() * b.tejas.length)], -(a + Math.PI / 2) + (rnd() - 0.5) * (sc.clase === 'arrabal' ? 0.5 : 0.14), rnd() < b.chim);
       if (rnd() > 0.9 && humos.length < 14) humos.push(new THREE.Vector3(x, alto * 1.8, z));
@@ -242,66 +245,22 @@ export function crearCiudad(l, mundo, { movil = false } = {}) {
   etiquetas.push({ nombre: perfil.sede, pos: new THREE.Vector3(sede.x, 34, sede.z), clase: 'ciudad' });
 
   /* ---------- edificios singulares ---------- */
-  const despues = [], aspas = [];   // lo que necesita piezas que se crean más abajo (fuegos) o que se mueve (molino)
+  const despues = [], aspas = [];
+  // cristales y faroles se encienden al caer la noche; las brasas siempre
+  const vidrio = new THREE.MeshStandardMaterial({ color: 0x141a22, roughness: 0.3, emissive: 0xffc070, emissiveIntensity: 0 });
+  const farolM = new THREE.MeshStandardMaterial({ color: 0x6a5a30, emissive: 0xffc060, emissiveIntensity: 0.1 });
+  const brasaM = new THREE.MeshStandardMaterial({ color: 0x331008, emissive: 0xff5a14, emissiveIntensity: 2 });
+  const edificio = crearEdificios({ caja, cil, cono, poner, sub, casa, torre, rnd, matLiso, matPiedra, matTejado, vidrio, farolM, brasaM,
+    G: { caja: gCaja, cil: gCil, cono: gCono, roca: gRoca, dosAguas: gDosAguas }, piedra, piedraClara, colPared: e.pared, colorRegion, teja: tejas[0], teja2: tejas[2] });   // lo que necesita piezas que se crean más abajo (fuegos) o que se mueve (molino)
   for (const q of hitos) {
     const ry = -q.ang - Math.PI / 2, ejeY0 = new THREE.Vector3(0, 1, 0);
     const fuera = (x, y, z) => new THREE.Vector3(x, y, z).applyAxisAngle(ejeY0, ry).add(new THREE.Vector3(q.x, 0, q.z));   // local → escena
     let alto = 9;
     conMarco(q.x, q.z, ry, () => {
-      const pared = paredes[0], teja = tejas[0], oscuro = matPared(0x6a5a48), tabla = matLiso(0x6a5039);
-      if (q.tipo === 'cuartel') {
-        caja(matPared(e.muro, { piedra: true }), 13, 6, 6, 0.5, 0, 0); poner(gDosAguas, teja, 0.5, 6, 0, 14.5, 3.4, 7.2);
-        torre(-7.2, -0.5, 2.1, 12, piedra, teja, true);
-        for (let i = 0; i < 5; i++) caja(tabla, 0.2, 1.6, 0.2, -4 + i * 2.2, 0, 5.2);   // lanceros en el patio
-        const p = fuera(-7.2, 13, -0.5); bandera(p.x, p.y, p.z, colorRegion); alto = 15;
-      } else if (q.tipo === 'posada') {
-        casa(0.5, -0.5, 11, 6.5, 6.4, pared, tejas[2], 0, true); casa(-6.6, 2.4, 5.2, 4.8, 4, pared, tejas[2], Math.PI / 2, false);
-        caja(tabla, 0.25, 4.2, 0.25, 6.6, 0, 4.2); caja(matLiso(0xb5652a), 2.0, 1.2, 0.2, 6.6, 3.0, 4.2);   // cartel
-        for (let i = 0; i < 4; i++) cil(matLiso(0x6a4a2e), 0.6, 1.1, 2 + i * 1.3, 0, 4.2);
-        alto = 11;
-      } else if (q.tipo === 'herreria') {
-        casa(0, 0, 9, 6, 4.2, oscuro, tejas[2], 0, false); caja(piedraClara, 2.0, 8.5, 2.0, 3.4, 0, -1.2);   // chimenea de la fragua
-        caja(matLiso(0x2b2b2e), 1.2, 0.9, 0.6, -1.5, 0, 4.4); caja(tabla, 3.2, 0.25, 1.4, 2.2, 0.9, 4.6);   // yunque y banco
-        const p = fuera(3.4, 9.5, -1.2), f = fuera(0.5, 2, 3.4); humos.push(p); despues.push(() => fuego(f.x, f.y, f.z, 15)); alto = 10;
-      } else if (q.tipo === 'establos') {
-        casa(0, -0.5, 15, 5, 3.2, matPared(0x8a6a48), tejas[2], 0, false);
-        for (let i = 0; i < 9; i++) { caja(tabla, 0.25, 1.3, 0.25, -8 + i * 2, 0, 5.4); if (i < 8) caja(tabla, 2, 0.16, 0.16, -7 + i * 2, 0.9, 5.4); }   // cercado
-        for (let i = 0; i < 3; i++) { const m = matLiso(0xd2aa4e); poner(gCil, m, -4 + i * 3.4, 0.9, 3.4, 0.9, 1.4, 0.9, 0, Math.PI / 2); }   // pacas
-        alto = 7;
-      } else if (q.tipo === 'salon') {
-        casa(0, 0, 16, 7.5, 5.5, matPared(0x4f4a44, { piedra: true }), matTejado(0x2c2f38), 0, false);
-        for (const s of [-1, 1]) { cil(tabla, 0.5, 8.5, s * 3.2, 0, 4.6); poner(gCono, tabla, s * 3.2, 9.3, 4.6, 0.7, 1.6, 0.7); }   // postes tallados
-        const a = fuera(-5.5, 2.4, 5.4), b = fuera(5.5, 2.4, 5.4); despues.push(() => { fuego(a.x, a.y, a.z, 14); fuego(b.x, b.y, b.z, 14); });
-        for (const s of [-5.5, 5.5]) cil(matLiso(0x2b2b2e), 0.7, 1.6, s, 0, 5.4);
-        alto = 12;
-      } else if (q.tipo === 'patio') {
-        for (let i = 0; i < 5; i++) { const x = -5.5 + i * 2.8; caja(tabla, 0.3, 2.6, 0.3, x, 0, -1); caja(tabla, 1.8, 0.3, 0.3, x, 1.7, -1); cil(matLiso(0xb09a6a), 0.5, 0.9, x, 1.9, -1); }   // peleles
-        caja(tabla, 4.5, 1.8, 0.6, 0, 0, 3.4); for (let i = 0; i < 6; i++) caja(matLiso(0x8a8e96), 0.12, 2.6, 0.12, -1.9 + i * 0.75, 0.2, 3.4, 0, 0.12);   // armero
-        for (let i = 0; i < 16; i++) { const a = i / 16 * 6.283; caja(tabla, 0.25, 1.1, 0.25, Math.cos(a) * 8, 0, Math.sin(a) * 5.2); }
-        alto = 6;
-      } else if (q.tipo === 'santuario') {
-        caja(matPiedra(0x565b67, 1), 7.5, 6.5, 7.5, 0, 0, 0); cono(matLiso(0xdfeaf2, { roughness: 0.25, metalness: 0.1 }), 3.2, 15, 0, 6.5, 0);   // aguja de hielo
-        for (let i = 0; i < 6; i++) { const a = i / 6 * 6.283 + 0.5; poner(gRoca, matLiso(0xcfdbe6, { roughness: 0.3 }), Math.cos(a) * 6.5, 1.8, Math.sin(a) * 5, 0.9, 2.6, 0.9, a, 0.15); }
-        const p = fuera(0, 9, 0); despues.push(() => fuego(p.x, p.y, p.z, 30, 0x8fd0ff)); alto = 23;
-      } else if (q.tipo === 'molino') {
-        poner(gCil, piedraClara, 0, 5.5, 0, 3.4, 11, 3.4); cono(tejas[2], 3.3, 4, 0, 11, 0);
-        casa(-5.6, 1.5, 4.5, 4, 3, pared, tejas[2], 0, false);
-        alto = 17;
-      } else if (q.tipo === 'lonja') {
-        caja(matPared(0xcbbf9f, { piedra: true }), 15, 5.5, 6, 0, 0, -0.8); poner(gDosAguas, teja, 0, 5.5, -0.8, 16.5, 3.4, 7.4);
-        for (let i = 0; i < 8; i++) cil(piedraClara, 0.4, 3.6, -6.3 + i * 1.8, 0, 3.6); caja(tabla, 14.5, 0.4, 2.4, 0, 3.6, 3.2);   // soportal
-        for (let i = 0; i < 6; i++) caja(matLiso(i % 2 ? 0x8a6a48 : 0xd2aa4e), 1.2, 0.9, 1.2, -5.5 + i * 2.2, 0, 5.4, i);
-        alto = 10;
-      } else if (q.tipo === 'cambio') {
-        caja(matPiedra(0xb9b3a4), 9.5, 7.5, 6.5, 0, 0, -0.5);
-        for (let i = 0; i < 5; i++) cil(piedraClara, 0.5, 6.2, -4 + i * 2, 0, 3.6); caja(piedraClara, 10.5, 1.0, 2.4, 0, 6.2, 3.3);
-        poner(gDosAguas, matTejado(0x3d4a5a), 0, 7.5, -0.2, 10.5, 2.6, 8.6);
-        alto = 12;
-      } else if (q.tipo === 'almacenes') {
-        for (let i = 0; i < 3; i++) casa(-5.4 + i * 5.4, 0, 6.6, 4.8, 4.6 + (i % 2) * 0.8, matPared(i % 2 ? 0x9a7a55 : 0x8a6a48), matTejado(0x5c3a2a), Math.PI / 2, false);
-        for (let i = 0; i < 7; i++) cil(matLiso(0x6a4a2e), 0.6, 1.1, -6 + i * 1.9, 0, 4.8);
-        alto = 9;
-      }
+      const r = edificio(q.tipo); alto = r.alto;
+      for (const [x, y, z, fuerza, color] of r.fuegos) { const p = fuera(x, y, z); despues.push(() => fuego(p.x, p.y, p.z, fuerza, color)); }
+      for (const h of r.humos) humos.push(fuera(...h));
+      if (r.bandera) { const p = fuera(...r.bandera); marco = null; bandera(p.x, p.y, p.z, colorRegion); }
     });
     if (q.tipo === 'molino') {   // las aspas giran: van aparte de las mallas fundidas
       const eje = new THREE.Group(), rueda = new THREE.Group(), p = fuera(0, 9.5, 3.7);
@@ -432,7 +391,7 @@ export function crearCiudad(l, mundo, { movil = false } = {}) {
   }
   if (l.id === 'valcoria') for (let i = 0; i < 40; i++) {   // robles viejos dentro de la muralla
     const a = rnd() * 6.28, r = 20 + rnd() * (R - 30), x = Math.cos(a) * r, z = Math.sin(a) * r;
-    if (!cercaAvenida(a, r, 5) && !enSede(x, z, 2) && anillos.every(q => Math.abs(q - r) > 4.5)) arbol(x, z, 0.7 + rnd() * 0.4);
+    if (!cercaAvenida(a, r, 5) && !enSede(x, z, 2) && anillos.every(q => Math.abs(q - r) > 4.5) && !hitos.some(q => Math.hypot(x - q.x, z - q.z) < 17)) arbol(x, z, 0.7 + rnd() * 0.4);
   }
 
   /* ---------- suelo: plano pintado con calles, plaza y caminos ---------- */
@@ -548,6 +507,7 @@ export function crearCiudad(l, mundo, { movil = false } = {}) {
     for (const s of antorchas) s.material.opacity = noche * (0.5 + 0.12 * Math.sin(t * 9 + s.userData.f) + 0.06 * Math.sin(t * 23 + s.userData.f));
     for (const b of banderas) { const p = b.geometry.attributes.position; for (let i = 0; i < p.count; i++) { const x = p.getX(i); p.setZ(i, Math.sin(x * 1.4 - t * 6) * 0.16 * x); } p.needsUpdate = true; }
     for (const a of aspas) a.rotation.z = t * 0.7;
+    vidrio.emissiveIntensity = noche * 0.9; farolM.emissiveIntensity = 0.1 + noche * 2.4; brasaM.emissiveIntensity = 1.8 + 0.4 * Math.sin(t * 2.3);
     if (agua) agua.material.roughness = 0.12 + 0.05 * Math.sin(t * 0.8);
   }
 
