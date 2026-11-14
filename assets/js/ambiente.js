@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { suave, suavizar } from './terreno.js';
 import { crearRuido } from './ruido.js';
 import { crearBarcoModelo } from './barco.js';
+import { lluvia } from './clima.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 function texturaSuave(nucleo = 0.0, color = '255,255,255') {
@@ -134,6 +135,12 @@ export function crearAmbiente(escena, renderer, mundo, terreno, lugares, { movil
     nieve.frustumCulled = false;
     clima.add(nieve);
   }
+
+  /* ---------- lluvia: chubascos sobre Valcoria y Astravan, alrededor de donde se mira ---------- */
+  const NG = movil ? 600 : 1500, pg = new Float32Array(NG * 6), cajaG = { a: 320, h: 130 };
+  for (let i = 0; i < NG; i++) { const x = (R.rnd() - 0.5) * cajaG.a, y = R.rnd() * cajaG.h, z = (R.rnd() - 0.5) * cajaG.a; pg.set([x, y, z, x + 0.8, y - 5, z], i * 6); }
+  const gotas = new THREE.LineSegments(new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(pg, 3)), new THREE.LineBasicMaterial({ color: 0xc8d6e4, transparent: true, opacity: 0, depthWrite: false, fog: false }));
+  gotas.frustumCulled = false; gotas.visible = false; clima.add(gotas);
 
   /* ---------- niebla de la marisma ---------- */
   const niebla = [];
@@ -346,6 +353,9 @@ export function crearAmbiente(escena, renderer, mundo, terreno, lugares, { movil
       pVida.set(x - cx, h, y - cz); mVida.compose(pVida, qVida.setFromAxisAngle(ejeArriba, r.giro + Math.sin(paso * 0.7) * 2), h < 0.3 ? oculto : eVida.setScalar(r.talla)); mReses.setMatrixAt(i, mVida);
     });
     mReses.instanceMatrix.needsUpdate = true;
+    // lluvia donde se está mirando, si allí hay chubasco
+    const agua = estado.clima ? lluvia(t, terreno.zonaEn(objetivo.x + cx, objetivo.z + cz)) : 0; estado.lluvia = agua; gotas.visible = agua > 0.02;
+    if (gotas.visible) { gotas.position.set(objetivo.x, 0, objetivo.z); gotas.material.opacity = agua * 0.45 * (0.5 + 0.5 * luzDia); for (let i = 0; i < NG; i++) { let y = pg[i * 6 + 1] - dt * 95; if (y < 0) y += cajaG.h; pg[i * 6 + 1] = y; pg[i * 6 + 4] = y - 5; } gotas.geometry.attributes.position.needsUpdate = true; }
     for (const s of humos) {
       const u = s.userData, k = (t * (u.oscuro ? 0.09 : 0.14) + u.fase) % 1, alto = u.oscuro ? 34 : u.flojo ? 9 : 15;
       const deriva = k * k * (u.oscuro ? 22 : 10);   // el viento lo tumba según sube

@@ -645,8 +645,11 @@ export function crearTerreno(mundo, { movil = false } = {}) {
       return tintar(g, (px, py) => { const t = suave(y, y + alto, py), dentro = 1 - Math.hypot(px, 0) / (r * 2); return [0.6 + t * 0.4, 0.6 + t * 0.4 + dentro * 0, 0.6 + t * 0.4]; });
     };
     const MADERA = [0.42, 0.3, 0.2];
-    const gHoja = mergeGeometries([tronco(0.34, 2.4, MADERA), masa(2.0, 0, 3.6, 0, 1, 1), masa(1.45, 1.25, 2.9, 0.5, 7), masa(1.5, -1.05, 3.0, -0.6, 13), masa(1.2, 0.1, 4.7, 0.7, 21)]);
-    const gPino = mergeGeometries([tronco(0.3, 1.6, MADERA), piso(1.9, 2.9, 1.0), piso(1.5, 2.6, 2.5), piso(1.0, 2.4, 4.0)]);
+    const ramaViva = (ry, rz, y, largo) => { const g = new THREE.CylinderGeometry(0.07, 0.15, largo, 5).toNonIndexed(); g.translate(0, largo / 2, 0); g.rotateZ(rz); g.rotateY(ry); g.translate(0, y, 0); return tintar(g, () => MADERA); };
+    const raigon = (() => { const g = new THREE.CylinderGeometry(0.34, 0.62, 0.5, 6).toNonIndexed(); g.translate(0, 0.25, 0); return tintar(g, () => MADERA); })();
+    const gHoja = mergeGeometries([tronco(0.34, 2.6, MADERA), raigon, ramaViva(0.5, 0.8, 1.7, 1.7), ramaViva(2.7, -0.75, 1.9, 1.6), ramaViva(4.5, 0.7, 2.1, 1.3),
+      masa(1.9, 0, 3.8, 0, 1, 1), masa(1.4, 1.35, 3.0, 0.5, 7, 1), masa(1.45, -1.15, 3.1, -0.6, 13, 1), masa(1.15, 0.1, 4.9, 0.7, 21), masa(1.1, 0.3, 3.0, -1.4, 31), masa(1.0, -0.5, 3.3, 1.4, 43)]);
+    const gPino = mergeGeometries([tronco(0.3, 1.6, MADERA), piso(1.95, 2.3, 1.0), piso(1.65, 2.2, 2.0), piso(1.3, 2.1, 3.1), piso(0.95, 2.0, 4.2), piso(0.6, 1.8, 5.3)]);
     const rama = (ry, rz, y) => { const g = new THREE.CylinderGeometry(0.06, 0.13, 2.0, 4).toNonIndexed(); g.translate(0, 1.0, 0); g.rotateZ(rz); g.rotateY(ry); g.translate(0, y, 0); return tintar(g, () => [1, 1, 1]); };
     const gSeco = mergeGeometries([tronco(0.28, 5, [1, 1, 1]), rama(0.4, 0.9, 2.6), rama(2.6, -0.8, 3.3), rama(4.4, 0.7, 3.9)]);
 

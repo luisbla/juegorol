@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { azarDe } from './ruido.js';
 import { crearBarcoModelo } from './barco.js';
 import { crearMatas } from './campo.js';
+import { lluvia } from './clima.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 export function crearEntrada(l) {
@@ -59,7 +60,8 @@ export function crearEntrada(l) {
     if (copa) { const p = copa.attributes.position, c = new Float32Array(p.count * 3); for (let i = 0; i < p.count; i += 3) { const k = 0.78 + az() * 0.3 + (p.getY(i) - 4) * 0.035; for (let j = 0; j < 3; j++) c.fill(k, (i + j) * 3, (i + j) * 3 + 3); } copa.setAttribute('color', new THREE.BufferAttribute(c, 3)); }
     return [une(tr), copa];
   };
-  const plantar = () => {
+  const plantar = camara => {
+    for (const k of Object.keys(bosque)) bosque[k] = bosque[k].filter(([x, z, s]) => Math.hypot(x - camara[0], z - camara[2]) > 8 + 3.2 * s);   // ninguno delante de la cámara al entrar
     const corteza = mat(0x3a2a1c), hojas = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, flatShading: true }), M = new THREE.Matrix4(), Q = new THREE.Quaternion(), eje = new THREE.Vector3(0, 1, 0), c = new THREE.Color();
     for (const tipo of ['hoja', 'pino', 'seco']) for (let v = 0; v < 3; v++) {
       const lista = bosque[tipo].filter((_, i) => i % 3 === v); if (!lista.length) continue;
@@ -71,7 +73,47 @@ export function crearEntrada(l) {
   const matas = opciones => { const m = crearMatas({ rnd, altura: alturaEn, ...opciones }); escena.add(m.malla); vivos.push(m.actualizar); };
   const trigal = (n, hueco, desde = 0, alto) => matas({ tipo: 'trigo', n, hueco, desde, alto });
   const pradera = (n, hueco, colores, desde = 0, hasta = 80) => matas({ tipo: 'hierba', n, hueco, desde, hasta, colores, fuerza: 0.5 });
-  const figura = (x, z, ry, color, padre = escena, y = 0) => { const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.y = ry; padre.add(g); cil(mat(color), 0.22, 0.34, 1.1, 0, 0.7, 0, g, 8); caja(mat(color), 0.62, 0.18, 0.3, 0, 1.72, 0, 0, g); for (const s of [-0.13, 0.13]) cil(mat(0x3a3028), 0.1, 0.09, 0.75, s, 0, 0, g, 6); pieza(new THREE.SphereGeometry(0.19, 10, 8), mat(0xd9b08c), 0, 2.1, 0, g); pieza(new THREE.SphereGeometry(0.2, 10, 6, 0, 6.3, 0, 1.7), mat(0x3a2a1c), 0, 2.15, -0.03, g); return g; };
+  // Figura articulada: piernas y brazos cuelgan de su articulación y se mueven al andar o al trabajar.
+  const PIELES = [0xe0b894, 0xd2a27c, 0xb98862, 0x8a6244], PELOS = [0x2a1f18, 0x5a3a22, 0x8a6a3a, 0x1a1a1a, 0xb8b0a4];
+  let nocheAhora = 0;
+  const figura = (x, z, ry, color, padre = escena, y = 0, talla = 1) => {
+    const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.y = ry; padre.add(g);
+    const c = new THREE.Group(); c.scale.setScalar(1.2 * talla); g.add(c);
+    const ropa = mat(color), piel = mat(PIELES[Math.floor(rnd() * 4)]), calza = mat(0x3a3028);
+    cil(ropa, 0.2, 0.31, 0.78, 0, 0.71, 0, c, 8); caja(ropa, 0.6, 0.17, 0.3, 0, 1.375, 0, 0, c); cil(mat(0x2a2018), 0.27, 0.28, 0.07, 0, 0.98, 0, c, 8); cil(piel, 0.07, 0.09, 0.12, 0, 1.52, 0, c, 6);
+    pieza(new THREE.SphereGeometry(0.17, 10, 8), piel, 0, 1.76, 0, c).scale.y = 1.1; caja(piel, 0.05, 0.06, 0.06, 0, 1.71, 0.17, 0, c);
+    pieza(new THREE.SphereGeometry(0.185, 10, 6, 0, 6.3, 0, 1.75), mat(rnd() < 0.25 ? color : PELOS[Math.floor(rnd() * 5)]), 0, 1.79, -0.02, c);
+    const miembro = (mx, my, m, largo, r, pie) => { const a = new THREE.Group(); a.position.set(mx, my, 0); c.add(a); cil(m, r, r * 0.85, largo, 0, -largo, 0, a, 6); if (pie) caja(mat(0x2a2018), 0.17, 0.09, 0.3, 0, -largo - 0.03, 0.05, 0, a); else pieza(new THREE.SphereGeometry(0.07, 6, 5), piel, 0, -largo - 0.04, 0, a); return a; };
+    const u = g.userData; u.pi = miembro(-0.12, 0.86, calza, 0.82, 0.105, true); u.pd = miembro(0.12, 0.86, calza, 0.82, 0.105, true); u.bi = miembro(-0.33, 1.44, ropa, 0.6, 0.075); u.bd = miembro(0.33, 1.44, ropa, 0.6, 0.075); u.fase = rnd() * 6.28; u.cuerpo = c;
+    vivos.push(t => { if (u.ocupada) return; u.bi.rotation.x = Math.sin(t * 0.9 + u.fase) * 0.08; u.bd.rotation.x = -Math.sin(t * 0.9 + u.fase) * 0.08; });   // en reposo, apenas un balanceo
+    return g;
+  };
+  // anda por una ruta cerrada de puntos [x, z]; de noche se recoge, salvo que sea de los que velan
+  const anda = (f, ruta, v = 1.6, vela = false) => {
+    const u = f.userData, acum = [0]; u.ocupada = true;
+    for (let i = 0; i < ruta.length; i++) { const a = ruta[i], b = ruta[(i + 1) % ruta.length]; acum.push(acum[i] + Math.hypot(b[0] - a[0], b[1] - a[1])); }
+    const total = acum[ruta.length], y0 = f.position.y;
+    vivos.push(t => {
+      f.visible = vela || nocheAhora < 0.6; if (!f.visible) return;
+      const s = (t * v + u.fase * 7) % total; let i = 0; while (acum[i + 1] < s) i++;
+      const a = ruta[i], b = ruta[(i + 1) % ruta.length], k = (s - acum[i]) / (acum[i + 1] - acum[i] || 1), paso = Math.sin(t * v * 3.4 + u.fase) * 0.6;
+      f.position.set(a[0] + (b[0] - a[0]) * k, y0 + Math.abs(Math.cos(t * v * 3.4 + u.fase)) * 0.05, a[1] + (b[1] - a[1]) * k); f.rotation.y = Math.atan2(b[0] - a[0], b[1] - a[1]);
+      u.pi.rotation.x = paso; u.pd.rotation.x = -paso; u.bi.rotation.x = -paso * 0.7; u.bd.rotation.x = paso * 0.7;
+    });
+    return f;
+  };
+  // faena con el brazo derecho: golpea (sube despacio, baja de golpe), habla (gesticula) o remueve (vaivén corto)
+  const faena = (f, modo, ritmo = 1) => { const u = f.userData; u.ocupada = true; vivos.push(t => {
+    if (modo === 'golpea') { const k = (t * ritmo * 0.9 + u.fase) % 1, alza = k < 0.7 ? k / 0.7 : 1 - (k - 0.7) / 0.3; u.bd.rotation.x = -0.4 - alza * 2.0; u.cuerpo.rotation.x = 0.12 - alza * 0.1; }
+    else if (modo === 'habla') { u.bd.rotation.x = -0.7 + Math.sin(t * 2.1 * ritmo + u.fase) * 0.35; u.bd.rotation.z = Math.sin(t * 1.3 + u.fase) * 0.2; u.bi.rotation.x = Math.sin(t * 0.8 + u.fase) * 0.1; u.cuerpo.rotation.y = Math.sin(t * 0.5 + u.fase) * 0.15; }
+    else { u.bd.rotation.x = -1.0 + Math.sin(t * 2.6 * ritmo + u.fase) * 0.3; u.bi.rotation.x = -0.5; }
+  }); return f; };
+  const gallina = (x, z, color = 0xe8e0d0) => { const g = nido(x, z, rnd() * 6); pieza(new THREE.SphereGeometry(0.2, 8, 6), mat(color), 0, 0.34, 0, g).scale.set(1, 0.9, 1.3); pieza(new THREE.SphereGeometry(0.1, 6, 5), mat(color), 0, 0.56, 0.22, g); pieza(new THREE.ConeGeometry(0.035, 0.1, 4), mat(0xd9a23a), 0, 0.55, 0.35, g).rotation.x = Math.PI / 2; pieza(new THREE.ConeGeometry(0.11, 0.26, 5), mat(color), 0, 0.46, -0.28, g).rotation.x = -2.2; for (const s of [-0.07, 0.07]) cil(mat(0xd9a23a), 0.016, 0.016, 0.2, s, 0, 0, g, 4);
+    const f = rnd() * 6.28, x0 = x, z0 = z; vivos.push(t => { g.visible = nocheAhora < 0.6; const p = t * 0.25 + f; g.position.set(x0 + Math.sin(p) * 1.1 + Math.sin(p * 2.7) * 0.4, 0, z0 + Math.cos(p * 1.3) * 1.1); g.rotation.set(Math.max(0, Math.sin(t * 3 + f * 5)) * 0.7, f + Math.sin(p) * 1.5, 0, 'YXZ'); }); return g; };
+  // luz de noche: cristales que se encienden, faroles y, con cuentagotas, luces de verdad
+  const vidrio = new THREE.MeshStandardMaterial({ color: 0x1a1d24, roughness: 0.4, emissive: 0xffc070, emissiveIntensity: 0 }), farolM = new THREE.MeshStandardMaterial({ color: 0x6a5a30, emissive: 0xffc060, emissiveIntensity: 0.1 }), lucesNoche = [];
+  const farol = (x, z, ry = 0, alto = 3.4, y = 0) => { const g = nido(x, z, ry, y); caja(mat(0x3a2a1c), 0.2, alto, 0.2, 0, 0, 0, 0, g); caja(mat(0x3a2a1c), 0.9, 0.12, 0.12, 0.36, alto - 0.2, 0, 0, g); caja(mat(0x2b2b2e), 0.44, 0.08, 0.44, 0.72, alto - 0.42, 0, 0, g); caja(farolM, 0.3, 0.44, 0.3, 0.72, alto - 0.86, 0, 0, g);
+    if (lucesNoche.length < 4) { const l2 = new THREE.PointLight(0xffb060, 0, 30, 1.8); l2.position.set(0.72, alto - 0.6, 0); g.add(l2); lucesNoche.push([l2, 70]); } return g; };
   const gTejado = new THREE.ConeGeometry(0.7071, 1, 4).rotateY(Math.PI / 4);   // a cuatro aguas: torres, toldos y tiendas
   const gDosAguas = (() => {   // prisma con la cumbrera a lo largo de X; base 1×1, alto 1, centrado en el origen
     const A = [-0.5, -0.5, -0.5], B = [0.5, -0.5, -0.5], C = [0.5, -0.5, 0.5], D = [-0.5, -0.5, 0.5], E = [-0.5, 0.5, 0], F = [0.5, 0.5, 0], p = [], uv = [];
@@ -81,16 +123,16 @@ export function crearEntrada(l) {
   // Casa: zócalo, entramado, puerta con marco y escalón, ventanas con alféizar y contraventanas, alero y chimenea con remate.
   // Todas sus piezas se marcan como fijas y al final se funden por material.
   const CONTRAS = [0x4a5a3a, 0x7a3b2e, 0x2f4f6f, 0x6a5a2f];
-  const casa = (x, z, w, d, h, ry = 0, { pared = 0xd2c4a4, teja = 0xa5512c, chim = false, puerta = true, y = 0, entramado = true, piedra = false } = {}) => {
+  const casa = (x, z, w, d, h, ry = 0, { pared = 0xd2c4a4, teja = 0xa5512c, chim = false, puerta = true, y = 0, entramado = true, piedra = false, ventanas = true } = {}) => {
     const g = nido(x, z, ry, y), osc = mat(0x3a2a1c), pc = mat(0x8d8676), cc = mat(CONTRAS[Math.floor(rnd() * 4)]), F = (m, cw, ch, cd, cx, cy, cz, cry = 0) => { const o = caja(m, cw, ch, cd, cx, cy, cz, cry, g); o.userData.fijo = true; return o; };
     F(pc, w + 0.3, 0.5, d + 0.3, 0, 0, 0); F(mat(pared), w, h, d, 0, 0, 0);
     const t = pieza(gDosAguas, mat(teja), 0, h + h * 0.32, 0, g); t.scale.set(w * 1.16, h * 0.64, d * 1.24); t.userData.fijo = true;
     F(osc, w * 1.16 + 0.2, 0.2, 0.3, 0, h + h * 0.64 - 0.1, 0); for (const s of [-1, 1]) F(osc, w * 1.16, 0.14, 0.18, 0, h - 0.04, s * d * 0.62);
     if (entramado && !piedra) { for (const sx of [-1, 1]) for (const sz of [-1, 1]) F(osc, 0.24, h, 0.24, sx * w / 2, 0, sz * d / 2); for (const sz of [-1, 1]) { F(osc, w, 0.2, 0.1, 0, h * 0.5, sz * (d / 2 + 0.02)); F(osc, w, 0.2, 0.1, 0, h - 0.2, sz * (d / 2 + 0.02)); } }
     else if (piedra) for (const sx of [-1, 1]) for (let j = 0; j < 4; j++) F(pc, 0.5, 0.42, 0.5, sx * w / 2, 0.5 + j * h / 4.4, d / 2);
-    const hueco = (px, pz, pry, an = 0.8, al = 0.9, py = h * 0.5) => { const v = nido(px, pz, pry); g.add(v); const V = (m, a, b, c2, vx, vy, vz) => { const o = caja(m, a, b, c2, vx, vy, vz, 0, v); o.userData.fijo = true; }; V(osc, an + 0.24, al + 0.24, 0.1, 0, py - 0.12, 0.02); V(mat(0x1a1d24), an, al, 0.14, 0, py, 0.03); V(osc, 0.06, al, 0.18, 0, py, 0.03); V(pc, an + 0.5, 0.12, 0.3, 0, py - 0.22, 0.12); for (const s of [-1, 1]) V(cc, an * 0.5, al, 0.07, s * an * 0.8, py, 0.05); };
-    const nv = w > 7 ? 2 : 1; for (const s of [-1, 1]) for (let i = 0; i < nv; i++) hueco(s * (w * 0.2 + (i + (puerta ? 0.4 : 0)) * w * 0.18), d / 2, 0);
-    for (const s of [-1, 1]) hueco(s * w / 2, 0, s * Math.PI / 2); hueco(w * 0.2, -d / 2, Math.PI);
+    const hueco = (px, pz, pry, an = 0.8, al = 0.9, py = h * 0.5) => { const v = nido(px, pz, pry); g.add(v); const V = (m, a, b, c2, vx, vy, vz) => { const o = caja(m, a, b, c2, vx, vy, vz, 0, v); o.userData.fijo = true; }; V(osc, an + 0.24, al + 0.24, 0.1, 0, py - 0.12, 0.02); V(vidrio, an, al, 0.14, 0, py, 0.03); V(osc, 0.06, al, 0.18, 0, py, 0.03); V(pc, an + 0.5, 0.12, 0.3, 0, py - 0.22, 0.12); for (const s of [-1, 1]) V(cc, an * 0.5, al, 0.07, s * an * 0.8, py, 0.05); };
+    const nv = !ventanas ? 0 : w > 7 ? 2 : 1; for (const s of [-1, 1]) for (let i = 0; i < nv; i++) hueco(s * (w * 0.2 + (i + (puerta ? 0.4 : 0)) * w * 0.18), d / 2, 0);
+    if (ventanas) { for (const s of [-1, 1]) hueco(s * w / 2, 0, s * Math.PI / 2); hueco(w * 0.2, -d / 2, Math.PI); }
     if (puerta) { F(osc, 1.3, 2.05, 0.12, 0, 0.3, d / 2 + 0.03); F(mat(0x4a3423), 1.0, 1.9, 0.18, 0, 0.3, d / 2 + 0.04); F(mat(0x2b2b2e), 0.08, 0.2, 0.26, 0.3, 1.1, d / 2 + 0.04); F(pc, 1.7, 0.3, 0.7, 0, 0, d / 2 + 0.4); }
     if (chim) { F(mat(0x7d7468), 0.7, h * 0.75, 0.7, w * 0.28, h, d * 0.1); F(mat(0x7d7468), 0.95, 0.16, 0.95, w * 0.28, h + h * 0.75, d * 0.1); }
     return g;
@@ -105,8 +147,8 @@ export function crearEntrada(l) {
   const barril = (x, z, s = 1) => { cil(mat(0x6a4a2e), 0.45 * s, 0.45 * s, 0.95 * s, x, 0, z); cil(mat(0x2b2b2e), 0.47 * s, 0.47 * s, 0.07, x, 0.3 * s, z); };
   const cerca = (x0, z0, x1, z1, m = mat(0x5a4633), alto = 1.1) => { const d = Math.hypot(x1 - x0, z1 - z0), n = Math.max(1, Math.round(d / 1.6)), ry = -Math.atan2(z1 - z0, x1 - x0); for (let i = 0; i <= n; i++) caja(m, 0.16, alto, 0.16, x0 + (x1 - x0) * i / n, 0, z0 + (z1 - z0) * i / n); for (const f of [0.45, 0.85]) caja(m, d, 0.09, 0.07, (x0 + x1) / 2, alto * f, (z0 + z1) / 2, ry); };
   const hoguera = (x, z, viva) => { for (let i = 0; i < 7; i++) { const a = i / 7 * 6.28; roca(mat(0x55504a), 0.22, x + Math.cos(a) * 0.7, 0.12, z + Math.sin(a) * 0.7); } cil(mat(0x15120f), 0.5, 0.5, 0.1, x, 0, z); if (viva) { const f = pieza(new THREE.ConeGeometry(0.35, 1.0, 6), new THREE.MeshBasicMaterial({ color: 0xffb04a, transparent: true, opacity: 0.85 }), x, 0.6, z); vivos.push(t => { f.scale.y = 0.8 + 0.3 * Math.sin(t * 9); }); const luz = new THREE.PointLight(0xff9a4a, 60, 26, 1.8); luz.position.set(x, 1.4, z); escena.add(luz); } };
-  const tienda = (x, z, ry, color, caida = 0) => { const g = nido(x, z, ry), t = pieza(gTejado, mat(color, { side: THREE.DoubleSide }), 0, 0.8, 0, g); t.scale.set(2.6, 1.6, 2.2); g.rotation.z = caida; return g; };
-  const res = (x, z, ry, color, s = 1) => { const g = nido(x, z, ry); g.scale.setScalar(s); const c = pieza(new THREE.SphereGeometry(0.5, 8, 6), mat(color), 0, 0.75, 0, g); c.scale.set(0.8, 0.8, 1.5); pieza(new THREE.SphereGeometry(0.24, 8, 6), mat(0x3a3028), 0, 0.95, 0.75, g); for (const sx of [-0.2, 0.2]) for (const sz of [-0.4, 0.4]) cil(mat(0x3a3028), 0.06, 0.05, 0.5, sx, 0, sz, g, 5); return g; };
+  const tienda = (x, z, ry, color, caida = 0) => { const g = nido(x, z, ry), t = pieza(gTejado, mat(color, { side: THREE.DoubleSide }), 0, 0.8, 0, g); t.scale.set(2.6, caida ? 0.5 : 1.6, 2.2); if (caida) { t.position.y = 0.25; t.rotation.z = caida * 0.12; } return g; };   // la vencida queda aplastada en el suelo, no en el aire
+  const res = (x, z, ry, color, s = 1) => { const g = nido(x, z, ry); g.scale.setScalar(s); const c = pieza(new THREE.SphereGeometry(0.5, 8, 6), mat(color), 0, 0.75, 0, g); c.scale.set(0.8, 0.8, 1.5); pieza(new THREE.SphereGeometry(0.24, 8, 6), mat(0x3a3028), 0, 0.95, 0.75, g); for (const sx of [-0.2, 0.2]) for (const sz of [-0.4, 0.4]) cil(mat(0x3a3028), 0.06, 0.05, 0.5, sx, 0, sz, g, 5); const fr = rnd() * 6.28; vivos.push(t => { g.rotation.x = Math.max(0, Math.sin(t * 0.4 + fr)) * 0.1; }); return g; };
   const carro = (x, z, ry) => { const g = nido(x, z, ry); caja(mat(0x7a5c3e), 1.6, 0.14, 2.6, 0, 0.7, 0, 0, g); for (const s of [-0.8, 0.8]) caja(mat(0x6a5039), 0.08, 0.45, 2.6, s, 0.84, 0, 0, g); for (const s of [-0.9, 0.9]) { const r = cil(mat(0x3a2a1c), 0.55, 0.55, 0.1, s, 0, 0, g, 12); r.rotation.z = Math.PI / 2; r.position.y = 0.55; } for (const s of [-0.5, 0.5]) caja(mat(0x5a4633), 0.08, 0.08, 2, s, 0.7, 2.2, 0, g); return g; };
   let texBlanda = null;
   const blanda = () => { if (!texBlanda) { const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d'), g = x.createRadialGradient(32, 32, 0, 32, 32, 32); g.addColorStop(0, 'rgba(255,255,255,0.55)'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.fillRect(0, 0, 64, 64); texBlanda = new THREE.CanvasTexture(c); } return texBlanda; };
@@ -153,7 +195,7 @@ export function crearEntrada(l) {
       caja(sillar, 11.6, 1.6, 1.8, 0, 13.6, -5.4);
       for (let i = 0; i < 7; i++) caja(sillar, 20 + i * 1.6, 0.4, 1.5, 0, 0.3 - i * 0.07, -1.8 + i * 1.5);
       // lo caído y lo que ha crecido encima
-      const c1 = cil(sillar, 1.25, 1.35, 11, 13, 1.3, 6); c1.rotation.z = Math.PI / 2 - 0.06; c1.rotation.y = 0.5; cil(sillar, 1.35, 1.4, 2.6, -14, 0, 3, undefined, 14); cil(sillar, 1.3, 1.35, 1.4, -11, 0, 6, undefined, 14);
+      const c1 = cil(sillar, 1.25, 1.35, 11, 13, 1.3, 6); c1.rotation.z = Math.PI / 2 - 0.06; c1.rotation.y = 0.5; c1.position.y = 1.5; cil(sillar, 1.35, 1.4, 2.6, -14, 0, 3, undefined, 14); cil(sillar, 1.3, 1.35, 1.4, -11, 0, 6, undefined, 14);
       for (let i = 0; i < 26; i++) roca(i % 3 ? sillar : musgo, 0.5 + rnd() * 1.1, (rnd() - 0.5) * 44, 0.3, 2 + rnd() * 22, 0.6);
       for (let i = 0; i < 8; i++) { const r = cil(mat(0x33261a), 0.18, 0.4, 9 + rnd() * 5, -9 + i * 2.6 + rnd(), 12 + rnd() * 3, -4.2 + rnd() * 0.6, undefined, 5); r.rotation.z = (rnd() - 0.5) * 0.5; }   // raíces que bajan por la fachada
       // el bosque: cerrado por todas partes menos por donde se llega
@@ -210,15 +252,15 @@ export function crearEntrada(l) {
       for (let i = 0; i < 7; i++) caja(sombra, 4.4, 0.5, 1.1, 0, FONDO - 0.5 - i * 0.55, -3 - i * 1.05);
       caja(mat(0x060504), 4.6, 0.2, 9, 0, FONDO - 0.02, -6.6).castShadow = false; for (const s of [-1, 1]) caja(arenisca, 0.8, 1.6, 9.4, s * 2.7, FONDO, -6.6); caja(arenisca, 6.2, 1.4, 1.0, 0, FONDO + 1.6, -11.6);
       for (let i = 0; i < 40; i++) roca(i % 3 ? arenisca : tierra, 0.4 + rnd() * 0.9, (rnd() - 0.5) * 40, FONDO + 0.3, -20 + rnd() * 34, 0.6);
-      for (const [x, z, ry] of [[-11, 2, 0.4], [-13, -8, 1.2], [3, 12, 0.2]]) { const c = cil(arenisca, 0.5, 0.55, 5, x, FONDO + 0.5, z, undefined, 10); c.rotation.z = Math.PI / 2; c.rotation.y = ry; }
+      for (const [x, z, ry] of [[-11, 2, 0.4], [-13, -8, 1.2], [3, 12, 0.2]]) { const c = cil(arenisca, 0.5, 0.55, 5, x, FONDO + 0.5, z, undefined, 10); c.rotation.z = Math.PI / 2; c.rotation.y = ry; c.position.y = FONDO + 0.5; }
       // rampa por donde bajan los curiosos, el arado y el surco a medias
       const rampa = caja(tierra, 4.6, 0.4, 12, 21, FONDO / 2 - 0.2, 21); rampa.rotation.x = -0.36; rampa.castShadow = false;
-      const ar = nido(21, 30, 0.1); caja(mat(0x5a4633), 0.2, 0.2, 4.4, 0, 0.8, 0.6, 0, ar).rotation.x = 0.16; caja(mat(0x2b2b2e), 0.12, 1.1, 0.8, 0, 0, -1.3, 0, ar).rotation.x = 0.5; for (const s of [-0.4, 0.4]) caja(mat(0x5a4633), 0.1, 1.6, 0.1, s, 0.7, -2.1, 0, ar).rotation.x = -0.7; const rd = cil(mat(0x3a2a1c), 0.55, 0.55, 0.12, 0, 0, 2.4, ar, 12); rd.rotation.z = Math.PI / 2;
+      const ar = nido(21, 30, 0.1); caja(mat(0x5a4633), 0.2, 0.2, 4.4, 0, 0.8, 0.6, 0, ar).rotation.x = 0.16; caja(mat(0x2b2b2e), 0.12, 1.1, 0.8, 0, 0, -1.3, 0, ar).rotation.x = 0.5; for (const s of [-0.4, 0.4]) caja(mat(0x5a4633), 0.1, 1.6, 0.1, s, 0.7, -2.1, 0, ar).rotation.x = -0.7; const rd = cil(mat(0x3a2a1c), 0.55, 0.55, 0.12, 0, 0, 2.4, ar, 12); rd.rotation.z = Math.PI / 2; rd.position.y = 0.55;
       caja(tierra, 1.2, 0.2, 44, 21, 0, 54);
       // lo que deja la gente del campo
       cil(mat(0x3a2a1c), 0.3, 0.45, 2.6, -29, 0, 8, undefined, 6); roca(mat(0x5a6a3a), 2.4, -29, 3.8, 8, 0.8); roca(mat(0x6a7a42), 1.6, -27.8, 4.8, 7.4, 0.8); cintas(-29, 2.4, 8, 9, 2.2);
       for (let i = 0; i < 6; i++) { const g = pieza(new THREE.ConeGeometry(0.5, 1.7, 7), mat(0xd9b24e), -8 + i * 1.6, 0.85, 27.4 + (i % 2) * 0.5); g.rotation.z = (i % 2 - 0.5) * 0.25; }
-      figura(25, 27, -2.4, 0x8a6a48); figura(-3, 2, 0, 0x6a5a2f).position.y = FONDO;
+      faena(figura(25, 27, -2.4, 0x8a6a48), 'habla', 0.6); figura(23.4, 28.2, 1.2, 0x5a6b3a); const cur = figura(-3, 2, 0, 0x6a5a2f); cur.position.y = FONDO; anda(cur, [[-3, 4], [3.6, 4], [3.6, -1], [-3.6, -1]], 0.9);
       rotulo('La nave', 0, 11, -8); rotulo('La espadaña', 0, 20, -19.6); rotulo('La escalera', 0, 1.5, -6); rotulo('El claustro', 18, 8.5, -3); rotulo('El arado', 21, 4, 30); rotulo('Espino de las cintas', -29, 8, 8);
       return { pos: [24, 22, 46], objetivo: [2, 1, -6], cielo: 0xbcd0e0, R: 46, limite: 44 };
     },
@@ -239,7 +281,7 @@ export function crearEntrada(l) {
       for (let i = 0; i < 14; i++) roca(i % 2 ? cal : verdin, 0.8 + rnd() * 1.4, -28 + rnd() * 60, 0.1, -46 + rnd() * 40, 0.5);
       // boyas: hasta aquí llegan las redes. Las barcas faenan de este lado, y la orilla queda lejos, al fondo
       for (let i = 0; i < 15; i++) { const a = (i / 14 - 0.5) * 2.6, x = Math.sin(a) * 44, z = 12 - Math.cos(a) * 14, b = pieza(new THREE.SphereGeometry(0.55, 8, 6), mat(i % 2 ? 0xb23a2e : 0xe8e0d0), x, 0.25, z); vivos.push(t => { b.position.y = 0.25 + Math.sin(t * 1.4 + i) * 0.12; }); }
-      for (const [x, z, ry, vela] of [[-9, 24, 0.4, 'recogidas'], [8, 30, -0.5, 'ninguna'], [-24, 34, 1.1, 'recogidas'], [26, 20, 2.6, 'dadas']]) { const b = crearBarcoModelo({ eslora: 5.5, palos: 1, velas: vela, lona: 0xd9cfb8 }), g = nido(x, z, ry, 0.05); g.add(b); figura(-0.6, 0, Math.PI / 2, 0x4a5a6a, g, 0.42); vivos.push(t => { g.position.y = 0.05 + Math.sin(t * 0.9 + x) * 0.08; g.rotation.z = Math.sin(t * 0.7 + x) * 0.03; }); }
+      for (const [x, z, ry, vela] of [[-9, 24, 0.4, 'recogidas'], [8, 30, -0.5, 'ninguna'], [-24, 34, 1.1, 'recogidas'], [26, 20, 2.6, 'dadas']]) { const b = crearBarcoModelo({ eslora: 5.5, palos: 1, velas: vela, lona: 0xd9cfb8 }), g = nido(x, z, ry, 0.05); g.add(b); faena(figura(-0.6, 0, Math.PI / 2, 0x4a5a6a, g, 0.42, 0.8), 'remueve', 0.5); vivos.push(t => { g.position.y = 0.05 + Math.sin(t * 0.9 + x) * 0.08; g.rotation.z = Math.sin(t * 0.7 + x) * 0.03; }); }
       const orilla = pieza(new THREE.CylinderGeometry(238, 236, 9, 60, 1, true), mat(0x4f6a4a, { side: THREE.BackSide }), 0, 4, 0); orilla.castShadow = false;
       for (let i = 0; i < 40; i++) { const a = i / 40 * 6.28 + rnd() * 0.1; roca(mat(i % 2 ? 0x3f5a3c : 0x4a6646), 12 + rnd() * 9, Math.cos(a) * 232, 6 + rnd() * 5, Math.sin(a) * 232, 0.8); }
       niebla(22, 2.2, 60, 0.5, 0xffffff, 34);
@@ -256,7 +298,14 @@ export function crearEntrada(l) {
       const e = casa(-9, -9, 5.4, 9, 5, 0.6, { pared: 0xdad2c0, teja, piedra: true }); caja(mat(0xbdb4a2), 2.6, 9, 2.6, 0, 0, -5.4, 0, e); pieza(gTejado, mat(teja), 0, 10.3, -5.4, e).scale.set(3.2, 2.6, 3.2); cil(mat(0xd9b24e), 0.4, 0.5, 0.7, 0, 7.4, -4.0, e, 8);
       cil(mat(0x8d8676), 1.3, 1.4, 1.0, 0, 0, 0); cil(mat(0x1c2a30), 1.05, 1.05, 0.1, 0, 0.95, 0); for (const s of [-1.2, 1.2]) caja(mat(0x5a4633), 0.2, 2.6, 0.2, s, 0.9, 0); caja(mat(0x5a4633), 2.8, 0.22, 0.4, 0, 3.4, 0);
       for (let i = 0; i < 3; i++) { const x = 4 + i * 3.2, z = -5; caja(mat(0x6b5440), 2.4, 1.0, 1.4, x, 0, z); const t = pieza(gTejado, mat([0xb23a2e, 0x2f6aa0, 0xd9a23a][i], { side: THREE.DoubleSide }), x, 3, z); t.scale.set(3, 0.9, 2.2); for (const s of [-1.1, 1.1]) caja(mat(0x5a4633), 0.12, 2.6, 0.12, x + s, 0, z + 0.6); }
-      for (const [x, z, c] of [[2, 3, 0x7a3b2e], [-3, 2, 0x2f4f6f], [5, -2.6, 0x5a6b3a], [8, -3, 0x8a7a55], [-1, 9, 0x6a5a2f], [1.4, 22, 0x4a3a5a]]) { const f = figura(x, z, rnd() * 6, c); vivos.push(t => { f.position.y = Math.abs(Math.sin(t * 1.2 + x)) * 0.03; }); }
+      // vecinos: dos de charla junto al pozo, los tenderos, gente que va y viene, críos corriendo y un perro detrás
+      faena(figura(2.2, 2.6, -2.2, 0x7a3b2e), 'habla'); faena(figura(0.8, 3.6, 1.0, 0x2f4f6f), 'habla', 0.7);
+      for (let i = 0; i < 3; i++) faena(figura(4 + i * 3.2, -6.1, 0, [0x5a6b3a, 0x8a7a55, 0x6a5a2f][i]), i === 1 ? 'remueve' : 'habla', 0.8);
+      figura(5.6, -3.2, Math.PI, 0x4a3a5a); anda(figura(0, 0, 0, 0x6a2f3a), [[1.6, 30], [1.6, 4], [-4, -3], [-1.6, -28], [-1.6, 4]], 1.5); anda(figura(0, 0, 0, 0x3f5a5a), [[-30, 1.4], [-4, 1.4], [3, 4], [30, -1.4], [3, -1.4]], 1.3); anda(figura(0, 0, 0, 0x8a6a48), [[10, 9], [-6, 11], [-12, 4], [-5, -3], [6, 2]], 1.1);
+      const corro = Array.from({ length: 12 }, (_, i) => [Math.cos(i / 12 * 6.28) * 4.6, Math.sin(i / 12 * 6.28) * 4.6]); for (let i = 0; i < 2; i++) anda(figura(0, 0, 0, [0xb23a2e, 0x2f6aa0][i], escena, 0, 0.62), corro, 3.4 + i * 0.3);
+      const perro = res(0, 0, 0, 0x6a4a2e, 0.62); vivos.push(t => { const a = t * 0.72 + 1.2; perro.visible = nocheAhora < 0.6; perro.position.set(Math.cos(a) * 5.6, Math.abs(Math.sin(t * 9)) * 0.08, Math.sin(a) * 5.6); perro.rotation.y = -a; });
+      for (let i = 0; i < 5; i++) gallina(-15 + rnd() * 3, -2 + rnd() * 3, [0xe8e0d0, 0x8a5a36, 0xc9a06a][i % 3]);
+      farol(-4.4, -4.6, 0.8); farol(7, 6, 3.6); farol(-3, 8.6, -0.6);
       carro(-4, 14, 0.2); barril(6, 4); barril(7, 4.6); for (let i = 0; i < 3; i++) res(-16 + i * 1.6, 12 + (i % 2), rnd() * 6, 0xf0ece0, 1.2);
       cerca(-20, 9, -12, 9); cerca(-20, 9, -20, 16); cerca(-20, 16, -12, 16);
       if (lago) {   // pueblo de pescadores: la orilla, el embarcadero y las redes
@@ -283,7 +332,7 @@ export function crearEntrada(l) {
       const ab = nido(2, 6, 0.25); caja(mat(0x6a5039), 3.4, 0.7, 1.1, 0, 0, 0, 0, ab); caja(mat(0x3f6f80, { roughness: 0.2 }), 3.0, 0.05, 0.8, 0, 0.68, 0, 0, ab);
       const cab = nido(12.5, 3.2, Math.PI - 0.2); for (const [x, c] of [[-2.9, 0x6a4326], [0, 0x2f2620]]) { const g = new THREE.Group(); g.position.set(x, 0, 0); g.scale.setScalar(2); cab.add(g); const b = pieza(new THREE.SphereGeometry(0.5, 8, 6), mat(c), 0, 0.85, 0, g); b.scale.set(0.8, 0.8, 1.6); const n = cil(mat(c), 0.16, 0.22, 0.8, 0, 1.0, 0.8, g, 6); n.rotation.x = 0.7; pieza(new THREE.SphereGeometry(0.2, 8, 6), mat(c), 0, 1.6, 1.15, g).scale.z = 1.5; for (const sx of [-0.2, 0.2]) for (const sz of [-0.45, 0.45]) cil(mat(c), 0.06, 0.05, 0.6, sx, 0, sz, g, 5); }
       const sen = nido(-1, 10, 0.3); cil(mat(0x5a4633), 0.14, 0.16, 4, 0, 0, 0, sen, 6); for (let i = 0; i < 2; i++) caja(mat(0x8a6a48), 2.2, 0.5, 0.1, (i ? -1 : 1) * 1.0, 3.2 - i * 0.7, 0, 0, sen);
-      carro(6, 12, 0.6); barril(-1, -1); barril(0, -1.6); figura(4, 4, 2, 0x6a5a2f); figura(-3, 2, 0.4, 0x4a5a6a);
+      carro(6, 12, 0.6); barril(-1, -1); barril(0, -1.6); faena(figura(9.6, 6.6, 0.4, 0x6a5a2f), 'golpea', 1.4); anda(figura(0, 0, 0, 0x4a5a6a), [[-3, 2], [1.4, 7.2], [8, 8], [1.4, 7.2]], 1.2); farol(-1.4, 0.6, 0.6); if (!nieve) for (let i = 0; i < 4; i++) gallina(13 + rnd() * 3, 9 + rnd() * 3, [0xe8e0d0, 0x8a5a36][i % 2]);
       if (nieve) { for (let i = 0; i < 12; i++) roca(mat(0x3a3c44), 4 + rnd() * 5, (rnd() - 0.5) * 80, 1, -30 - rnd() * 30, 1.4); for (let i = 0; i < 9; i++) pino((rnd() - 0.5) * 70, 20 + rnd() * 30, 1.2 + rnd() * 0.6, 0x3a5046); cil(mat(0x2b2b2e), 1.2, 0.8, 0.6, -6, 23.4, -4); nevada(500); rotulo('Almenara', -6, 30, -4); }
       else if (esLlano) { arbol(-22, 8, 1.6, 0x6a7a3a); trigal(5200, (x, z) => Math.abs(x - 3 - z * 0.26) < 4.5, 19, undefined); }
       else { arbol(-20, 6, 4.2, 0x35502c); pradera(2600, (x, z) => Math.abs(x - 3 - z * 0.26) < 4.5, undefined, 18); arboleda(Array.from({ length: 50 }, () => { const a = rnd() * 6.28, d = 34 + rnd() * 50; return [Math.cos(a) * d, Math.sin(a) * d, 1.1 + rnd() * 0.9]; }), [0x2f4a2a, 0x3a5a30]); if (l.id === 'roble') rotulo('El roble', -20, 22, 6); }
@@ -308,7 +357,7 @@ export function crearEntrada(l) {
       suelo(0x5a7040); disco(0x6a6040, 14, 0.03); pradera(2600, () => false, undefined, 14.5);
       for (const [x, z, ry, c, caida] of [[-6, -3, 0.3, 0x9a8a68, 0], [5, -5, 1.9, 0x8a7a58, 0.6], [2, 6, 1.0, 0x9a8a68, 0], [-8, 5, 2.4, 0x7a6a4e, -0.5], [9, 3, 0.2, 0x8a7a58, 0]]) { const t = tienda(x, z, ry, c, caida); t.scale.setScalar(1.9); }
       hoguera(0, 0, false); hoguera(-3, 9, false); const olla = cil(mat(0x2b2b2e), 0.6, 0.5, 0.7, 1.6, 0.3, 0.8, undefined, 10); olla.rotation.z = 1.3;
-      for (let i = 0; i < 4; i++) { const p = cil(mat(0x5a4633), 0.04, 0.04, 3.4, -2 + i * 1.4 + rnd(), 0.06, 3 + rnd() * 2, undefined, 4); p.rotation.set(Math.PI / 2, 0, rnd() * 3); pieza(new THREE.ConeGeometry(0.09, 0.4, 5), mat(0x9aa0aa), p.position.x, 0.08, p.position.z + 1.8); }
+      for (let i = 0; i < 4; i++) { const p = cil(mat(0x5a4633), 0.04, 0.04, 3.4, -2 + i * 1.4 + rnd(), 0.06, 3 + rnd() * 2, undefined, 4); p.rotation.set(Math.PI / 2, 0, rnd() * 3); p.position.y = 0.06; pieza(new THREE.ConeGeometry(0.09, 0.4, 5), mat(0x9aa0aa), p.position.x, 0.08, p.position.z + 1.8); }
       for (let i = 0; i < 6; i++) { caja(mat([0x6a5039, 0x8a6a48, 0x5a4a3a][i % 3]), 0.9, 0.5, 0.7, (rnd() - 0.5) * 16, 0, (rnd() - 0.5) * 14, rnd() * 3); roca(mat(0xb89a62), 0.45, (rnd() - 0.5) * 16, 0.25, (rnd() - 0.5) * 14, 0.6); }
       const c = carro(11, -8, 0.8); c.rotation.z = 0.35; cil(mat(0x3a2a1c), 0.55, 0.55, 0.1, 13.4, 0.02, -5.6, undefined, 12);
       for (let i = 0; i < 14; i++) disco(0x4a4630, 0.28, 0.04).position.set(-4 - i * 1.5 + (i % 2) * 0.5, 0.04, 12 + i * 2.2);   // huellas que se van, con prisa
@@ -362,8 +411,8 @@ export function crearEntrada(l) {
       const g = nido(0, 0, 0.3); for (let i = 0; i < 7; i++) { const t = cil(mat(i % 2 ? 0x5a4633 : 0x4f3d2c), 0.32, 0.32, 7.4, 0, 0, 0, g, 7); t.rotation.z = Math.PI / 2; t.position.set(0, 0.32 + i * 0.6, 2.6); const u = t.clone(); u.position.z = -2.6; g.add(u); const v = cil(mat(i % 2 ? 0x4f3d2c : 0x5a4633), 0.32, 0.32, 5.6, 0, 0, 0, g, 7); v.rotation.x = Math.PI / 2; v.position.set(3.4, 0.62 + i * 0.6, 0); const w = v.clone(); w.position.x = -3.4; g.add(w); }
       pieza(gDosAguas, mat(0xe8eef4), 0, 5.7, 0, g).scale.set(9.4, 3, 7.4); caja(mat(0x2a1f18), 1.3, 2.4, 0.2, -0.8, 0, 2.95, 0, g); caja(mat(0x3a2a1c, { emissive: 0xffb858, emissiveIntensity: 0.9 }), 0.9, 0.9, 0.2, 1.6, 1.6, 2.95, 0, g); caja(mat(0x7d7468), 1.1, 4.4, 1.1, 2.2, 3.4, -1.2, 0, g); humo(2.4, 8.6, -0.6, false);
       const le = nido(6, 2, 0.3); for (let f = 0; f < 4; f++) for (let i = 0; i < 6 - f; i++) { const t = cil(mat(f % 2 ? 0x7a5a3a : 0x6a4a2e), 0.26, 0.26, 2.2, 0, 0, 0, le, 6); t.rotation.z = Math.PI / 2; t.position.set(0, 0.26 + f * 0.46, -1.4 + i * 0.55 + f * 0.28); } pieza(gTejado, mat(0xe8eef4), 0, 2.6, 0, le).scale.set(3, 0.8, 4);
-      cil(mat(0x5a4633), 0.6, 0.7, 0.9, -5, 0, 4, undefined, 8); const ha = nido(-5, 4, 0.5, 0.9); caja(mat(0x6a5039), 0.08, 1.4, 0.08, 0, 0, 0, 0, ha).rotation.z = 0.6; caja(mat(0x9aa0aa), 0.5, 0.3, 0.06, 0.45, 1.1, 0, 0, ha);
-      const f = figura(-3.2, 5.4, 0.6, 0x4a4238); caja(mat(0x8a7a66), 0.9, 0.5, 0.6, 0, 1.6, -0.1, 0, f); res(8, 7, 2, 0xb8a888, 1.4); for (let i = 0; i < 9; i++) disco(0xcfd8e2, 0.3, 0.02).position.set(-3 - i * 1.2 + (i % 2) * 0.4, 0.02, 8 + i * 2.4);
+      cil(mat(0x5a4633), 0.6, 0.7, 0.9, -5, 0, 4, undefined, 8); caja(mat(0x7a5a3a), 0.5, 0.5, 0.5, -5, 0.9, 4, 0.4);   // el leño que está partiendo
+      const f = faena(figura(-3.9, 4.9, -2.3, 0x4a4238), 'golpea', 0.7); caja(mat(0x6a5039), 0.06, 0.06, 1.2, 0, -0.66, 0.5, 0, f.userData.bd); caja(mat(0x9aa0aa), 0.07, 0.34, 0.4, 0, -0.66, 1.0, 0, f.userData.bd); const lumbre = new THREE.PointLight(0xffb060, 0, 26, 1.8); lumbre.position.set(2.4, 2.2, 4.6); escena.add(lumbre); lucesNoche.push([lumbre, 60]); res(8, 7, 2, 0xb8a888, 1.4); for (let i = 0; i < 9; i++) disco(0xcfd8e2, 0.3, 0.02).position.set(-3 - i * 1.2 + (i % 2) * 0.4, 0.02, 8 + i * 2.4);
       for (const s of [-1, 1]) { const e = caja(mat(0x6a5039), 0.2, 2.6, 0.06, 4.6 + s * 0.2, 0, 3.4); e.rotation.x = -0.25; }
       for (let i = 0; i < 20; i++) roca(mat(0x3a3c44), 5 + rnd() * 6, (rnd() - 0.5) * 100, 1.5, -34 - rnd() * 30, 1.5);
       arboleda(Array.from({ length: 60 }, () => { const a = rnd() * 6.28, d = 18 + rnd() * 50; return [Math.cos(a) * d, Math.sin(a) * d, 1 + rnd() * 0.7]; }).filter(p => p[1] < 12 || Math.abs(p[0]) > 14), [0x3a5046, 0x33483e], { pinos: true });
@@ -374,13 +423,13 @@ export function crearEntrada(l) {
     // La granja grande de Marendol
     granja() {
       suelo(0xb0903e); disco(0xb89a6a, 26, 0.03); trigal(5200, (x, z) => x > 22 && x < 48 && z > 0 && z < 20, 28);
-      casa(-6, -8, 12, 7, 5, 0, { pared: 0xe6dcc0, teja: 0xb5652a, chim: true, entramado: false }); humo(-2.6, 9.6, -8, false); casa(10, -6, 9, 13, 6.4, 0, { pared: 0x8a6a48, teja: 0x74683f, puerta: false, entramado: false }); caja(mat(0x3a2a1c), 4, 4.4, 0.2, 10, 0, 0.6); caja(mat(0x14161a), 1.6, 1.6, 0.2, 10, 6.6, 0.4);
+      casa(-6, -8, 12, 7, 5, 0, { pared: 0xe6dcc0, teja: 0xb5652a, chim: true, entramado: false }); humo(-2.6, 9.6, -8, false); casa(10, -6, 9, 13, 6.4, 0, { pared: 0x8a6a48, teja: 0x74683f, puerta: false, entramado: false, ventanas: false }); caja(mat(0x3a2a1c), 4, 4.4, 0.2, 10, 0, 0.6); caja(mat(0x14161a), 1.6, 1.6, 0.2, 10, 6.6, 0.4);
       cil(mat(0xd8d0c0), 2.2, 2.2, 9, 20, 0, -8, undefined, 14); pieza(new THREE.ConeGeometry(2.5, 2.4, 14), mat(0xb5652a), 20, 10.2, -8);
       cerca(-20, 4, -6, 4); cerca(-20, 4, -20, 16); cerca(-20, 16, -6, 16); cerca(-6, 16, -6, 9); for (let i = 0; i < 5; i++) res(-17 + (i % 3) * 4, 7 + Math.floor(i / 3) * 5 + rnd(), rnd() * 6, [0x7a4a2e, 0x3a2a22, 0xd8c8b0][i % 3], 2.2);
       cerca(2, 6, 14, 6); cerca(14, 6, 14, 14); cerca(14, 14, 2, 14); cerca(2, 14, 2, 6); for (let i = 0; i < 7; i++) res(4 + (i % 4) * 2.6, 8 + Math.floor(i / 4) * 3.4, rnd() * 6, 0xf0ece0, 1.2);
       for (let i = 0; i < 8; i++) caja(mat(0xd2aa4e), 2, 1.1, 1.3, -2 + (i % 4) * 2.2, i > 3 ? 1.1 : 0, -1.4, (i % 2) * 0.1);
       const esp = nido(-14, -2, 0.3); caja(mat(0x5a4633), 0.14, 3.4, 0.14, 0, 0, 0, 0, esp); caja(mat(0x5a4633), 2.6, 0.14, 0.14, 0, 2.5, 0, 0, esp); caja(mat(0x7a3b2e), 1.4, 1.6, 0.3, 0, 1.4, 0, 0, esp); pieza(new THREE.SphereGeometry(0.4, 8, 6), mat(0xb89a62), 0, 3.5, 0, esp); pieza(new THREE.ConeGeometry(0.7, 0.5, 8), mat(0xd2aa4e), 0, 3.95, 0, esp);
-      cil(mat(0x8d8676), 1.2, 1.3, 1.0, 2, 0, -3); carro(-2, 6, 0.4); figura(1, 2, 2.4, 0x8a6a48); figura(-10, 1, 0.6, 0x6a5a2f); figura(16, 3, 4, 0x5a6b3a);
+      cil(mat(0x8d8676), 1.2, 1.3, 1.0, 2, 0, -3); carro(-2, 6, 0.4); faena(figura(-1, 2.6, 2.6, 0x8a6a48), 'remueve'); for (let i = 0; i < 6; i++) gallina(-3.4 + rnd() * 3, 3.4 + rnd() * 2.6, [0xe8e0d0, 0x8a5a36, 0xc9a06a][i % 3]); anda(figura(0, 0, 0, 0x6a5a2f), [[-21.5, 2.6], [-4.6, 2.6], [-4.6, 17.4], [-21.5, 17.4]], 1.0); faena(figura(16, 3, 4, 0x5a6b3a), 'habla', 0.6); figura(17.2, 1.6, 0.9, 0x7a3b2e); farol(-0.4, -3.8, 0.4);
       for (let i = 0; i < 15; i++) { arbol(26 + (i % 5) * 4.4, 4 + Math.floor(i / 5) * 5, 0.8, 0x6a8a3a); }
       rotulo('Casa', -6, 10, -8); rotulo('Granero', 10, 12, -6); rotulo('Silo', 20, 14, -8); rotulo('Frutales', 34, 6, 9);
       return { pos: [16, 20, 42], objetivo: [2, 2, 0], cielo: 0xbcd0e0, R: 46, limite: 42 };
@@ -399,7 +448,7 @@ export function crearEntrada(l) {
       for (let i = 0; i < 8; i++) caja(mat(0x6b5440), 1.8, 0.16, 1.2, -9 - i * 1.2, 1.2 - i * 0.02, 6); for (let i = 0; i < 4; i++) cil(mat(0x4a3a2a), 0.14, 0.14, 3.4, -10 - i * 2.6, -1.5, 6.7, undefined, 5);
       const b = crearBarcoModelo({ eslora: 5, palos: 1, velas: 'recogidas' }), gb = nido(-16, 9, 0.4, 0.05); gb.add(b); vivos.push(t => { gb.position.y = 0.05 + Math.sin(t) * 0.1; });
       const lejos = crearBarcoModelo({ eslora: 16, palos: 3, velas: 'dadas' }), gl = nido(60, -70, 2.2, 0.1); gl.add(lejos); vivos.push(t => { gl.position.x = 60 - ((t * 1.2) % 160); gl.position.y = 0.1 + Math.sin(t * 0.8) * 0.2; });
-      const f = figura(1.4, 2.6, 0.5, 0x2f4f6f); f.position.y = 34.2;
+      const f = figura(0, 0, 0, 0x2f4f6f); f.position.y = 34.2; anda(f, Array.from({ length: 14 }, (_, i) => [Math.cos(i / 14 * 6.28) * 2.75, Math.sin(i / 14 * 6.28) * 2.75]), 0.7, true); farol(4.6, 6.4, 2.4, 3, 3.6);
       rotulo('El fanal', 0, 42, 0); rotulo('Casa del farero', 7, 10.5, 3); rotulo('Embarcadero', -13, 4, 6);
       return { pos: [30, 20, 52], objetivo: [0, 17, 0], cielo: 0x8ab0d0, R: 56, limite: 44 };
     },
@@ -425,7 +474,12 @@ export function crearEntrada(l) {
     },
   };
   const v = (PARAJES[l.id] || PARAJES[l.tipo] || PARAJES.pueblo)();
-  plantar(); fundir();
+  // lluvia: rayas que caen alrededor del paraje cuando en la región hay chubasco; polvo que cruza los campos de Marendol
+  const NG = 900, pg = new Float32Array(NG * 6), gotas = new THREE.LineSegments(new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(pg, 3)), new THREE.LineBasicMaterial({ color: 0xc8d6e4, transparent: true, opacity: 0, depthWrite: false }));
+  for (let i = 0; i < NG; i++) { const x = (rnd() - 0.5) * 110, y = rnd() * 44, z = (rnd() - 0.5) * 110; pg.set([x, y, z, x + 0.25, y - 1.5, z], i * 6); }
+  gotas.frustumCulled = false; gotas.visible = false; escena.add(gotas);
+  if (l.region === 'marendol') for (let i = 0; i < 7; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: blanda(), transparent: true, depthWrite: false, opacity: 0.16, color: 0xd9c08a })), z0 = (rnd() - 0.5) * 90, f0 = rnd() * 140; sp.scale.set(30, 7, 1); escena.add(sp); vivos.push(t => { sp.position.set(((t * 5 + f0) % 140) - 70, 2.2, z0 + Math.sin(t * 0.2 + i) * 4); }); }
+  plantar(v.pos); fundir();
 
   /* ---------- luz del día, la misma hora que en el mapa ---------- */
   const sol = new THREE.DirectionalLight(0xffffff, 2); sol.castShadow = true; sol.shadow.mapSize.setScalar(2048);
@@ -438,6 +492,10 @@ export function crearEntrada(l) {
     sol.position.copy(luz.dirSol).multiplyScalar(180); sol.intensity = luz.sol.intensity * k; sol.color.copy(luz.sol.color); sol.castShadow = luz.sol.castShadow;
     luna.position.copy(luz.dirLuna).multiplyScalar(180); luna.intensity = luz.luna.intensity * 1.2; luzCielo.intensity = luz.luzCielo.intensity * (0.5 + 0.5 * k);
     escena.background.copy(luz.horizonte).lerp(luz.arriba, 0.3).lerp(tinte, (k < 1 ? 0.7 : 0.35) * (1 - noche * 0.8)); escena.fog.color.copy(escena.background);
+    nocheAhora = noche; vidrio.emissiveIntensity = noche * 1.3; farolM.emissiveIntensity = 0.1 + noche * 2.6; for (const [luzN, fuerza] of lucesNoche) luzN.intensity = fuerza * noche;
+    const agua = lluvia(t, l.region); gotas.visible = agua > 0.02;
+    if (gotas.visible) { gotas.material.opacity = agua * 0.5; for (let i = 0; i < NG; i++) { let y = pg[i * 6 + 1] - 0.9; if (y < 0) y += 44; pg[i * 6 + 1] = y; pg[i * 6 + 4] = y - 1.5; } gotas.geometry.attributes.position.needsUpdate = true; sol.intensity *= 1 - agua * 0.55; }
+    escena.fog.density = bruma * (1 + agua * 1.6);
     for (const f of vivos) f(t);
     if (vivos.haz) { vivos.haz.rotation.y = t * 0.5; vivos.haz.visible = noche > 0.3; }
   }

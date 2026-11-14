@@ -34,6 +34,7 @@ assets/
   js/ruinas.js         parajes: la vista de cerca de ruinas (solo el exterior y la entrada), pueblos, postas, faro, torre...
   js/sonido.js         ambiente sonoro sin archivos: viento, mar, gentío, fuego, grillos y pájaros
   js/campo.js          trigo y hierba: matas instanciadas que se mecen con el viento
+  js/clima.js          chubascos sobre Valcoria y Astravan, los mismos en el mapa y en los parajes
   js/modelos.js        carga opcional de modelos glTF de artista
   js/ambiente.js       cielo, sombras, nubes, nieve, niebla, humo, barcos, pájaros, faro, luces de noche
   js/viaje.js          rutas y viajero
@@ -54,6 +55,7 @@ Todo se edita en `assets/data/mundo.json`. Las coordenadas van en una rejilla de
 - **`suelo`**: `agua` (medio sumergido en un lago), `marisma` (a ras de charca) o `islote` (levanta un peñón en el mar). Sin este campo, tierra firme.
 - **`oculto: true`**: el lugar se ve pero no lleva nombre ni sale en la lista de destinos; solo aparece su ficha si se pulsa encima.
 - **Notas y marcas**: en el panel Partida, con el modo edición puesto, cada ficha tiene un cuadro de notas y se pueden clavar marcas en el centro de la vista. Se guardan en `partida.json` con lo demás: si lo subes, las lee cualquiera.
+- **Partida por enlace**: «Copiar partida como enlace» mete la partida entera en la dirección (`…/#partida=…`). Quien lo abra la ve tal cual, sin subir nada al repositorio.
 - **Enlace a un lugar**: `…/#lugar=id` abre el mapa centrado en él; la ficha tiene un botón que lo copia.
 - **`decorado`**: ambiente sin nombre ni ficha (aldeas, atalayas, casas fuertes, fuertes, minas, almenaras...). Por región, una lista de `[tipo, cuántos, { junto, tamano }]`; el mapa lo reparte solo donde el terreno lo permite. Para quitarlo de una región, borra su línea.
 - **`gobierno`**: texto que solo se muestra dentro de la ciudad. El interior se genera solo: su tamaño sale de `tamano` y sus puertas, de los caminos que llegan a esa capital.

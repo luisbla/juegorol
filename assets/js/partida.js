@@ -16,6 +16,11 @@ export async function crearPartida({ mundo, terreno, lugares, escena, viajes, h,
     const g = JSON.parse(localStorage.getItem(CLAVE) || 'null');
     if (g && g.huella === huella) { estado = { ...VACIA, ...g.estado }; borrador = true; }
   } catch { /* almacenamiento no disponible */ }
+  // una partida puede llegar dentro del enlace (…#partida=…): se muestra sin tocar lo guardado en este navegador
+  const aTexto = o => btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify(o)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const deTexto = t => JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(t.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0))));
+  let deEnlace = false;
+  try { const t = new URLSearchParams(location.hash.slice(1)).get('partida'); if (t) { estado = { ...VACIA, ...deTexto(t) }; borrador = true; deEnlace = true; } } catch { /* enlace roto: se ignora */ }
   const porId = Object.fromEntries(lugares.lista.map(l => [l.datos.id, l]));
   const nombre = id => porId[id]?.datos.nombre ?? id;
 
@@ -119,7 +124,7 @@ export async function crearPartida({ mundo, terreno, lugares, escena, viajes, h,
     alCambiar?.();
   }
   function cambiar() {
-    borrador = true;
+    borrador = true; deEnlace = false;
     try { localStorage.setItem(CLAVE, JSON.stringify({ huella, estado })); } catch { /* sin almacenamiento: vale para esta visita */ }
     aplicar();
   }
@@ -175,8 +180,9 @@ export async function crearPartida({ mundo, terreno, lugares, escena, viajes, h,
       estado.marcas.length ? h('ul', { class: 'marcas' }, ...estado.marcas.map((m, i) => h('li', {}, m.texto, edicion ? h('button', { type: 'button', 'aria-label': `Quitar la marca «${m.texto}»`, onclick: () => { estado.marcas.splice(i, 1); cambiar(); } }, '×') : null))) : null,
       edicion ? (() => { const campo = h('input', { type: 'text', maxlength: '60', placeholder: 'Aquí nos emboscaron…', 'aria-label': 'Texto de la marca' }); const poner = () => { if (campo.value.trim()) marcar(campo.value); }; campo.addEventListener('keydown', ev => { if (ev.key === 'Enter') poner(); }); return h('div', { class: 'fila' }, campo, h('button', { type: 'button', class: 'ancho', onclick: poner }, 'Marcar…')); })() : null,
       h('button', { type: 'button', class: 'ancho', onclick: descargar }, 'Descargar partida.json'),
+      (() => { const b = h('button', { type: 'button', class: 'ancho', onclick: async () => { const url = `${location.origin}${location.pathname}#partida=${aTexto(estado)}`; try { await navigator.clipboard.writeText(url); b.textContent = 'Enlace copiado'; } catch { history.replaceState(null, '', url); b.textContent = 'Enlace en la barra de direcciones'; } } }, 'Copiar partida como enlace'); return b; })(),
       borrador ? h('button', { type: 'button', class: 'ancho', onclick: descartar }, 'Descartar mis cambios') : null,
-      h('p', { class: 'nota' }, borrador ? 'Hay cambios guardados solo en este navegador. Para que los vea el resto, sube el archivo descargado a assets/data/. Ojo: notas y marcas van dentro y las leerá cualquiera que abra el mapa.' : 'Mostrando la partida publicada.'),
+      h('p', { class: 'nota' }, deEnlace ? 'Estás viendo una partida recibida por enlace. No se guarda aquí hasta que cambies algo.' : borrador ? 'Hay cambios guardados solo en este navegador. Para que los vea el resto, sube el archivo descargado a assets/data/. Ojo: notas y marcas van dentro y las leerá cualquiera que abra el mapa.' : 'Mostrando la partida publicada.'),
     ].filter(Boolean));
   }
 
