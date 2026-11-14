@@ -13,6 +13,7 @@ export function crearSala(tipo, id) {
   const caja = (m, w, h, d, x, y, z, padre) => pieza(new THREE.BoxGeometry(w, h, d), m, x, y + h / 2, z, padre);
   const cil = (m, r, h, x, y, z, padre, seg = 12) => pieza(new THREE.CylinderGeometry(r, r, h, seg), m, x, y + h / 2, z, padre);
   const rotulo = (nombre, x, y, z) => etiquetas.push({ nombre, pos: new THREE.Vector3(x, y, z), clase: 'hito' });
+  const PELOS = [0x2a1f18, 0x5a3a22, 0x8a6a3a, 0x1a1a1a, 0xb8b0a4];
   const ROPAS = [0x7a3b2e, 0x2f4f6f, 0x5a6b3a, 0x6a5a2f, 0x4a3a5a, 0x8a6a48];
 
   // la caja: suelo, fondo y dos laterales, con ventanas al fondo
@@ -30,7 +31,13 @@ export function crearSala(tipo, id) {
     const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = mira; g.scale.setScalar(alto); escena.add(g);
     pieza(new THREE.CapsuleGeometry(0.62, 1.7, 4, 10), mat(color, { roughness: 1 }), 0, 1.75, 0, g);
     pieza(new THREE.SphereGeometry(0.46, 12, 10), mat(0xd9b08c), 0, 3.35, 0, g);
+    pieza(new THREE.SphereGeometry(0.5, 10, 6, 0, Math.PI * 2, 0, Math.PI * 0.55), mat(PELOS[Math.floor(rnd() * PELOS.length)], { roughness: 1 }), 0, 3.4, -0.06, g);   // pelo
+    pieza(new THREE.BoxGeometry(0.14, 0.14, 0.14), mat(0xc99a78), 0, 3.3, 0.46, g);                                                                              // nariz
+    pieza(new THREE.CylinderGeometry(0.64, 0.64, 0.14, 10), mat(0x2a2018), 0, 1.75, 0, g);                                                                       // cinto
+    for (const s of [-0.26, 0.26]) pieza(new THREE.BoxGeometry(0.36, 0.2, 0.6), mat(0x2a2018), s, 0.1, 0.12, g);                                                 // botas
+    pieza(new THREE.CapsuleGeometry(0.17, 1.1, 4, 6), mat(color, { roughness: 1 }), -0.72, 2.0, 0.05, g).rotation.z = -0.12;                                     // brazo izquierdo
     const hombro = new THREE.Group(); hombro.position.set(0.72, 2.6, 0); g.add(hombro);
+    pieza(new THREE.SphereGeometry(0.16, 6, 5), mat(0xd9b08c), 0, -1.3, 0, hombro);                                                                              // mano
     pieza(new THREE.CapsuleGeometry(0.17, 1.1, 4, 6), mat(color, { roughness: 1 }), 0, -0.6, 0, hombro);
     const fase = rnd() * 6.28;
     vivos.push(t => { g.position.y = Math.sin(t * 1.3 + fase) * 0.03; });

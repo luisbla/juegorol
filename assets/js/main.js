@@ -249,7 +249,7 @@ async function iniciar() {
         if (libre > mejor) { mejor = libre; desde = p; }
         if (libre > 17) break;
       }
-      desde.y = 9 + alto * 0.55;
+      desde.y = e.picado ? lejos * 0.9 : 9 + alto * 0.55;   // los recintos amurallados se miran más desde arriba
     } else desde = objetivo.clone().add(camara.position.clone().sub(control.target).setLength(24));
     volar(desde, objetivo, 1100);
     pintarFicha();

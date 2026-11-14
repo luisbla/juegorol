@@ -90,6 +90,11 @@ export function crearInterior(l) {
     pieza(new THREE.CylinderGeometry(0.42, sentado ? 0.6 : 0.52, sentado ? 1.5 : 2.3, 8), ropa, 0, sentado ? 0.85 : 1.15, 0, g);
     pieza(new THREE.SphereGeometry(0.4, 10, 8), piel, 0, sentado ? 1.95 : 2.7, 0, g);
     if (sentado) { const piernas = pieza(new THREE.BoxGeometry(0.9, 0.45, 1.1), ropa, 0, 0.25, 0.55, g); piernas.material = mat(0x3a3028); }
+    const cy = sentado ? 1.95 : 2.7;
+    pieza(new THREE.SphereGeometry(0.43, 10, 6, 0, Math.PI * 2, 0, Math.PI * 0.55), mat([0x2a1f18, 0x5a3a22, 0x8a6a3a, 0x1a1a1a, 0xb8b0a4][Math.floor(rnd() * 5)], { roughness: 1 }), 0, cy + 0.04, -0.05, g);   // pelo
+    pieza(new THREE.BoxGeometry(0.12, 0.12, 0.12), piel, 0, cy - 0.04, 0.4, g);                                                                                       // nariz
+    pieza(new THREE.CylinderGeometry(0.5, 0.5, 0.12, 10), mat(0x2a2018), 0, sentado ? 0.75 : 1.2, 0, g);                                                               // cinto
+    pieza(new THREE.CylinderGeometry(0.13, 0.13, 0.95, 6), ropa, -0.5, sentado ? 1.0 : 1.6, 0.12, g).rotation.x = sentado ? -0.9 : 0;                                  // brazo izquierdo
     const brazo = new THREE.Group(); brazo.position.set(0.48, sentado ? 1.35 : 2.0, 0.1); g.add(brazo);
     pieza(new THREE.CylinderGeometry(0.13, 0.13, 0.95, 6), ropa, 0, -0.3, 0.3, brazo).rotation.x = -1.0;
     const jarra = rnd() > 0.35 ? pieza(new THREE.CylinderGeometry(0.2, 0.2, 0.42, 8), mat(0xc9b06a, { roughness: 0.5 }), 0, -0.5, 0.75, brazo) : null;

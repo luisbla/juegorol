@@ -26,6 +26,7 @@ const HITOS = {
 const RUMBOS = ['este', 'sureste', 'sur', 'suroeste', 'oeste', 'noroeste', 'norte', 'noreste'];
 const difAng = (a, b) => Math.abs(((a - b + Math.PI * 3) % (Math.PI * 2)) - Math.PI);
 
+const gEsfera = new THREE.SphereGeometry(1, 10, 8);
 const sinIndice = new Map();
 const plana = g => { if (!sinIndice.has(g)) sinIndice.set(g, g.index ? g.toNonIndexed() : g); return sinIndice.get(g); };
 
@@ -83,7 +84,7 @@ export function crearCiudad(l, mundo, { movil = false } = {}) {
   }
   const conMarco = (x, z, ry, fn) => { marco = new THREE.Matrix4().makeRotationY(ry).setPosition(x, 0, z); fn(); marco = null; };
   // sub: un marco dentro del marco, para piezas que se repiten giradas (ventanas, puertas, carros)
-  const sub = (x, z, ry, fn) => { const antes = marco; marco = antes.clone().multiply(new THREE.Matrix4().makeRotationY(ry).setPosition(x, 0, z)); fn(); marco = antes; };
+  const sub = (x, z, ry, fn) => { const antes = marco, local = new THREE.Matrix4().makeRotationY(ry).setPosition(x, 0, z); marco = antes ? antes.clone().multiply(local) : local; fn(); marco = antes; };
   const caja = (m, w, h, d, x, y, z, ry = 0) => poner(gCaja, m, x, y + h / 2, z, w, h, d, ry);
   const cil = (m, r, h, x, y, z) => poner(gCil, m, x, y + h / 2, z, r, h, r);
   const cono = (m, r, h, x, y, z) => poner(gCono, m, x, y + h / 2, z, r, h, r);
@@ -103,7 +104,16 @@ export function crearCiudad(l, mundo, { movil = false } = {}) {
   const tejas = [matTejado(e.teja), matTejado(e.teja), matTejado(perfil.teja2)];
   const banderas = [], humos = [];
 
+  const colorRegion = mundo.regiones.find(r => r.id === l.region)?.color ?? '#cccccc';
+  const despues = [], aspas = [];
+  // cristales y faroles se encienden al caer la noche; las brasas siempre
+  const vidrio = new THREE.MeshStandardMaterial({ color: 0x141a22, roughness: 0.3, emissive: 0xffc070, emissiveIntensity: 0 });
+  const farolM = new THREE.MeshStandardMaterial({ color: 0x6a5a30, emissive: 0xffc060, emissiveIntensity: 0.1 });
+  const brasaM = new THREE.MeshStandardMaterial({ color: 0x331008, emissive: 0xff5a14, emissiveIntensity: 2 });
+  const edificio = crearEdificios({ caja, cil, cono, poner, sub, casa, torre, rnd, matLiso, matPiedra, matTejado, vidrio, farolM, brasaM,
+    G: { caja: gCaja, cil: gCil, cono: gCono, roca: gRoca, dosAguas: gDosAguas, casco: gCasco, esfera: gEsfera }, piedra, piedraClara, colPared: e.pared, colorRegion, teja: tejas[0], teja2: tejas[2] });   // lo que necesita piezas que se crean más abajo (fuegos) o que se mueve (molino)
   /* ---------- caserío en anillos ---------- */
+  const azarCasas = azarDe('casas-' + l.id);
   // las calles no son círculos perfectos: cada anillo ondula, más cuanto más lejos de la plaza, y lo cortan callejones
   const paso = 13, anillos = [], f1 = rnd() * 6.28, f2 = rnd() * 6.28;
   const onda = (a, r) => (Math.sin(a * 3 + f1) * 3.0 + Math.sin(a * 7 + f2) * 1.6) * Math.min(1, (r - 20) / 40) * Math.min(1, (R - 6 - r) / 14);
@@ -158,7 +168,12 @@ export function crearCiudad(l, mundo, { movil = false } = {}) {
       const r = Math.min(R - 9, r0 + sc.desfase * Math.min(1, (r0 - 20) / 30) + onda(a, r0) + (rnd() - 0.5) * 1.8), x = Math.cos(a) * r, z = Math.sin(a) * r;
       if (cercaAvenida(a, r, 6.5) || enSede(x, z) || enMar(x, z, 11) || i % callejon === 0 || rnd() < b.hueco || hitos.some(q => Math.hypot(x - q.x, z - q.z) < 17.5) || claros.some(q => Math.hypot(x - q.x, z - q.z) < 9)) continue;
       const alto = (3.0 + rnd() * 1.6 + (1 - r / R) * 1.4 + (rnd() > 0.85 ? 1.6 : 0)) * b.alto;
-      casa(x, z, (4.6 + rnd() * 1.5) * b.w, (4.3 + rnd() * 1.2) * b.w, alto, b.paredes[Math.floor(rnd() * b.paredes.length)], b.tejas[Math.floor(rnd() * b.tejas.length)], -(a + Math.PI / 2) + (rnd() - 0.5) * (sc.clase === 'arrabal' ? 0.5 : 0.14), rnd() < b.chim);
+      const cw = (4.6 + rnd() * 1.5) * b.w, cd = (4.3 + rnd() * 1.2) * b.w, pared = b.paredes[Math.floor(rnd() * b.paredes.length)], teja = b.tejas[Math.floor(rnd() * b.tejas.length)];
+      const cry = -(a + Math.PI / 2) + (rnd() - 0.5) * (sc.clase === 'arrabal' ? 0.5 : 0.14), chim = rnd() < b.chim;
+      casa(x, z, cw, cd, alto, pared, teja, cry, chim);
+      // relieve: todo en las casas de primera línea (cerca de la plaza o de una avenida), lo justo en el resto
+      const primera = r < 50 || cercaAvenida(a, r, 14), nivel = movil ? (primera && r < 40 ? 1 : 0) : primera ? 2 : 1;
+      if (nivel) sub(x, z, cry, () => edificio('casa', { w: cw, d: cd, alto, nivel, clase: sc.clase, lado: r0 === anillos[0] || azarCasas() > 0.5 ? 1 : -1, piedra: !!e.fortaleza || sc.clase === 'alto', chim, pared, teja, rnd: azarCasas }));
       if (rnd() > 0.9 && humos.length < 14) humos.push(new THREE.Vector3(x, alto * 1.8, z));
     }
   }
@@ -206,52 +221,21 @@ export function crearCiudad(l, mundo, { movil = false } = {}) {
     const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color, side: THREE.DoubleSide, roughness: 0.8 }));
     m.position.set(x, y + 4.6, z); banderas.push(m);
   }
-  const colorRegion = mundo.regiones.find(r => r.id === l.region)?.color ?? '#cccccc';
   const aMundo = (x, y, z) => new THREE.Vector3(x, y, z).applyAxisAngle(new THREE.Vector3(0, 1, 0), -angSede - Math.PI / 2).add(new THREE.Vector3(sede.x, 0, sede.z));
   // el conjunto mira a la plaza: su eje +z local apunta al centro de la ciudad
   conMarco(sede.x, sede.z, -angSede - Math.PI / 2, () => {
-    const muro = matPared(e.fortaleza ? 0x5d626e : e.muro, { piedra: true }), teja = tejas[0], k = rSede / 22;
-    // recinto con torres en las esquinas y puerta hacia la plaza
-    for (let i = 0; i < 20; i++) { const a = i / 20 * Math.PI * 2; if (difAng(a, -Math.PI / 2) < 0.25) continue; caja(piedra, rSede * 0.33, 5, 1.6, Math.cos(a) * rSede, 0, -Math.sin(a) * rSede, a + Math.PI / 2); }
-    for (let i = 0; i < 5; i++) { const a = i / 5 * Math.PI * 2 + 0.3; torre(Math.cos(a) * rSede, Math.sin(a) * rSede, 2.4, 8.5, piedra, teja, e.fortaleza); }
-    if (l.id === 'griselda') {
-      caja(muro, 17 * k, 17, 21 * k, 0, 0, -2);
-      for (let i = 0; i < 14; i++) { const a = i / 14 * 6.283; caja(piedra, 2.4, 1.6, 1.4, Math.cos(a) * 9 * k, 17, -2 + Math.sin(a) * 11 * k, -a); }
-      torre(-9 * k, -12 * k, 3.6, 27, piedra, teja, true); torre(9 * k, -12 * k, 3.0, 22, piedra, teja, true); torre(9 * k, 8 * k, 2.6, 19, piedra, teja, true);
-    } else if (l.id === 'astravan') {
-      caja(muro, 26 * k, 10, 12 * k, 0, 0, -3);
-      poner(gDosAguas, teja, 0, 10, -3, 28 * k, 5, 13.5 * k);
-      for (let i = 0; i < 9; i++) cil(piedraClara, 0.5, 5, -11 * k + i * 2.75 * k, 0, 4.2 * k);   // soportal
-      caja(piedraClara, 25 * k, 0.6, 2.4, 0, 5, 4.0 * k);
-      cil(muro, 5 * k, 17, 0, 0, -8 * k); cono(teja, 5.6 * k, 7, 0, 17, -8 * k);                  // torre del reloj
-      for (const s of [-1, 1]) casa(s * 12 * k, 7 * k, 7, 5, 5, paredes[0], tejas[2], Math.PI / 2, true);
-    } else if (l.id === 'solterra' || l.tipo === 'puerto') {
-      casa(0, -3, 19 * k, 9 * k, 8, muro, teja, 0, true);
-      casa(-9 * k, 5 * k, 7, 6, 5.5, paredes[0], teja, Math.PI / 2, false);
-      torre(9 * k, 3 * k, 2.6, 13, piedra, teja, false);
-    } else {
-      caja(muro, 17 * k, 12, 14 * k, 0, 0, -2);
-      poner(gDosAguas, teja, 0, 12, -2, 19 * k, 6.5, 16 * k);
-      torre(-9.5 * k, -9.5 * k, 3.3, 22, piedra, teja, false); torre(9.5 * k, -9.5 * k, 2.8, 18, piedra, teja, false);
-      torre(9.5 * k, 5.5 * k, 2.4, 15, piedra, teja, false); torre(-9.5 * k, 5.5 * k, 2.4, 15, piedra, teja, false);
-      casa(0, 9 * k, 9, 5, 5, paredes[0], teja, 0, false);
-    }
+    const r = edificio('sede', { id: l.id, puerto: l.tipo === 'puerto', rS: rSede, fortaleza: !!e.fortaleza, frio: l.id === 'griselda', colMuro: e.fortaleza ? 0x5d626e : e.muro, teja: tejas[0] });
+    for (const [x, y, z, fuerza, color] of r.fuegos) { const p = aMundo(x, y, z); despues.push(() => fuego(p.x, p.y, p.z, fuerza, color)); }
+    for (const h of r.humos) humos.push(aMundo(...h));
   });
   if (l.id === 'astravan') [-7, 0, 7].forEach((dx, i) => { const p = aMundo(dx, 10 + 5, -3); bandera(p.x, p.y, p.z, [0x2f6aa0, 0x3f8a54, 0xb08a2e][i]); });   // tres casas, tres pendones
   else {
     const k = rSede / 22, asta = { griselda: [-9 * k, 28.5, -12 * k], solterra: [9 * k, 18.5, 3 * k], liria: [9 * k, 18.5, 3 * k] }[l.id] || [-9.5 * k, 29, -9.5 * k];
     const p = aMundo(...asta); bandera(p.x, p.y, p.z, colorRegion);
   }
-  etiquetas.push({ nombre: perfil.sede, pos: new THREE.Vector3(sede.x, 34, sede.z), clase: 'ciudad' });
+  etiquetas.push({ nombre: perfil.sede, pos: new THREE.Vector3(sede.x, 34, sede.z), clase: 'ciudad', suelo: new THREE.Vector3(sede.x, 0, sede.z), frente: new THREE.Vector3(-sede.x, 0, -sede.z).normalize(), picado: true });
 
   /* ---------- edificios singulares ---------- */
-  const despues = [], aspas = [];
-  // cristales y faroles se encienden al caer la noche; las brasas siempre
-  const vidrio = new THREE.MeshStandardMaterial({ color: 0x141a22, roughness: 0.3, emissive: 0xffc070, emissiveIntensity: 0 });
-  const farolM = new THREE.MeshStandardMaterial({ color: 0x6a5a30, emissive: 0xffc060, emissiveIntensity: 0.1 });
-  const brasaM = new THREE.MeshStandardMaterial({ color: 0x331008, emissive: 0xff5a14, emissiveIntensity: 2 });
-  const edificio = crearEdificios({ caja, cil, cono, poner, sub, casa, torre, rnd, matLiso, matPiedra, matTejado, vidrio, farolM, brasaM,
-    G: { caja: gCaja, cil: gCil, cono: gCono, roca: gRoca, dosAguas: gDosAguas }, piedra, piedraClara, colPared: e.pared, colorRegion, teja: tejas[0], teja2: tejas[2] });   // lo que necesita piezas que se crean más abajo (fuegos) o que se mueve (molino)
   for (const q of hitos) {
     const ry = -q.ang - Math.PI / 2, ejeY0 = new THREE.Vector3(0, 1, 0);
     const fuera = (x, y, z) => new THREE.Vector3(x, y, z).applyAxisAngle(ejeY0, ry).add(new THREE.Vector3(q.x, 0, q.z));   // local → escena
@@ -452,21 +436,48 @@ export function crearCiudad(l, mundo, { movil = false } = {}) {
 
   /* ---------- vida: gente por las calles, humo de chimeneas, antorchas ---------- */
   const nGente = movil ? 45 : 110, andares = [];
-  // figuras: túnica (cono truncado) teñida por persona y cabeza aparte, con las mismas posiciones
-  const gCuerpo = new THREE.CylinderGeometry(0.22, 0.42, 1.45, 7); gCuerpo.translate(0, -0.2, 0);
-  const gCabeza = new THREE.SphereGeometry(0.25, 8, 6); gCabeza.translate(0, 0.78, 0);
-  const gente = new THREE.InstancedMesh(gCuerpo, new THREE.MeshStandardMaterial({ roughness: 1 }), nGente);
-  const cabezas = new THREE.InstancedMesh(gCabeza, new THREE.MeshStandardMaterial({ color: 0xd9b08c, roughness: 1 }), nGente);
-  const ROPA = [0x7a3b2e, 0x2f4f6f, 0x5a6b3a, 0x8a7a55, 0x4a3a5a, 0xb09a6a, 0x6a2f3a];
-  const colorTmp = new THREE.Color();
+  // Figuras articuladas: cada parte es una malla instanciada (una llamada de dibujo por parte, no por persona).
+  // Sayo, brazos y piernas se tiñen por persona; las piernas y los brazos giran en la cadera y el hombro al andar.
+  const une = gs => mergeGeometries(gs.map(g => g.index ? g.toNonIndexed() : g));
+  const gSayo = une([new THREE.CylinderGeometry(0.2, 0.31, 0.78, 8).translate(0, 1.1, 0), new THREE.BoxGeometry(0.6, 0.17, 0.3).translate(0, 1.46, 0), new THREE.CylinderGeometry(0.07, 0.09, 0.12, 6).translate(0, 1.58, 0)]);
+  const gCabeza = une([new THREE.SphereGeometry(0.17, 10, 8).scale(1, 1.12, 1).translate(0, 1.76, 0), new THREE.BoxGeometry(0.05, 0.06, 0.06).translate(0, 1.74, 0.17)]);
+  const gPelo = une([new THREE.SphereGeometry(0.185, 10, 6, 0, Math.PI * 2, 0, Math.PI * 0.55).translate(0, 1.79, -0.02), new THREE.BoxGeometry(0.3, 0.2, 0.1).translate(0, 1.68, -0.14)]);
+  const gPierna = une([new THREE.CylinderGeometry(0.105, 0.085, 0.82, 6).translate(0, -0.41, 0), new THREE.BoxGeometry(0.17, 0.09, 0.3).translate(0, -0.8, 0.05)]);
+  const gBrazo = une([new THREE.CylinderGeometry(0.075, 0.06, 0.6, 6).translate(0, -0.3, 0), new THREE.SphereGeometry(0.07, 6, 5).translate(0, -0.64, 0)]);
+  const tela = () => new THREE.MeshStandardMaterial({ roughness: 1 });
+  const partes = { sayo: new THREE.InstancedMesh(gSayo, tela(), nGente), cabeza: new THREE.InstancedMesh(gCabeza, tela(), nGente), pelo: new THREE.InstancedMesh(gPelo, tela(), nGente),
+    piernaI: new THREE.InstancedMesh(gPierna, tela(), nGente), piernaD: new THREE.InstancedMesh(gPierna, tela(), nGente), brazoI: new THREE.InstancedMesh(gBrazo, tela(), nGente), brazoD: new THREE.InstancedMesh(gBrazo, tela(), nGente) };
+  const ROPA = [0x7a3b2e, 0x2f4f6f, 0x5a6b3a, 0x8a7a55, 0x4a3a5a, 0xb09a6a, 0x6a2f3a, 0x3f5a5a, 0x9a5a2e], CALZAS = [0x3a3028, 0x4a4238, 0x2a2a30, 0x5a4a3a], PIELES = [0xe0b894, 0xd2a27c, 0xb98862, 0x8a6244], PELOS = [0x2a1f18, 0x5a3a22, 0x8a6a3a, 0x1a1a1a, 0xb8b0a4, 0x8a3a1e];
+  const colorTmp = new THREE.Color(), de = lista => lista[Math.floor(rnd() * lista.length)];
   for (let i = 0; i < nGente; i++) {
-    const enAvenida = rnd() < 0.55 && puertas.length;
-    andares.push(enAvenida
+    const enAvenida = rnd() < 0.55 && puertas.length, crio = rnd() < 0.12, talla = crio ? 0.6 + rnd() * 0.12 : 0.94 + rnd() * 0.16;
+    andares.push({ ...(enAvenida
       ? { tipo: 'avenida', ang: puertas[Math.floor(rnd() * puertas.length)].ang, lado: (rnd() - 0.5) * 5, f: rnd() * 6.28, v: 0.03 + rnd() * 0.03 }
-      : { tipo: 'anillo', r: (rnd() < 0.3 ? 8 + rnd() * 10 : anillos[Math.floor(rnd() * anillos.length)] + paso / 2 + (rnd() - 0.5) * 3), f: rnd() * 6.28, v: (rnd() > 0.5 ? 1 : -1) * (2.2 + rnd() * 1.6) });
-    gente.setColorAt(i, colorTmp.setHex(ROPA[Math.floor(rnd() * ROPA.length)]));
+      : { tipo: 'anillo', r: (rnd() < 0.3 ? 8 + rnd() * 10 : anillos[Math.floor(rnd() * anillos.length)] + paso / 2 + (rnd() - 0.5) * 3), f: rnd() * 6.28, v: (rnd() > 0.5 ? 1 : -1) * (2.2 + rnd() * 1.6) * (crio ? 1.5 : 1) }),
+      talla, ancho: talla * (0.9 + rnd() * 0.25), px: 0, pz: 0, rumbo: 0 });
+    const ropa = de(ROPA), calza = de(CALZAS), capucha = rnd() < 0.25;
+    partes.sayo.setColorAt(i, colorTmp.setHex(ropa)); partes.brazoI.setColorAt(i, colorTmp); partes.brazoD.setColorAt(i, colorTmp);
+    partes.pelo.setColorAt(i, capucha ? colorTmp.multiplyScalar(0.8) : colorTmp.setHex(de(PELOS)));
+    partes.piernaI.setColorAt(i, colorTmp.setHex(calza)); partes.piernaD.setColorAt(i, colorTmp); partes.cabeza.setColorAt(i, colorTmp.setHex(de(PIELES)));
   }
-  gente.castShadow = true; gente.frustumCulled = false; cabezas.frustumCulled = false; escena.add(gente, cabezas);
+  for (const m of Object.values(partes)) { m.castShadow = true; m.frustumCulled = false; escena.add(m); }
+
+  // Animales sueltos: perros que trotan por las calles y gallinas que picotean.
+  const nPerros = movil ? 3 : 9, nGallinas = movil ? 6 : 18;
+  const gPerro = une([new THREE.CylinderGeometry(0.19, 0.17, 0.75, 8).rotateX(Math.PI / 2).translate(0, 0.5, 0), new THREE.SphereGeometry(0.17, 8, 6).translate(0, 0.72, 0.45), new THREE.BoxGeometry(0.13, 0.12, 0.22).translate(0, 0.68, 0.64),
+    new THREE.ConeGeometry(0.06, 0.14, 4).translate(-0.1, 0.9, 0.42), new THREE.ConeGeometry(0.06, 0.14, 4).translate(0.1, 0.9, 0.42), new THREE.CylinderGeometry(0.035, 0.02, 0.4, 5).rotateX(-0.9).translate(0, 0.72, -0.5),
+    ...[[-0.12, 0.28], [0.12, 0.28], [-0.12, -0.28], [0.12, -0.28]].map(([x, z]) => new THREE.CylinderGeometry(0.05, 0.04, 0.4, 5).translate(x, 0.2, z))]);
+  const gGallina = une([new THREE.SphereGeometry(0.17, 8, 6).scale(1, 0.9, 1.3).translate(0, 0.3, 0), new THREE.SphereGeometry(0.09, 6, 5).translate(0, 0.5, 0.2), new THREE.ConeGeometry(0.03, 0.09, 4).rotateX(Math.PI / 2).translate(0, 0.49, 0.32),
+    new THREE.ConeGeometry(0.1, 0.24, 5).rotateX(-2.2).translate(0, 0.42, -0.25), new THREE.CylinderGeometry(0.015, 0.015, 0.2, 4).translate(-0.06, 0.1, 0), new THREE.CylinderGeometry(0.015, 0.015, 0.2, 4).translate(0.06, 0.1, 0)]);
+  const perros = new THREE.InstancedMesh(gPerro, tela(), nPerros), gallinas = new THREE.InstancedMesh(gGallina, tela(), nGallinas), trotes = [], picos = [];
+  for (let i = 0; i < nPerros; i++) { trotes.push({ r: anillos[Math.floor(rnd() * anillos.length)] + paso / 2 + (rnd() - 0.5) * 2, f: rnd() * 6.28, v: (rnd() > 0.5 ? 1 : -1) * (4 + rnd() * 3), talla: 0.8 + rnd() * 0.5, px: 0, pz: 0, rumbo: 0 }); perros.setColorAt(i, colorTmp.setHex(de([0x6a4a2e, 0x2a221c, 0xb89a6a, 0x8a8478, 0xd8d0c0]))); }
+  const corrales = sectores.filter(q => q.clase === 'arrabal'), dondeGallinas = corrales.length ? corrales : sectores;
+  for (let i = 0; i < nGallinas; i++) {
+    const grupo = Math.floor(i / 6), q0 = dondeGallinas[grupo % dondeGallinas.length], a = q0.a0 + (q0.a1 - q0.a0) * (0.3 + 0.4 * ((grupo * 0.37) % 1)) + (rnd() - 0.5) * 0.06, r0 = anillos[Math.min(anillos.length - 1, 1 + grupo % 3)] + paso / 2;
+    const r = r0 + onda(a, r0) + q0.desfase * Math.min(1, (r0 - 20) / 30) + (rnd() - 0.5) * 2.4;
+    picos.push({ x: Math.cos(a) * r, z: Math.sin(a) * r, f: rnd() * 6.28, giro: rnd() * 6.28 }); gallinas.setColorAt(i, colorTmp.setHex(de([0xe8e0d0, 0x8a5a36, 0x3a2a20, 0xc9a06a])));
+  }
+  for (const m of [perros, gallinas]) { m.castShadow = true; m.frustumCulled = false; escena.add(m); }
 
   const blanda = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d'), g = x.createRadialGradient(32, 32, 0, 32, 32, 32); g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(c); })();
   const bocanadas = [];
@@ -486,6 +497,9 @@ export function crearCiudad(l, mundo, { movil = false } = {}) {
   escena.add(sol, luna, cielo);
   escena.background = new THREE.Color(0x9cc4e8); escena.fog = new THREE.FogExp2(0x9cc4e8, 0.0011);
 
+  const matMiembro = new THREE.Matrix4(), matLocal = new THREE.Matrix4(), eulerTmp = new THREE.Euler();
+  // un miembro cuelga de su articulación (x, y en el cuerpo) y gira en ella; "mat" es la matriz de la persona
+  const miembro = (malla, i, x, y, giro) => { malla.setMatrixAt(i, matMiembro.multiplyMatrices(mat, matLocal.makeRotationX(giro).setPosition(x, y, 0))); };
   const mat = new THREE.Matrix4(), q = new THREE.Quaternion(), ejeY = new THREE.Vector3(0, 1, 0), pos = new THREE.Vector3(), esc = new THREE.Vector3(1, 1, 1), nada = new THREE.Vector3(0, 0, 0);
   function actualizar(t, luz, noche) {
     sol.position.copy(luz.dirSol).multiplyScalar(700); sol.intensity = luz.sol.intensity; sol.color.copy(luz.sol.color); sol.castShadow = luz.sol.castShadow;
@@ -497,11 +511,30 @@ export function crearCiudad(l, mundo, { movil = false } = {}) {
       if (a.tipo === 'avenida') { const s = Math.sin(t * a.v + a.f), r = 22 + (s * 0.5 + 0.5) * (R - 28); x = Math.cos(a.ang) * r - Math.sin(a.ang) * a.lado; z = Math.sin(a.ang) * r + Math.cos(a.ang) * a.lado; rumbo = -a.ang + (Math.cos(t * a.v + a.f) > 0 ? 0 : Math.PI); }
       else { const ang = a.f + t * a.v / a.r, r = a.r + (a.r > 22 ? onda(ang, a.r) + sectorDe(ang).desfase * Math.min(1, (a.r - 20) / 30) : 0); x = Math.cos(ang) * r; z = Math.sin(ang) * r; rumbo = -ang - Math.PI / 2 * Math.sign(a.v); }
       if (enMar(x, z, 2)) fuera = true;
-      pos.set(x, 0.95 + Math.abs(Math.sin(t * 7 + a.f)) * 0.12, z);
-      mat.compose(pos, q.setFromAxisAngle(ejeY, rumbo), fuera ? nada : esc);
-      gente.setMatrixAt(i, mat); cabezas.setMatrixAt(i, mat);
+      // mira hacia donde se mueve; el paso mueve piernas y brazos alternos
+      if (Math.hypot(x - a.px, z - a.pz) > 1e-4) a.rumbo = Math.atan2(x - a.px, z - a.pz);
+      a.px = x; a.pz = z;
+      const zancada = Math.sin(t * 8 * (1 / a.talla) + a.f) * 0.55;
+      pos.set(x, Math.abs(Math.cos(t * 8 * (1 / a.talla) + a.f)) * 0.04 * a.talla, z);
+      mat.compose(pos, q.setFromAxisAngle(ejeY, a.rumbo), fuera ? nada : esc.set(a.ancho, a.talla, a.ancho));
+      partes.sayo.setMatrixAt(i, mat); partes.cabeza.setMatrixAt(i, mat); partes.pelo.setMatrixAt(i, mat);
+      miembro(partes.piernaI, i, -0.12, 0.86, zancada); miembro(partes.piernaD, i, 0.12, 0.86, -zancada);
+      miembro(partes.brazoI, i, -0.33, 1.44, -zancada * 0.8); miembro(partes.brazoD, i, 0.33, 1.44, zancada * 0.8);
     });
-    gente.instanceMatrix.needsUpdate = true; cabezas.instanceMatrix.needsUpdate = true;
+    for (const m of Object.values(partes)) m.instanceMatrix.needsUpdate = true;
+    trotes.forEach((a, i) => {
+      const ang = a.f + t * a.v / a.r, r = a.r + onda(ang, a.r) + sectorDe(ang).desfase * Math.min(1, (a.r - 20) / 30), x = Math.cos(ang) * r, z = Math.sin(ang) * r;
+      if (Math.hypot(x - a.px, z - a.pz) > 1e-4) a.rumbo = Math.atan2(x - a.px, z - a.pz);
+      a.px = x; a.pz = z;
+      pos.set(x, Math.abs(Math.sin(t * 11 + a.f)) * 0.1, z); mat.compose(pos, q.setFromAxisAngle(ejeY, a.rumbo), enMar(x, z, 2) ? nada : esc.set(a.talla, a.talla, a.talla)); perros.setMatrixAt(i, mat);
+    });
+    perros.instanceMatrix.needsUpdate = true;
+    picos.forEach((a, i) => {   // dan pasitos y bajan la cabeza a picar
+      const paseo = t * 0.25 + a.f, x = a.x + Math.sin(paseo) * 1.2 + Math.sin(paseo * 2.7) * 0.4, z = a.z + Math.cos(paseo * 1.3) * 1.2;
+      pos.set(x, 0, z); q.setFromEuler(eulerTmp.set(Math.max(0, Math.sin(t * 3 + a.f * 5)) * 0.7, a.giro + Math.sin(paseo) * 1.5, 0, 'YXZ'));
+      mat.compose(pos, q, noche > 0.6 || enMar(x, z, 2) ? nada : esc.set(1, 1, 1)); gallinas.setMatrixAt(i, mat);
+    });
+    gallinas.instanceMatrix.needsUpdate = true;
     const dia = 1 - noche * 0.8;
     for (const s of bocanadas) { const u = s.userData, k = (t * 0.12 + u.fase) % 1; s.position.set(u.origen.x + k * k * 14, u.origen.y + k * 20, u.origen.z + Math.sin(u.fase * 9) * k * 3); const tam = 2.5 + k * 11; s.scale.set(tam, tam, 1); s.material.opacity = Math.sin(k * Math.PI) * 0.4 * (0.35 + 0.65 * dia); }
     for (const s of antorchas) s.material.opacity = noche * (0.5 + 0.12 * Math.sin(t * 9 + s.userData.f) + 0.06 * Math.sin(t * 23 + s.userData.f));
