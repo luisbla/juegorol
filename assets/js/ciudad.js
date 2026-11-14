@@ -538,7 +538,7 @@ export function crearCiudad(l, mundo, { movil = false } = {}) {
   }
 
   return {
-    escena, etiquetas, R, actualizar,
+    escena, etiquetas, R, actualizar, sonido: { calle: true, gentio: 0.7, pajaros: 0.3, mar: lago?.mar ? 0.6 : lago ? 0.25 : 0 },
     vista: { pos: new THREE.Vector3(0, R * 1.35, R * (lago?.mar ? 3.1 : 2.15)), objetivo: new THREE.Vector3(0, 0, R * (lago?.mar ? 0.45 : 0.1)) },
     limite: R + 70,
   };

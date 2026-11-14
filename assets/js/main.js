@@ -8,8 +8,10 @@ import { crearViajes } from './viaje.js';
 import { crearCiudad } from './ciudad.js';
 import { crearPartida } from './partida.js';
 import { crearMusica } from './musica.js';
+import { crearSonido } from './sonido.js';
 import { crearInterior } from './interior.js';
 import { crearSala } from './salas.js';
+import { crearEntrada } from './ruinas.js';
 import { cargarModelos } from './modelos.js';
 import { animar, actualizarAnimaciones, reducir, ease } from './anim.js';
 
@@ -53,10 +55,10 @@ async function iniciar() {
   escena.add(lugares.grupo);
   const ambiente = crearAmbiente(escena, renderer, mundo, terreno, lugares, { movil });
   const viajes = crearViajes(escena, mundo, terreno);
-  const musica = crearMusica(mundo.musica);
+  const musica = crearMusica(mundo.musica), sonido = crearSonido();
   cargarModelos(mundo.modelos, lugares, ambiente.barcos);
   // qué lugares tienen interior y cómo se llama el botón
-  const INTERIOR = { capital: 'Entrar en la ciudad', puerto: 'Entrar en el puerto', taberna: 'Entrar en la taberna' };
+  const INTERIOR = { capital: 'Entrar en la ciudad', puerto: 'Entrar en el puerto', taberna: 'Entrar en la taberna', ruina: 'Acercarse a la entrada' };
   const { W, H } = terreno;
 
   /* ---------- cámara ---------- */
@@ -208,8 +210,8 @@ async function iniciar() {
   async function entrar(l) {
     if (dentro) return;
     dentro = l;
-    if (!ciudades.has(l.datos.id)) ciudades.set(l.datos.id, l.datos.tipo === 'taberna' ? crearInterior(l.datos) : crearCiudad(l.datos, mundo, { movil }));
-    await abrir(ciudades.get(l.datos.id), l.datos.nombre, l.datos.tipo === 'taberna' ? 'taberna' : 'ciudad');
+    if (!ciudades.has(l.datos.id)) ciudades.set(l.datos.id, l.datos.tipo === 'taberna' ? crearInterior(l.datos) : l.datos.tipo === 'ruina' ? crearEntrada(l.datos) : crearCiudad(l.datos, mundo, { movil }));
+    await abrir(ciudades.get(l.datos.id), l.datos.nombre, l.datos.tipo === 'taberna' ? 'taberna' : l.datos.tipo === 'ruina' ? 'ruina' : 'ciudad');
   }
   // Entrar en un edificio de la ciudad (de momento, la posada).
   async function entrarEdificio(e) {
@@ -276,8 +278,22 @@ async function iniciar() {
       return;
     }
     if (partida.estado.grupo === d.id) nodos.push(h('p', { class: 'aqui' }, `El grupo está aquí · día ${partida.estado.dia}`));
+    // notas del grupo sobre este lugar: se leen siempre y se escriben en modo edición
+    const nota = partida.estado.notas?.[d.id];
+    if (partida.edicion) {
+      const campo = h('textarea', { rows: '3', placeholder: 'Notas del grupo sobre este lugar…', 'aria-label': `Notas sobre ${d.nombre}` }); campo.value = nota || '';
+      campo.addEventListener('change', () => partida.anotar(d.id, campo.value));
+      nodos.push(h('div', { class: 'notas' }, h('h3', {}, 'Notas del grupo'), campo));
+    } else if (nota) nodos.push(h('div', { class: 'notas' }, h('h3', {}, 'Notas del grupo'), h('p', {}, nota)));
     if (INTERIOR[d.tipo]) nodos.push(h('button', { class: 'accion', type: 'button', onclick: () => entrar(l) }, INTERIOR[d.tipo]));
     if (partida.edicion && partida.estado.grupo !== d.id && !d.oculto) nodos.push(h('button', { class: 'accion', type: 'button', onclick: () => partida.ponerGrupo(d.id) }, 'Poner aquí al grupo'));
+    if (!d.oculto) {
+      const copiar = h('button', { class: 'enlace', type: 'button', onclick: async () => {
+        const url = `${location.origin}${location.pathname}#lugar=${d.id}`;
+        try { await navigator.clipboard.writeText(url); copiar.textContent = 'Enlace copiado'; } catch { history.replaceState(null, '', url); copiar.textContent = 'Enlace en la barra de direcciones'; }
+      } }, 'Copiar enlace a este lugar');
+      nodos.push(copiar);
+    }
     const viaje = h('div', { class: 'viaje' }, h('h3', {}, 'Viajar desde aquí'));
     if (!viajes.alcanzable(d.id)) {
       viaje.append(h('p', { class: 'nota' }, 'No hay camino conocido hasta este lugar.'));
@@ -331,9 +347,10 @@ async function iniciar() {
     rayo.setFromCamera(raton, camara);
     return rayo.intersectObjects(lugares.dianas, false).map(i => i.object.userData.id).find(id => !porId[id].tapado) ?? null;
   }
-  const partida = await crearPartida({ mundo, terreno, lugares, escena, viajes, h, cuerpo: $('#partidaCuerpo'), alCambiar: () => { if (elegido?.tapado) cerrar(); else if (elegido && !dentro) pintarFicha(); } });
+  let ticSonido = 0;
+  const partida = await crearPartida({ mundo, terreno, lugares, escena, viajes, h, cuerpo: $('#partidaCuerpo'), centro: () => [control.target.x + terreno.cx, control.target.z + terreno.cz], alCambiar: () => { if (elegido?.tapado) cerrar(); else if (elegido && !dentro) pintarFicha(); } });
   const botonMusica = $('#musica');
-  botonMusica.addEventListener('click', () => { musica.activar(!musica.activa); botonMusica.setAttribute('aria-pressed', String(musica.activa)); botonMusica.title = musica.activa ? 'Quitar la música' : 'Poner música'; });
+  botonMusica.addEventListener('click', () => { musica.activar(!musica.activa); sonido.activar(musica.activa); botonMusica.setAttribute('aria-pressed', String(musica.activa)); botonMusica.title = musica.activa ? 'Quitar la música' : 'Poner música'; });
   let pulsado = null;
   lienzo.addEventListener('pointerdown', ev => { pulsado = { x: ev.clientX, y: ev.clientY, t: performance.now() }; });
   lienzo.addEventListener('pointerup', ev => {
@@ -391,6 +408,15 @@ async function iniciar() {
   function cuadro(ahora) {
     const dt = Math.min(0.1, (ahora - antes) / 1000); antes = ahora; t += dt;
     actualizarAnimaciones(ahora);
+    if (sonido.activo && (ticSonido++ % 20) === 0) {   // ambiente sonoro: según el interior o, en el mapa, lo que haya bajo la cámara
+      const noche = ambiente.estado.noche, dia = 1 - noche;
+      if (ciudad) { const s = ciudad.sonido || {}; sonido.mezcla(s.calle ? { gentio: (s.gentio || 0) * dia, pajaros: (s.pajaros || 0) * dia, grillos: noche * 0.5, mar: s.mar, viento: 0.12 } : s); }
+      else {
+        const zona = terreno.zonaEn(control.target.x + terreno.cx, control.target.z + terreno.cz), alto = Math.min(1, camara.position.y / 260);
+        sonido.mezcla(zona === 'mar' ? { mar: 0.9 - alto * 0.5, viento: 0.2 + alto * 0.4 } : zona === 'thraengarde' ? { viento: 0.75 + alto * 0.25 }
+          : zona === 'marisma' ? { grillos: 0.4 + noche * 0.6, viento: 0.15 + alto * 0.4 } : { viento: 0.18 + alto * 0.5, pajaros: dia * (1 - alto) * 0.8, grillos: noche * (1 - alto) * 0.6 });
+      }
+    }
     if (corriendo) { hora = (hora + dt * 24 / SEG_POR_DIA) % 24; barra.value = hora; pintarHora(); }
     control.update();
     if (camara.position.y < (ciudad ? 3 : 6)) camara.position.y = ciudad ? 3 : 6;
@@ -410,6 +436,9 @@ async function iniciar() {
   requestAnimationFrame(cuadro);
   carga.classList.add('fuera');
   // Para trastear desde la consola: mapa.seleccionar('faro'), mapa.ponerHora(22)…
+  // enlace a un lugar: …/#lugar=id abre el mapa ya centrado en él
+  const irAlEnlace = () => { const id = new URLSearchParams(location.hash.slice(1)).get('lugar'), l = id && porId[id]; if (l && !l.tapado && !l.datos.oculto && !dentro) seleccionar(id, true); };
+  addEventListener('hashchange', irAlEnlace); irAlEnlace();
   window.mapa = { get interior() { return ciudad; },
     seleccionar, entrar: id => { seleccionar(id, false); return entrar(porId[id]); }, salir, camara, control, partida,
     ponerHora: v => { hora = v; ponerReloj(false); barra.value = v; pintarHora(); },

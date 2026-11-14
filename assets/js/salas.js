@@ -333,5 +333,6 @@ export function crearSala(tipo, id, { color = 0x7a2e2a } = {}) {
     for (const f of vivos) f(t);
     cristal.emissiveIntensity = 0.06 + 0.9 * (1 - noche); deFuera.intensity = (claro ? 1.2 : 0.7) * (1 - noche);
   }
-  return { escena, etiquetas, R: 30, minDist: 9, actualizar, vista: { pos: new THREE.Vector3(2, 30, 43), objetivo: new THREE.Vector3(0, 3, -1) }, limite: 20 };
+  const SONIDO = { herreria: { fuego: 0.9 }, cuartel: { fuego: 0.35, gentio: 0.2 }, lonja: { gentio: 0.8 }, trono: { gentio: 0.3 }, homenaje: { fuego: 0.6, viento: 0.35 }, consejo: { gentio: 0.45 }, senor: { fuego: 0.55, gentio: 0.3 }, capitania: { gentio: 0.3, mar: 0.3 } };
+  return { escena, etiquetas, R: 30, minDist: 9, actualizar, sonido: SONIDO[tipo], vista: { pos: new THREE.Vector3(2, 30, 43), objetivo: new THREE.Vector3(0, 3, -1) }, limite: 20 };
 }

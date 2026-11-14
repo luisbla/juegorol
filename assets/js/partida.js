@@ -4,9 +4,9 @@
 import * as THREE from 'three';
 
 const CLAVE = 'alden-partida';
-const VACIA = { niebla: false, dia: 1, grupo: null, descubiertos: [], diario: [] };
+const VACIA = { niebla: false, dia: 1, grupo: null, descubiertos: [], diario: [], notas: {}, marcas: [] };
 
-export async function crearPartida({ mundo, terreno, lugares, escena, viajes, h, cuerpo, alCambiar }) {
+export async function crearPartida({ mundo, terreno, lugares, escena, viajes, h, cuerpo, alCambiar, centro }) {
   const { W, H, cx, cz } = terreno;
   let base = VACIA;
   try { const r = await fetch('assets/data/partida.json', { cache: 'no-store' }); if (r.ok) base = { ...VACIA, ...(await r.json()) }; } catch { /* sin archivo: partida vacía */ }
@@ -84,6 +84,27 @@ export async function crearPartida({ mundo, terreno, lugares, escena, viajes, h,
     }
   }
 
+  /* ---------- marcas libres sobre el mapa: un banderín y su rótulo ---------- */
+  const marcas = new THREE.Group(); escena.add(marcas);
+  const rotuloDe = texto => {
+    const c = document.createElement('canvas'), x = c.getContext('2d'); x.font = '600 34px Georgia, serif'; c.width = Math.ceil(x.measureText(texto).width) + 36; c.height = 56;
+    x.font = '600 34px Georgia, serif'; x.fillStyle = 'rgba(14,16,21,0.82)'; x.beginPath(); x.roundRect(0, 0, c.width, c.height, 28); x.fill(); x.fillStyle = '#ffe9b0'; x.textBaseline = 'middle'; x.fillText(texto, 18, 30);
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+    const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, depthTest: false, transparent: true })); s.scale.set(c.width / 15, c.height / 15, 1); s.renderOrder = 8; return s;
+  };
+  function pintarMarcas() {
+    for (const m of [...marcas.children]) { marcas.remove(m); m.traverse(o => { o.material?.map?.dispose(); o.material?.dispose?.(); }); }
+    for (const m of estado.marcas) {
+      const g = new THREE.Group(), y = Math.max(terreno.alturaEn(m.x, m.y), 0);
+      const palo = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 11, 6), new THREE.MeshBasicMaterial({ color: 0x2a2018 })); palo.position.y = 5.5;
+      const tela = new THREE.Mesh(new THREE.ConeGeometry(2.2, 5, 3), new THREE.MeshBasicMaterial({ color: 0xc8402f })); tela.rotation.z = -Math.PI / 2; tela.position.set(2.5, 9.2, 0); tela.scale.z = 0.12;
+      const r = rotuloDe(m.texto); r.position.y = 15;
+      g.add(palo, tela, r); g.position.set(m.x - cx, y, m.y - cz); marcas.add(g);
+    }
+  }
+  const anotar = (id, texto) => { if (texto.trim()) estado.notas[id] = texto.trim(); else delete estado.notas[id]; cambiar(); };
+  const marcar = texto => { const [x, y] = centro(); estado.marcas.push({ x: Math.round(x), y: Math.round(y), texto: texto.trim().slice(0, 60) }); cambiar(); };
+
   function aplicar() {
     nubes.visible = estado.niebla;
     for (const l of lugares.lista) {
@@ -93,6 +114,7 @@ export async function crearPartida({ mundo, terreno, lugares, escena, viajes, h,
     const l = porId[estado.grupo];
     grupo.visible = !!l;
     if (l) grupo.position.set(l.base.x + l.radio * 0.8 + 4, Math.max(l.base.y, 0), l.base.z + l.radio * 0.5);
+    marcas.visible = true; pintarMarcas();
     pintarMascara(); pintarRastro(); pintarPanel();
     alCambiar?.();
   }
@@ -149,9 +171,12 @@ export async function crearPartida({ mundo, terreno, lugares, escena, viajes, h,
       marca('Niebla de guerra', estado.niebla, v => { estado.niebla = v; cambiar(); }),
       marca('Modo edición (viajar y colocar desde las fichas)', edicion, v => { edicion = v; alCambiar?.(); }),
       diario.length ? h('p', { class: 'rotulo' }, 'Diario') : null, diario.length ? h('ul', {}, ...diario) : null,
+      estado.marcas.length || edicion ? h('p', { class: 'rotulo' }, 'Marcas en el mapa') : null,
+      estado.marcas.length ? h('ul', { class: 'marcas' }, ...estado.marcas.map((m, i) => h('li', {}, m.texto, edicion ? h('button', { type: 'button', 'aria-label': `Quitar la marca «${m.texto}»`, onclick: () => { estado.marcas.splice(i, 1); cambiar(); } }, '×') : null))) : null,
+      edicion ? (() => { const campo = h('input', { type: 'text', maxlength: '60', placeholder: 'Aquí nos emboscaron…', 'aria-label': 'Texto de la marca' }); const poner = () => { if (campo.value.trim()) marcar(campo.value); }; campo.addEventListener('keydown', ev => { if (ev.key === 'Enter') poner(); }); return h('div', { class: 'fila' }, campo, h('button', { type: 'button', class: 'ancho', onclick: poner }, 'Marcar el centro')); })() : null,
       h('button', { type: 'button', class: 'ancho', onclick: descargar }, 'Descargar partida.json'),
       borrador ? h('button', { type: 'button', class: 'ancho', onclick: descartar }, 'Descartar mis cambios') : null,
-      h('p', { class: 'nota' }, borrador ? 'Hay cambios guardados solo en este navegador. Para que los vea el resto, sube el archivo descargado a assets/data/.' : 'Mostrando la partida publicada.'),
+      h('p', { class: 'nota' }, borrador ? 'Hay cambios guardados solo en este navegador. Para que los vea el resto, sube el archivo descargado a assets/data/. Ojo: notas y marcas van dentro y las leerá cualquiera que abra el mapa.' : 'Mostrando la partida publicada.'),
     ].filter(Boolean));
   }
 
@@ -164,5 +189,5 @@ export async function crearPartida({ mundo, terreno, lugares, escena, viajes, h,
   }
 
   aplicar();
-  return { get estado() { return estado; }, get edicion() { return edicion; }, ponerGrupo, viajar, actualizar };
+  return { get estado() { return estado; }, get edicion() { return edicion; }, ponerGrupo, viajar, actualizar, anotar };
 }

@@ -31,6 +31,8 @@ assets/
   js/salas.js          interior de herrerías, cuarteles y lonjas de las ciudades
   js/edificios.js      exterior detallado de los edificios singulares (posada, cuartel, herrería, establos, molino, lonja...)
   js/barco.js          el velero (casco, castillos, arboladura y velas) que usan el mar, el puerto y las ciudades
+  js/ruinas.js         el paraje y la entrada de cada ruina (nunca el interior)
+  js/sonido.js         ambiente sonoro sin archivos: viento, mar, gentío, fuego, grillos y pájaros
   js/modelos.js        carga opcional de modelos glTF de artista
   js/ambiente.js       cielo, sombras, nubes, nieve, niebla, humo, barcos, pájaros, faro, luces de noche
   js/viaje.js          rutas y viajero
@@ -50,6 +52,8 @@ Todo se edita en `assets/data/mundo.json`. Las coordenadas van en una rejilla de
 - **`tamano`**: escala del modelo (1 por defecto). Así Valcoria es la ciudad más grande.
 - **`suelo`**: `agua` (medio sumergido en un lago), `marisma` (a ras de charca) o `islote` (levanta un peñón en el mar). Sin este campo, tierra firme.
 - **`oculto: true`**: el lugar se ve pero no lleva nombre ni sale en la lista de destinos; solo aparece su ficha si se pulsa encima.
+- **Notas y marcas**: en el panel Partida, con el modo edición puesto, cada ficha tiene un cuadro de notas y se pueden clavar marcas en el centro de la vista. Se guardan en `partida.json` con lo demás: si lo subes, las lee cualquiera.
+- **Enlace a un lugar**: `…/#lugar=id` abre el mapa centrado en él; la ficha tiene un botón que lo copia.
 - **`decorado`**: ambiente sin nombre ni ficha (aldeas, atalayas, casas fuertes, fuertes, minas, almenaras...). Por región, una lista de `[tipo, cuántos, { junto, tamano }]`; el mapa lo reparte solo donde el terreno lo permite. Para quitarlo de una región, borra su línea.
 - **`gobierno`**: texto que solo se muestra dentro de la ciudad. El interior se genera solo: su tamaño sale de `tamano` y sus puertas, de los caminos que llegan a esa capital.
 - **Caminos**: `de`, `a` (ids de lugares o de `cruces`), `tipo` (`camino`, `senda` o `barca`) y `puntos` intermedios. Se suavizan solos y el terreno abre paso. Los de tipo `barca` no se dibujan: solo cuentan para las rutas.

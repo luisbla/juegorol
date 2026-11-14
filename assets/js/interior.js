@@ -208,7 +208,7 @@ export function crearInterior(l) {
   }
 
   return {
-    escena, etiquetas, R: 30, minDist: 9, actualizar, plantas, verPlanta, get planta() { return plantaActual; },
+    escena, etiquetas, R: 30, minDist: 9, actualizar, sonido: { fuego: 0.55, gentio: 0.7 }, plantas, verPlanta, get planta() { return plantaActual; },
     vista: { pos: new THREE.Vector3(2, 31, 44), objetivo: new THREE.Vector3(0, 3, -1) },
     limite: 20,
   };

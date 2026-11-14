@@ -149,9 +149,12 @@
     { "de": "liria", "a": "faro", "tipo": "barca", "puntos": [[905,925]] }
   ],
   "decorado": {
-    "nota": "Ambiente sin nombre ni ficha, repartido con semilla: [tipo, cuántos, opciones]. No es canon; quita o cambia lo que no encaje.",
+    "nota": "Ambiente sin nombre ni ficha, repartido con semilla: [tipo, cuántos, opciones]. No es canon; quita o cambia lo que no encaje. En 'arrasado', la franja de una región pegada a otra queda con menos poblamiento y en ruinas.",
     "valcoria": [["arrabal", 8, { "junto": "valcoria", "tamano": 0.75 }], ["casafuerte", 5], ["aldea", 14], ["atalaya", 10], ["molino", 4], ["granja", 8], ["ermita", 3]],
-    "thraengarde": [["arrabal", 4, { "junto": "griselda", "tamano": 0.75 }], ["fuerte", 6], ["almenara", 8], ["mina", 5], ["campamento", 5], ["menhires", 3], ["aldea", 6]]
+    "thraengarde": [["arrabal", 4, { "junto": "griselda", "tamano": 0.75 }], ["fuerte", 6], ["almenara", 8], ["mina", 5], ["campamento", 5], ["menhires", 3], ["aldea", 6]],
+    "marendol": [["cortijo", 9], ["granero", 4], ["molino", 4], ["palomar", 3], ["aldea", 7], ["almiar", 9]],
+    "astravan": [["embarcadero", 7], ["pesqueria", 5], ["acena", 3], ["barca", 12], ["aldea", 7], ["granja", 5]],
+    "arrasado": { "valcoria": { "hacia": "thraengarde", "distancia": 170 } }
   },
   "rutasBarcos": [
     { "en": "mar", "puntos": [[892,912],[900,988],[1100,1002],[1300,996],[1460,942],[1380,988],[1150,994],[1040,1000]] },

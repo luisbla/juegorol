@@ -211,11 +211,22 @@ export function crearTerreno(mundo, { movil = false } = {}) {
   const decorado = [];
   {
     // por tipo: pendiente máxima, distancia mínima y máxima al camino, lejos de lugares, separación entre iguales y radio que despeja de árboles
+    // modo: 'orilla' (en tierra, mirando al agua), 'rio' (junto a un río), 'agua' (flotando en un lago o en el mar)
     const REGLAS = {
       aldea: [0.22, 7, 46, 24, 30, 9], granja: [0.22, 6, 60, 22, 24, 7], molino: [0.3, 6, 50, 22, 30, 5], ermita: [0.3, 8, 40, 26, 40, 5],
       casafuerte: [0.25, 8, 50, 34, 60, 8], atalaya: [0.6, 5, 16, 34, 55, 4], fuerte: [0.25, 7, 44, 40, 60, 10], campamento: [0.25, 6, 34, 30, 40, 8],
       mina: [1.3, 0, 999, 30, 55, 7], almenara: [2.5, 0, 999, 30, 60, 4], menhires: [0.3, 14, 999, 30, 70, 6], arrabal: [0.3, 0, 999, 0, 13, 7],
+      cortijo: [0.2, 6, 70, 24, 36, 9], granero: [0.22, 6, 50, 24, 40, 6], palomar: [0.3, 6, 60, 22, 50, 4], almiar: [0.25, 4, 80, 16, 22, 4],
+      embarcadero: [0.5, 0, 999, 22, 40, 6, 'orilla'], pesqueria: [0.5, 0, 999, 24, 44, 7, 'orilla'], acena: [0.6, 0, 999, 20, 60, 6, 'rio'], barca: [9, 0, 999, 0, 26, 0, 'agua'],
     };
+    const distPoligono = (pol, x, y) => {
+      let m = Infinity;
+      for (let i = 0, j = pol.length - 1; i < pol.length; j = i++) { const [ax, ay] = pol[j], [bx, by] = pol[i], vx = bx - ax, vy = by - ay, t = Math.max(0, Math.min(1, ((x - ax) * vx + (y - ay) * vy) / (vx * vx + vy * vy || 1))); m = Math.min(m, Math.hypot(x - ax - vx * t, y - ay - vy * t)); }
+      return m;
+    };
+    // hacia dónde baja (o sube) más el terreno o una distancia, mirando alrededor: devuelve el giro que encara ese rumbo
+    const encarar = (f, x, y, radio, menor = true) => { let mejor = menor ? Infinity : -Infinity, giro = 0; for (let k = 0; k < 16; k++) { const a = k / 16 * 6.283, v = f(x + Math.sin(a) * radio, y + Math.cos(a) * radio); if (menor ? v < mejor : v > mejor) { mejor = v; giro = a; } } return [giro, mejor]; };
+    const mojados = mundo.lugares.filter(l => l.suelo);
     let semilla = 1;
     for (const [idRegion, lista] of Object.entries(mundo.decorado || {})) {
       const reg = mundo.regiones.find(r => r.id === idRegion);
@@ -225,19 +236,38 @@ export function crearTerreno(mundo, { movil = false } = {}) {
       for (let k = 0; k < 400; k++) { const x = x0 + azar(k, 401) * (x1 - x0), y = y0 + azar(k, 409) * (y1 - y0); if (dentroDe(reg.poligono, x, y) && alturaEn(x, y) > 0.7) cotas.push(alturaEn(x, y)); }
       cotas.sort((a, b) => a - b);
       const cota = f => cotas[Math.floor(cotas.length * f)] ?? 0;
+      // franja castigada: cerca de la región vecina hay menos, y lo que queda está arrasado
+      const castigo = mundo.decorado.arrasado?.[idRegion], vecina = castigo && mundo.regiones.find(r => r.id === castigo.hacia);
       for (const [tipo, n, extra = {}] of lista) {
-        const [pend, cMin, cMax, lejos, sep, radio] = REGLAS[tipo] || REGLAS.aldea, junto = extra.junto ? porId[extra.junto] : null;
-        for (let k = 0, puestos = 0; k < 8000 && puestos < n; k++) {
+        const [pend, cMin, cMax, lejos, sep, radio, modo] = REGLAS[tipo] || REGLAS.aldea, junto = extra.junto ? porId[extra.junto] : null;
+        for (let k = 0, puestos = 0; k < 9000 && puestos < n; k++) {
           semilla++;
-          let x = x0 + azar(semilla, 11) * (x1 - x0), y = y0 + azar(semilla, 29) * (y1 - y0);
+          let x = x0 + azar(semilla, 11) * (x1 - x0), y = y0 + azar(semilla, 29) * (y1 - y0), giro = azar(semilla, 7) * 6.283;
           if (junto) { const a = azar(semilla, 3) * 6.283, d = radioDe(junto) + 4 + azar(semilla, 5) * 13; x = junto.x + Math.cos(a) * d; y = junto.y + Math.sin(a) * d; }
           if (x < 10 || y < 10 || x > W - 10 || y > H - 10 || !dentroDe(reg.poligono, x, y)) continue;
           const h = alturaEn(x, y), p = pendienteEn(x, y), dc = distCamino(x, y);
-          if (h < 0.7 || p > pend || pesoMarisma(x, y) > 0.08 || distRio(x, y) < 9 || dc < cMin || dc > cMax) continue;
-          if (junto ? dc < 5 : distLugar(x, y) < lejos) continue;
-          if ((tipo === 'almenara' && h < cota(0.8)) || (tipo === 'mina' && (h < cota(0.45) || p < 0.3))) continue;
+          if (pesoMarisma(x, y) > 0.08) continue;
+          if (modo === 'agua') {
+            if (h > -0.6 || encarar(alturaEn, x, y, 24, false)[1] < 0.3 || distRio(x, y) < 14 || mojados.some(l => Math.hypot(l.x - x, l.y - y) < 46) || distLugar(x, y) < 6) continue;
+          } else {
+            if (h < 0.7 || p > pend || dc < cMin || dc > cMax) continue;
+            if (modo === 'rio') { const dr = distRio(x, y); if (dr < 5 || dr > 9.5) continue; giro = encarar(distRio, x, y, 4)[0]; }
+            else if (distRio(x, y) < 9) continue;
+            if (modo === 'orilla') { const [g, fondo] = encarar(alturaEn, x, y, 8); if (h > 2.4 || fondo > -0.35) continue; giro = g; }
+            if (junto ? dc < 5 : distLugar(x, y) < lejos) continue;
+            if ((tipo === 'almenara' && h < cota(0.8)) || (tipo === 'mina' && (h < cota(0.45) || p < 0.3))) continue;
+          }
           if (decorado.some(d => Math.hypot(d.x - x, d.y - y) < (d.tipo === tipo ? Math.max(sep, d.sep) : Math.max(sep, d.sep) * 0.45))) continue;
-          decorado.push({ id: 'decorado-' + decorado.length, tipo, x, y, region: idRegion, radio, sep, giro: azar(semilla, 7) * 6.283, tamano: extra.tamano });
+          let arrasado = false;
+          if (vecina) {
+            const dv = distPoligono(vecina.poligono, x, y);
+            if (dv < castigo.distancia) {
+              const u = azar(semilla, 13), cerca = 1 - dv / castigo.distancia, firme = tipo === 'casafuerte' || tipo === 'atalaya';
+              if (!firme && u < 0.3 + 0.4 * cerca) { puestos++; continue; }   // aquí ya no vive nadie: ni rastro
+              arrasado = firme ? u < 0.35 + 0.4 * cerca : u < 0.85 + 0.15 * cerca;
+            }
+          }
+          decorado.push({ id: 'decorado-' + decorado.length, tipo, x, y, region: idRegion, radio, sep, giro, tamano: extra.tamano, arrasado, flota: modo === 'agua' });
           puestos++;
         }
       }

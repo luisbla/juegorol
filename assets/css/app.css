@@ -99,6 +99,15 @@ button.etq:hover, button.etq.activa { border-color: var(--oro); background: rgba
 #ficha .plantas { display: flex; gap: 6px; margin: 0 0 12px; }
 #ficha .plantas button { flex: 1; padding: 7px 6px; background: none; border: 1px solid var(--borde); border-radius: 7px; font-size: 0.84rem; }
 #ficha .plantas button[aria-pressed="true"] { border-color: var(--oro); color: var(--oro); background: rgba(224, 184, 94, 0.1); }
+#ficha .notas { border-left: 2px solid var(--borde); padding: 2px 0 2px 12px; margin: 0 0 14px; }
+#ficha .notas h3 { margin: 0 0 4px; font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--tenue); font-weight: 600; }
+#ficha .notas p { margin: 0; white-space: pre-wrap; }
+#ficha textarea { width: 100%; padding: 8px; background: #1b1e26; border: 1px solid var(--borde); border-radius: 7px; color: var(--crema); font: inherit; font-size: 0.88rem; resize: vertical; }
+#ficha .enlace { display: block; width: 100%; padding: 6px 10px; margin: 0 0 12px; background: none; border: 1px dashed var(--borde); border-radius: 8px; font-size: 0.8rem; color: var(--tenue); }
+#ficha .enlace:hover { border-color: var(--oro); color: var(--crema); }
+#partidaCuerpo input[type="text"] { flex: 1; min-width: 0; padding: 6px 8px; background: #1b1e26; border: 1px solid var(--borde); border-radius: 6px; color: var(--crema); font: inherit; }
+#partidaCuerpo .marcas li { display: flex; gap: 6px; align-items: center; justify-content: space-between; }
+#partidaCuerpo .marcas button { min-width: 24px; min-height: 24px; }
 #ficha .aqui { color: var(--oro); font-weight: 600; margin-bottom: 10px; }
 #ficha .encuentros { margin: 8px 0; padding-left: 18px; font-size: 0.86rem; line-height: 1.45; color: #ddd4c0; }
 .en-ciudad #partida { display: none; }
