@@ -7,6 +7,23 @@
     "kmPorDia": 38.6,
     "notaRitmo": "ritmo normal a pie de D&D 5e: 24 millas al día"
   },
+  "musica": {
+    "carpeta": "assets/audio/",
+    "mapa": "bosque.mp3",
+    "ciudad": "mercader.mp3",
+    "tipos": { "taberna": "taberna.mp3", "ruina": "mazmorra.mp3", "puerto": "mercader.mp3", "quemado": "tension.mp3", "campamento": "tension.mp3", "palafitos": "tension.mp3", "pasarela": "tension.mp3", "pecio": "tension.mp3" }
+  },
+  "encuentros": {
+    "nota": "Regla casera, pendiente del máster: por cada día de viaje se tira 1d20 y hay encuentro si sale el umbral de la zona o más. Las tablas son genéricas.",
+    "zonas": {
+      "valcoria": { "nombre": "Valcoria", "umbral": 17, "tabla": ["Una patrulla del rey pide cuentas", "Lobos siguiendo al grupo", "Leñadores con noticias del camino", "Un carro volcado en la cuneta", "Refugiados que bajan de la frontera"] },
+      "thraengarde": { "nombre": "Thraengarde", "umbral": 14, "tabla": ["Ventisca: hay que buscar abrigo", "Jinetes de un clan cortan el paso", "Peregrinos del culto camino de las cumbres", "Un alud ha borrado el sendero", "Huellas grandes en la nieve"] },
+      "marendol": { "nombre": "Marendol", "umbral": 19, "tabla": ["Carreteros con una rueda rota", "Jabalíes en los sembrados", "Un recaudador con escolta", "Fiesta de cosecha en una aldea"] },
+      "astravan": { "nombre": "Astravan", "umbral": 18, "tabla": ["Una caravana de mercaderes ofrece compañía", "Contrabandistas que no quieren testigos", "Niebla espesa que sube del lago", "Un cobrador de peaje de más"] },
+      "marisma": { "nombre": "la Marisma Callada", "umbral": 13, "tabla": ["El suelo cede bajo los pies", "Luces frías entre los juncos", "Sanguijuelas y fiebre", "Algo se mueve bajo el agua", "Silencio total: ni un pájaro"] },
+      "mar": { "nombre": "el Mar del Sur", "umbral": 17, "tabla": ["Mar picada", "Una vela desconocida en el horizonte", "Bancos de niebla"] }
+    }
+  },
   "regiones": [
     {
       "id": "valcoria", "nombre": "Reino de Valcoria", "lema": "Tierras de los Robles", "color": "#4f8a3c",

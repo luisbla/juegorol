@@ -373,7 +373,7 @@ const CONSTRUCTORES = {
 };
 
 // Piezas y materiales que reutiliza ciudad.js para levantar el interior de las capitales.
-export const kit = { matPared, matPiedra, matTejado, matLiso, gCaja, gCil, gCono, gRoca, gDosAguas, ESTILOS, ventanas };
+export const kit = { matPared, matPiedra, matTejado, matLiso, gCaja, gCil, gCono, gRoca, gDosAguas, gCasco, ESTILOS, ventanas };
 
 // Devuelve el grupo ya colocado y los datos que usan el ambiente (humo, luces, banderas) y la interfaz (selección).
 export function crearLugares(mundo, terreno) {

@@ -635,6 +635,8 @@ export function crearTerreno(mundo, { movil = false } = {}) {
   return {
     grupo, malla, agua, caminos, fronteras, arboles,
     alturaEn, pendienteEn, distCamino, distLugar, aMundo,
+    // zona para las tablas de encuentros: marisma, mar o la región que más pesa en ese punto
+    zonaEn: (x, y) => (pesoMarisma(x, y) > 0.5 ? 'marisma' : alturaEn(x, y) < 0 ? 'mar' : ids.reduce((m, id, i) => (peso(i, x, y) > peso(ids.indexOf(m), x, y) ? id : m), ids[0])),
     uniformes, uAgua, W, H, cx, cz, porId,
   };
 }

@@ -6,6 +6,8 @@ import { crearLugares } from './lugares.js';
 import { crearAmbiente } from './ambiente.js';
 import { crearViajes } from './viaje.js';
 import { crearCiudad } from './ciudad.js';
+import { crearPartida } from './partida.js';
+import { crearMusica } from './musica.js';
 import { animar, actualizarAnimaciones, reducir, ease } from './anim.js';
 
 const $ = s => document.querySelector(s);
@@ -48,6 +50,7 @@ async function iniciar() {
   escena.add(lugares.grupo);
   const ambiente = crearAmbiente(escena, renderer, mundo, terreno, lugares, { movil });
   const viajes = crearViajes(escena, mundo, terreno);
+  const musica = crearMusica(mundo.musica);
   const { W, H } = terreno;
 
   /* ---------- cámara ---------- */
@@ -126,6 +129,7 @@ async function iniciar() {
         else if (e.clase === 'region') op = w < 720 ? 0 : suave(umbral * 0.8, umbral, lejos);
         else if (e.clase === 'geo') op = suave(170, 320, lejos);
         else if (e.clase === 'lugar' && e.lugar !== elegido) op = suave(umbral, umbral * 0.8, lejos);
+        if (e.lugar?.tapado || (e.clase === 'geo' && partida.estado.niebla)) op = 0;   // bajo la niebla de guerra
       }
       e.el.style.opacity = op;
       e.el.style.visibility = op < 0.02 ? 'hidden' : 'visible';
@@ -156,6 +160,7 @@ async function iniciar() {
     anillo.position.set(l.base.x, Math.max(l.base.y, 0) + 0.8, l.base.z);
     anillo.userData.radio = l.radio * 0.95;
     viajes.limpiar();
+    musica.ambiente(l.datos.tipo);
     pintarFicha();
     if (acercar) {
       const dir = camara.position.clone().sub(control.target), d = THREE.MathUtils.clamp(dir.length(), 150 + l.radio * 3, 380);
@@ -165,7 +170,7 @@ async function iniciar() {
   function cerrar() {
     if (dentro) { salir(); return; }
     if (elegido?.etiqueta) elegido.etiqueta.classList.remove('activa');
-    elegido = null; anillo.visible = false; ficha.hidden = true; ficha.replaceChildren(); viajes.limpiar();
+    elegido = null; anillo.visible = false; ficha.hidden = true; ficha.replaceChildren(); viajes.limpiar(); musica.ambiente(null);
   }
   // Entrar en una capital: fundido, se levanta su interior (una vez; luego se reutiliza) y la cámara pasa a esa escena.
   async function entrar(l) {
@@ -181,7 +186,7 @@ async function iniciar() {
     camara.position.copy(c.vista.pos); control.target.copy(c.vista.objetivo);
     control.minDistance = 20; control.maxDistance = c.R * 5; limite.x = limite.z = c.limite;
     titulo.textContent = l.datos.nombre; pista.textContent = 'Interior de la ciudad · Esc para volver al mapa'; pista.classList.remove('fuera');
-    document.body.classList.add('en-ciudad');
+    document.body.classList.add('en-ciudad'); musica.ambiente('ciudad');
     pintarFicha(); velo.classList.remove('puesto');
   }
   async function salir() {
@@ -192,7 +197,7 @@ async function iniciar() {
     camara.position.copy(guardado.pos); control.target.copy(guardado.objetivo);
     control.minDistance = guardado.min; control.maxDistance = guardado.max; limite.x = W / 2; limite.z = H / 2;
     titulo.textContent = mundo.meta.nombre; pista.classList.add('fuera');
-    document.body.classList.remove('en-ciudad');
+    document.body.classList.remove('en-ciudad'); musica.ambiente(elegido ? elegido.datos.tipo : null);
     if (elegido) pintarFicha();
     velo.classList.remove('puesto');
   }
@@ -211,7 +216,9 @@ async function iniciar() {
       ficha.replaceChildren(...nodos); ficha.hidden = false;
       return;
     }
-    if (d.tipo === 'capital') nodos.push(h('button', { class: 'accion', type: 'button', onclick: () => entrar(l) }, 'Entrar en la ciudad'));
+    if (partida.estado.grupo === d.id) nodos.push(h('p', { class: 'aqui' }, `El grupo está aquí · día ${partida.estado.dia}`));
+    if (d.tipo === 'capital' || d.tipo === 'puerto') nodos.push(h('button', { class: 'accion', type: 'button', onclick: () => entrar(l) }, d.tipo === 'puerto' ? 'Entrar en el puerto' : 'Entrar en la ciudad'));
+    if (partida.edicion && partida.estado.grupo !== d.id && !d.oculto) nodos.push(h('button', { class: 'accion', type: 'button', onclick: () => partida.ponerGrupo(d.id) }, 'Poner aquí al grupo'));
     const viaje = h('div', { class: 'viaje' }, h('h3', {}, 'Viajar desde aquí'));
     if (!viajes.alcanzable(d.id)) {
       viaje.append(h('p', { class: 'nota' }, 'No hay camino conocido hasta este lugar.'));
@@ -238,6 +245,18 @@ async function iniciar() {
         const t = Math.tan(THREE.MathUtils.degToRad(camara.fov / 2));
         const dist = Math.max(260, Math.max(tam.x * 0.7 / (t * camara.aspect), tam.z * 0.9 / t));
         volar(new THREE.Vector3(centro.x, Math.cos(0.6) * dist, centro.z + Math.sin(0.6) * dist), centro, 1100).then(() => viajes.mostrar(r));
+        // con el modo edición y el grupo en el origen, el viaje se puede hacer de verdad: avanza el día, descubre y tira encuentros
+        if (partida.edicion && partida.estado.grupo === d.id) {
+          const destino = sel.value;
+          res.append(h('button', { class: 'accion', type: 'button', onclick: () => {
+            const inf = partida.viajar(r, d.id, destino);
+            seleccionar(destino, false);
+            const hueco = ficha.querySelector('.viaje');
+            hueco.append(h('p', { class: 'resultado' }, `Viaje hecho: ${inf.dias} ${inf.dias === 1 ? 'día' : 'días'} de camino.`),
+              inf.encuentros.length ? h('ul', { class: 'encuentros' }, ...inf.encuentros.map(e => h('li', {}, h('b', {}, `Día ${e.dia}, ${e.zona}: `), `${e.que} (tirada ${e.tirada})`))) : h('p', { class: 'nota' }, 'Sin encuentros.'),
+              h('p', { class: 'nota' }, mundo.encuentros?.nota ?? ''));
+          } }, 'Hacer este viaje con el grupo'));
+        }
       });
       viaje.append(sel, res);
     }
@@ -251,8 +270,11 @@ async function iniciar() {
     if (dentro) return null;
     raton.set(ev.clientX / innerWidth * 2 - 1, -(ev.clientY / innerHeight) * 2 + 1);
     rayo.setFromCamera(raton, camara);
-    return rayo.intersectObjects(lugares.dianas, false)[0]?.object.userData.id ?? null;
+    return rayo.intersectObjects(lugares.dianas, false).map(i => i.object.userData.id).find(id => !porId[id].tapado) ?? null;
   }
+  const partida = await crearPartida({ mundo, terreno, lugares, escena, viajes, h, cuerpo: $('#partidaCuerpo'), alCambiar: () => { if (elegido?.tapado) cerrar(); else if (elegido && !dentro) pintarFicha(); } });
+  const botonMusica = $('#musica');
+  botonMusica.addEventListener('click', () => { musica.activar(!musica.activa); botonMusica.setAttribute('aria-pressed', String(musica.activa)); botonMusica.title = musica.activa ? 'Quitar la música' : 'Poner música'; });
   let pulsado = null;
   lienzo.addEventListener('pointerdown', ev => { pulsado = { x: ev.clientX, y: ev.clientY, t: performance.now() }; });
   lienzo.addEventListener('pointerup', ev => {
@@ -319,6 +341,7 @@ async function iniciar() {
       renderer.render(ciudad.escena, camara);
     } else {
       ambiente.actualizar(t, dt, camara, control.target);
+      partida.actualizar(t);
       if (anillo.visible) { const r = anillo.userData.radio * (1 + 0.06 * Math.sin(t * 3)); anillo.scale.set(r, r, 1); }
       renderer.render(escena, camara);
     }
@@ -329,7 +352,7 @@ async function iniciar() {
   carga.classList.add('fuera');
   // Para trastear desde la consola: mapa.seleccionar('faro'), mapa.ponerHora(22)…
   window.mapa = {
-    seleccionar, entrar: id => entrar(porId[id]), salir, camara, control,
+    seleccionar, entrar: id => entrar(porId[id]), salir, camara, control, partida,
     ponerHora: v => { hora = v; ponerReloj(false); barra.value = v; pintarHora(); },
     enPantalla: id => { const v = porId[id].base.clone().project(camara); return [(v.x * 0.5 + 0.5) * innerWidth, (-v.y * 0.5 + 0.5) * innerHeight]; },
   };

@@ -5,13 +5,14 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { kit } from './lugares.js';
 import { azarDe } from './ruido.js';
 
-const { matPared, matPiedra, matTejado, matLiso, gCaja, gCil, gCono, gRoca, gDosAguas, ESTILOS } = kit;
+const { matPared, matPiedra, matTejado, matLiso, gCaja, gCil, gCono, gRoca, gDosAguas, gCasco, ESTILOS } = kit;
 
 const PERFIL = {
   valcoria: { sede: 'Castillo real', fuera: '#5f8244', dentro: '#a39472', calle: '#c2b494', teja2: 0x7d4a36, arbol: 'hoja' },
   griselda: { sede: 'Torre del homenaje', fuera: '#dde3e9', dentro: '#8b8e95', calle: '#a9acb2', teja2: 0x444a58, arbol: 'pino' },
   solterra: { sede: 'Casa del señor', fuera: '#c6a14c', dentro: '#b39a6c', calle: '#d3c198', teja2: 0x8a5a30, arbol: 'hoja' },
   astravan: { sede: 'Casa del Consejo', fuera: '#56824c', dentro: '#a79f8e', calle: '#cdc6b6', teja2: 0x7a4a52, arbol: 'hoja' },
+  liria: { sede: 'Capitanía del puerto', fuera: '#56824c', dentro: '#a79f8e', calle: '#cdc6b6', teja2: 0xa5512c, arbol: 'hoja', escala: 0.8 },
 };
 // Edificios singulares de cada capital, además de la plaza y la sede.
 const HITOS = {
@@ -19,6 +20,7 @@ const HITOS = {
   griselda: [['Salón de los clanes', 'salon'], ['Patio de armas', 'patio'], ['Armería', 'herreria'], ['Santuario del hielo', 'santuario']],
   solterra: [['Molino', 'molino'], ['Lonja del grano', 'lonja'], ['Posada', 'posada'], ['Establos', 'establos']],
   astravan: [['Lonja', 'lonja'], ['Casa de cambio', 'cambio'], ['Almacenes', 'almacenes'], ['Posada', 'posada'], ['Cuartel de la guardia', 'cuartel']],
+  liria: [['Lonja', 'lonja'], ['Aduana', 'cuartel'], ['Almacenes', 'almacenes'], ['Posada', 'posada'], ['Casa de cambio', 'cambio']],
 };
 const RUMBOS = ['este', 'sureste', 'sur', 'suroeste', 'oeste', 'noroeste', 'norte', 'noreste'];
 const difAng = (a, b) => Math.abs(((a - b + Math.PI * 3) % (Math.PI * 2)) - Math.PI);
@@ -27,8 +29,8 @@ const sinIndice = new Map();
 const plana = g => { if (!sinIndice.has(g)) sinIndice.set(g, g.index ? g.toNonIndexed() : g); return sinIndice.get(g); };
 
 export function crearCiudad(l, mundo, { movil = false } = {}) {
-  const rnd = azarDe('ciudad-' + l.id), e = ESTILOS[l.id] || ESTILOS.valcoria, perfil = PERFIL[l.id] || PERFIL.valcoria;
-  const tam = l.tamano || 1, R = 62 * tam + 26, L = R + 135;
+  const rnd = azarDe('ciudad-' + l.id), e = ESTILOS[l.id] || (l.tipo === 'puerto' ? ESTILOS.astravan : ESTILOS.valcoria), perfil = PERFIL[l.id] || PERFIL.valcoria;
+  const tam = (l.tamano || 1) * (perfil.escala || 1), R = 62 * tam + 26, L = R + 135;
   const escena = new THREE.Scene(), etiquetas = [];
 
   /* ---------- puertas: una por cada camino que llega a la ciudad ---------- */
@@ -50,12 +52,14 @@ export function crearCiudad(l, mundo, { movil = false } = {}) {
   const rSede = 15 + 7 * tam, sede = { x: Math.cos(angSede) * R * 0.5, z: Math.sin(angSede) * R * 0.5 };
   const enSede = (x, z, margen = 5) => Math.hypot(x - sede.x, z - sede.z) < rSede + margen;
 
-  // Astravan: el lago grande queda donde está en el mapa
+  // frente de agua: en Astravan, el lago grande donde está en el mapa; en un puerto, el mar al sur
   let lago = null;
-  if (l.id === 'astravan' && mundo.lagos?.length) {
-    const g = mundo.lagos[0], ang = Math.atan2(g.y - l.y, g.x - l.x);
-    lago = { ang, r: 190, x: Math.cos(ang) * (R + 34 + 190), z: Math.sin(ang) * (R + 34 + 190) };
-    if (!puertas.some(p => difAng(p.ang, ang) < 0.5)) puertas.push({ ang, nombre: 'Muelles del lago', principal: true, lago: true });
+  const frente = l.id === 'astravan' && mundo.lagos?.length ? { ang: Math.atan2(mundo.lagos[0].y - l.y, mundo.lagos[0].x - l.x), r: 190, nombre: 'Muelles del lago' }
+    : l.tipo === 'puerto' ? { ang: Math.PI / 2, r: 900, nombre: 'Muelles', mar: true } : null;
+  if (frente) {
+    lago = { ...frente, margen: frente.mar ? 15 : 34 };
+    lago.x = Math.cos(lago.ang) * (R + lago.margen + lago.r); lago.z = Math.sin(lago.ang) * (R + lago.margen + lago.r);
+    if (!puertas.some(p => difAng(p.ang, lago.ang) < 0.5)) puertas.push({ ang: lago.ang, nombre: lago.nombre, principal: true, lago: true });
   }
   const enLago = (x, z, margen = 0) => lago && Math.hypot(x - lago.x, z - lago.z) < lago.r + margen;
 
@@ -174,7 +178,7 @@ export function crearCiudad(l, mundo, { movil = false } = {}) {
       caja(piedraClara, 25 * k, 0.6, 2.4, 0, 5, 4.0 * k);
       cil(muro, 5 * k, 17, 0, 0, -8 * k); cono(teja, 5.6 * k, 7, 0, 17, -8 * k);                  // torre del reloj
       for (const s of [-1, 1]) casa(s * 12 * k, 7 * k, 7, 5, 5, paredes[0], tejas[2], Math.PI / 2, true);
-    } else if (l.id === 'solterra') {
+    } else if (l.id === 'solterra' || l.tipo === 'puerto') {
       casa(0, -3, 19 * k, 9 * k, 8, muro, teja, 0, true);
       casa(-9 * k, 5 * k, 7, 6, 5.5, paredes[0], teja, Math.PI / 2, false);
       torre(9 * k, 3 * k, 2.6, 13, piedra, teja, false);
@@ -188,7 +192,7 @@ export function crearCiudad(l, mundo, { movil = false } = {}) {
   });
   if (l.id === 'astravan') [-7, 0, 7].forEach((dx, i) => { const p = aMundo(dx, 10 + 5, -3); bandera(p.x, p.y, p.z, [0x2f6aa0, 0x3f8a54, 0xb08a2e][i]); });   // tres casas, tres pendones
   else {
-    const k = rSede / 22, asta = { griselda: [-9 * k, 28.5, -12 * k], solterra: [9 * k, 18.5, 3 * k] }[l.id] || [-9.5 * k, 29, -9.5 * k];
+    const k = rSede / 22, asta = { griselda: [-9 * k, 28.5, -12 * k], solterra: [9 * k, 18.5, 3 * k], liria: [9 * k, 18.5, 3 * k] }[l.id] || [-9.5 * k, 29, -9.5 * k];
     const p = aMundo(...asta); bandera(p.x, p.y, p.z, colorRegion);
   }
   etiquetas.push({ nombre: perfil.sede, pos: new THREE.Vector3(sede.x, 34, sede.z), clase: 'ciudad' });
@@ -290,15 +294,19 @@ export function crearCiudad(l, mundo, { movil = false } = {}) {
   }
   if (lago) {
     const p = puertas.find(q => q.lago) || puertas.reduce((m, q) => difAng(q.ang, lago.ang) < difAng(m.ang, lago.ang) ? q : m);
-    const ux = Math.cos(lago.ang), uz = Math.sin(lago.ang), tx = -uz, tz = ux, orilla = R + 34;
-    for (const s of [-28, -12, 6, 22]) {   // espigones con barcazas
+    const ux = Math.cos(lago.ang), uz = Math.sin(lago.ang), tx = -uz, tz = ux, orilla = R + lago.margen;
+    for (const s of (lago.mar ? [-58, -40, -22, -4, 14, 32, 50] : [-28, -12, 6, 22])) {   // espigones con barcos amarrados
       const largo = 26 + Math.abs(s) * 0.4, bx = ux * (orilla + largo / 2 - 4) + tx * s, bz = uz * (orilla + largo / 2 - 4) + tz * s;
       caja(madera, largo, 0.5, 2.6, bx, 1.0, bz, -lago.ang);
       for (let d = 2; d < largo; d += 5) caja(matLiso(0x4a3a2a), 0.5, 3.4, 0.5, ux * (orilla + d - 4) + tx * (s + 1.2), -1.4, uz * (orilla + d - 4) + tz * (s + 1.2));
-      poner(gCil, matLiso(0x5a3f2b), ux * (orilla + largo * 0.7) + tx * (s - 3.4), 0.5, uz * (orilla + largo * 0.7) + tz * (s - 3.4), 1.5, 9, 1.0, -lago.ang, Math.PI / 2);
+      // barco amarrado: casco afilado, cubierta y dos palos con la vela recogida
+      const bx2 = ux * (orilla + largo * 0.68) + tx * (s - 3.6), bz2 = uz * (orilla + largo * 0.68) + tz * (s - 3.6), eslora = lago.mar ? 13 : 9, jarcia = matLiso(0x3a2c20);
+      poner(gCasco, matLiso(0x5a3f2b), bx2, 0.7, bz2, 1.7, eslora, 2.3, -lago.ang, Math.PI / 2);
+      caja(madera, eslora * 0.62, 0.2, 2.6, bx2, 1.75, bz2, -lago.ang);
+      for (const d of [-0.2, 0.16]) { const mx = bx2 + ux * eslora * d, mz = bz2 + uz * eslora * d; cil(jarcia, 0.16, eslora * 0.8, mx, 1.8, mz); caja(jarcia, 0.2, 0.2, eslora * 0.42, mx, 1.8 + eslora * 0.6, mz, -lago.ang); caja(matLiso(0xe6dcc6), 0.34, 0.6, eslora * 0.38, mx, 1.8 + eslora * 0.56, mz, -lago.ang); }
     }
-    for (let i = 0; i < 7; i++) { const s = -36 + i * 11; casa(ux * (orilla - 9) + tx * s, uz * (orilla - 9) + tz * s, 8, 5.5, 4.5 + (i % 2), matPared(i % 2 ? 0x9a7a55 : 0x8a6a48), matTejado(0x5c3a2a), -lago.ang + Math.PI / 2, false); }
-    if (!p.lago) etiquetas.push({ nombre: 'Muelles del lago', pos: new THREE.Vector3(ux * (orilla + 6), 12, uz * (orilla + 6)), clase: 'ciudad' });
+    for (let i = 0; i < (lago.mar ? 11 : 7); i++) { const s = (lago.mar ? -58 : -36) + i * 11; casa(ux * (orilla - 9) + tx * s, uz * (orilla - 9) + tz * s, 8, 5.5, 4.5 + (i % 2), matPared(i % 2 ? 0x9a7a55 : 0x8a6a48), matTejado(0x5c3a2a), -lago.ang + Math.PI / 2, false); }
+    if (!p.lago) etiquetas.push({ nombre: lago.nombre, pos: new THREE.Vector3(ux * (orilla + 6), 12, uz * (orilla + 6)), clase: 'ciudad' });
   }
 
   /* ---------- arbolado ---------- */
@@ -356,7 +364,7 @@ export function crearCiudad(l, mundo, { movil = false } = {}) {
   suelo.rotation.x = -Math.PI / 2; suelo.receiveShadow = true; escena.add(suelo);
   let agua = null;
   if (lago) {
-    agua = new THREE.Mesh(new THREE.CircleGeometry(lago.r, 64), new THREE.MeshStandardMaterial({ color: 0x1f5878, roughness: 0.12, metalness: 0.35, transparent: true, opacity: 0.9 }));
+    agua = new THREE.Mesh(new THREE.CircleGeometry(lago.r, 128), new THREE.MeshStandardMaterial({ color: 0x236a8e, roughness: 0.2, metalness: 0.25, transparent: true, opacity: 0.92 }));
     agua.rotation.x = -Math.PI / 2; agua.position.set(lago.x, 0.25, lago.z); escena.add(agua);
   }
 
@@ -428,7 +436,7 @@ export function crearCiudad(l, mundo, { movil = false } = {}) {
 
   return {
     escena, etiquetas, R, actualizar,
-    vista: { pos: new THREE.Vector3(0, R * 1.5, R * 2.15), objetivo: new THREE.Vector3(0, 0, R * 0.1) },
+    vista: { pos: new THREE.Vector3(0, R * 1.5, R * (lago?.mar ? 2.9 : 2.15)), objetivo: new THREE.Vector3(0, 0, R * (lago?.mar ? 0.35 : 0.1)) },
     limite: R + 70,
   };
 }

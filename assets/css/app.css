@@ -26,7 +26,7 @@ button, summary, select { cursor: pointer; }
 .cabecera p.fuera { opacity: 0; }
 
 /* ---------- mandos ---------- */
-.mandos { position: fixed; top: 12px; right: 12px; display: flex; gap: 8px; align-items: flex-start; }
+.mandos { position: fixed; top: 12px; right: 12px; display: flex; gap: 8px; align-items: flex-start; z-index: 4; }
 .hora, .capas, .camara, #ficha { background: var(--panel); border: 1px solid var(--borde); border-radius: 10px; backdrop-filter: blur(8px); }
 .hora { display: flex; align-items: center; gap: 8px; padding: 6px 10px; }
 .hora button { background: none; border: 1px solid var(--borde); border-radius: 6px; padding: 3px 9px; font-size: 0.8rem; min-height: 30px; }
@@ -82,6 +82,24 @@ button.etq:hover, button.etq.activa { border-color: var(--oro); background: rgba
 #ficha .resultado b { color: var(--oro); font-variant-numeric: tabular-nums; }
 #ficha .nota { font-size: 0.75rem; color: var(--tenue); margin: 4px 0 0; }
 
+/* ---------- partida y música ---------- */
+.suelto { background: var(--panel); border: 1px solid var(--borde); border-radius: 10px; backdrop-filter: blur(8px); min-width: 40px; height: 44px; font-size: 1.1rem; }
+.suelto[aria-pressed="true"] { border-color: var(--oro); color: var(--oro); }
+#partidaCuerpo { width: 260px; padding: 8px 12px 12px; display: grid; gap: 8px; font-size: 0.82rem; }
+#partidaCuerpo .fila { display: flex; align-items: center; gap: 6px; }
+#partidaCuerpo .fila span { flex: 1; font: 600 0.95rem var(--serif); }
+#partidaCuerpo button { background: none; border: 1px solid var(--borde); border-radius: 6px; min-width: 30px; min-height: 30px; }
+#partidaCuerpo button:hover { border-color: var(--oro); }
+#partidaCuerpo button.ancho { padding: 6px 10px; }
+#partidaCuerpo select { width: 100%; padding: 7px; background: #1b1e26; border: 1px solid var(--borde); border-radius: 7px; }
+#partidaCuerpo label { padding: 0; white-space: normal; }
+#partidaCuerpo .rotulo { margin: 4px 0 -4px; font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--tenue); }
+#partidaCuerpo ul { margin: 0; padding-left: 16px; display: grid; gap: 4px; color: #ddd4c0; }
+#partidaCuerpo .nota { margin: 0; font-size: 0.72rem; color: var(--tenue); line-height: 1.35; }
+#ficha .aqui { color: var(--oro); font-weight: 600; margin-bottom: 10px; }
+#ficha .encuentros { margin: 8px 0; padding-left: 18px; font-size: 0.86rem; line-height: 1.45; color: #ddd4c0; }
+.en-ciudad #partida { display: none; }
+
 /* ---------- interior de ciudad ---------- */
 #velo { position: fixed; inset: 0; background: var(--tinta); opacity: 0; pointer-events: none; transition: opacity 0.35s; z-index: 8; }
 #velo.puesto { opacity: 1; pointer-events: auto; }
@@ -97,7 +115,10 @@ button.etq:hover, button.etq.activa { border-color: var(--oro); background: rgba
 @media (max-width: 720px) {
   .cabecera h1 { font-size: 1.15rem; }
   .cabecera p { display: none; }
-  .mandos { top: 46px; left: 12px; right: 12px; justify-content: space-between; }
+  .mandos { top: 46px; left: 12px; right: 12px; justify-content: space-between; flex-wrap: wrap; }
+  .hora { flex: 1 1 100%; }
+  .hora input { flex: 1; }
+  #partidaCuerpo { width: min(260px, calc(100vw - 48px)); }
   .hora input { width: 110px; }
   .etq-region b { font-size: 0.72rem; letter-spacing: 0.12em; }
   .etq-region i { display: none; }

@@ -11,19 +11,25 @@ Mapa interactivo en 3D de las Tierras de Alden. Web estática: sin servidor, sin
 - Ficha de cada lugar al pulsarlo. En las capitales, «Entrar en la ciudad» abre su interior en 3D (calles, plaza del mercado, muralla con una puerta por cada camino que llega, gente por las calles) y solo allí muestra quién gobierna.
 - «Viajar desde aquí»: ruta por los caminos, kilómetros y días a pie.
 - Capas conmutables: nombres, fronteras, caminos y clima.
+- **Partida**: día de campaña, posición del grupo, diario de viajes y niebla de guerra (un mar de nubes que solo se abre sobre lo descubierto). Con el «modo edición», desde la ficha de un lugar se puede colocar al grupo o hacer un viaje: avanza el día, descubre lo que queda junto al camino y tira por encuentros.
+- **Música**: el botón ♪ pone una pista en bucle según el sitio (mapa, taberna, ruinas, ciudad…), con fundido al cambiar.
 
 ## Estructura
 
 ```
 index.html
 assets/
-  data/mundo.json      regiones, costa, lagos, marisma, ríos, lugares, caminos, rutas de barcos
+  data/mundo.json      regiones, costa, lagos, marisma, ríos, lugares, caminos, rutas de barcos, música y encuentros
+  data/partida.json    estado publicado de la partida (opcional; si falta, partida vacía)
+  audio/               pistas de música (ver LEEME.txt)
   js/main.js           arranque, cámara, etiquetas, fichas, mandos
   js/terreno.js        alturas, textura, agua, ríos, puentes, caminos, fronteras, árboles
   js/lugares.js        modelos y texturas de cada tipo de lugar
   js/ciudad.js         interior de las capitales, generado a partir de los caminos que llegan a cada una
   js/ambiente.js       cielo, sombras, nubes, nieve, niebla, humo, barcos, pájaros, faro, luces de noche
   js/viaje.js          rutas y viajero
+  js/partida.js        día, grupo, diario, niebla de guerra y encuentros
+  js/musica.js         pistas por zona
   js/anim.js, ruido.js utilidades
   css/app.css
   img/icono.svg
@@ -43,6 +49,14 @@ Todo se edita en `assets/data/mundo.json`. Las coordenadas van en una rejilla de
 - **Ríos**: lista `rios`, cada uno con `puntos` y `ancho`. Excavan su cauce; dentro de un lago o del mar no se dibujan.
 - **Lagos, marisma, costa y fronteras**: elipses y listas de puntos; el relieve y el agua se recalculan al recargar.
 - **Ritmo de viaje**: `kmPorDia`.
+- **Música**: `musica` asigna un archivo de `assets/audio/` al mapa, a las ciudades y a cada tipo de lugar.
+- **Encuentros**: `encuentros.zonas` tiene, por región, el umbral del d20 y la tabla. Es una regla casera; cámbiala o borra el apartado para no tirar.
+
+## La partida
+
+El panel «Partida» guarda los cambios solo en el navegador de quien los hace. Para publicarlos: «Descargar partida.json» y subir ese archivo a `assets/data/`. Al cargar, el mapa usa el archivo publicado; un borrador local solo se conserva si se hizo sobre esa misma versión.
+
+La niebla de guerra es una capa visual, no un secreto: `partida.json` y `mundo.json` son públicos.
 
 Ojo: el repositorio es público. Lo que se escriba en `mundo.json` lo puede leer cualquiera, aunque en el mapa no se vea.
 
