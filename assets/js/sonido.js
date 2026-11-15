@@ -3,7 +3,7 @@
 // Cada capa tiene un nivel de 0 a 1 que el mapa va cambiando según dónde esté la cámara.
 export function crearSonido() {
   let ctx = null, maestro = null, activo = false, reloj = 0;
-  const capas = {}, nivel = { viento: 0, mar: 0, gentio: 0, fuego: 0, grillos: 0, pajaros: 0 }, TECHO = { viento: 0.5, mar: 0.55, gentio: 0.3, fuego: 0.4, grillos: 0.07, pajaros: 0.1 };
+  const capas = {}, nivel = { viento: 0, mar: 0, gentio: 0, fuego: 0, grillos: 0, pajaros: 0, lluvia: 0 }, TECHO = { viento: 0.5, mar: 0.55, gentio: 0.3, fuego: 0.4, grillos: 0.07, pajaros: 0.1, lluvia: 0.5 };
 
   function montar() {
     ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -30,6 +30,8 @@ export function crearSonido() {
     // grillos: un pitido agudo troceado
     { const o = ctx.createOscillator(), trozo = gan(0), g = gan(1); o.frequency.value = 4300; o.connect(trozo); trozo.connect(g); const sal = gan(0); g.connect(sal); sal.connect(maestro); capas.grillos = sal; o.start();
       const cuadro = ctx.createOscillator(), gc = gan(0.5); cuadro.type = 'square'; cuadro.frequency.value = 17; cuadro.connect(gc); gc.connect(trozo.gain); trozo.gain.value = 0.5; cuadro.start(); vaiven(0.55, 0.5, g.gain); }
+    // lluvia: siseo agudo y parejo, con un fondo grave de agua cayendo sobre tejado
+    { const alto = filtro('highpass', 2600, 0.3), g = gan(0.5); capa('lluvia', ruido(), alto, g); vaiven(0.19, 0.08, g.gain); const bajo = filtro('bandpass', 420, 0.5), gb = gan(0.35); const r2 = ruido(); r2.connect(bajo); bajo.connect(gb); gb.connect(capas.lluvia); }
     // pájaros: trinos sueltos, programados al azar mientras la capa suene
     { const sal = gan(0); sal.connect(maestro); capas.pajaros = sal; }
     reloj = setInterval(() => {

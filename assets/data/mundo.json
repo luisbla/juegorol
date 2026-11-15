@@ -1,167 +1,340 @@
 {
-  "meta": {
-    "nombre": "Tierras de Alden",
-    "ancho": 1536,
-    "alto": 1024,
-    "kmPorUnidad": 0.4845,
-    "kmPorDia": 38.6,
-    "notaRitmo": "ritmo normal a pie de D&D 5e: 24 millas al día"
-  },
+  "meta": {"nombre": "Tierras de Alden", "ancho": 1536, "alto": 1024, "kmPorUnidad": 0.4845, "kmPorDia": 38.6, "notaRitmo": "ritmo normal a pie de D&D 5e: 24 millas al día"},
   "musica": {
     "carpeta": "assets/audio/",
     "mapa": "bosque.mp3",
     "ciudad": "mercader.mp3",
-    "tipos": { "taberna": "taberna.mp3", "ruina": "mazmorra.mp3", "puerto": "mercader.mp3", "quemado": "tension.mp3", "campamento": "tension.mp3", "palafitos": "tension.mp3", "pasarela": "tension.mp3", "pecio": "tension.mp3" }
+    "tipos": {
+      "taberna": "taberna.mp3",
+      "ruina": "mazmorra.mp3",
+      "puerto": "mercader.mp3",
+      "quemado": "tension.mp3",
+      "campamento": "tension.mp3",
+      "palafitos": "tension.mp3",
+      "pasarela": "tension.mp3",
+      "pecio": "tension.mp3",
+      "mina": "tension.mp3",
+      "mercado": "mercader.mp3"
+    }
   },
-  "modelos": { "carpeta": "assets/modelos/", "lugares": {} },
+  "modelos": {
+    "carpeta": "assets/modelos/",
+    "lugares": {}
+  },
   "encuentros": {
-    "nota": "Regla casera, pendiente del máster: por cada día de viaje se tira 1d20 y hay encuentro si sale el umbral de la zona o más. Las tablas son genéricas.",
+    "nota": "Regla casera, pendiente del máster: por cada día de viaje se tira 1d20 y hay encuentro si sale el umbral de la zona o más.",
     "zonas": {
-      "valcoria": { "nombre": "Valcoria", "umbral": 17, "tabla": ["Una patrulla del rey pide cuentas", "Lobos siguiendo al grupo", "Leñadores con noticias del camino", "Un carro volcado en la cuneta", "Refugiados que bajan de la frontera"] },
-      "thraengarde": { "nombre": "Thraengarde", "umbral": 14, "tabla": ["Ventisca: hay que buscar abrigo", "Jinetes de un clan cortan el paso", "Peregrinos del culto camino de las cumbres", "Un alud ha borrado el sendero", "Huellas grandes en la nieve"] },
-      "marendol": { "nombre": "Marendol", "umbral": 19, "tabla": ["Carreteros con una rueda rota", "Jabalíes en los sembrados", "Un recaudador con escolta", "Fiesta de cosecha en una aldea"] },
-      "astravan": { "nombre": "Astravan", "umbral": 18, "tabla": ["Una caravana de mercaderes ofrece compañía", "Contrabandistas que no quieren testigos", "Niebla espesa que sube del lago", "Un cobrador de peaje de más"] },
-      "marisma": { "nombre": "la Marisma Callada", "umbral": 13, "tabla": ["El suelo cede bajo los pies", "Luces frías entre los juncos", "Sanguijuelas y fiebre", "Algo se mueve bajo el agua", "Silencio total: ni un pájaro"] },
-      "mar": { "nombre": "el Mar del Sur", "umbral": 17, "tabla": ["Mar picada", "Una vela desconocida en el horizonte", "Bancos de niebla"] }
+      "valcoria": {
+        "nombre": "Valcoria",
+        "umbral": 17,
+        "tabla": [
+          "Una patrulla de la Guardia de la Marca pide nombres y destino",
+          "Leñadores que bajan con prisa y sin leña",
+          "Un carro de grano volcado; la escolta discute de quién es la culpa",
+          "Refugiados de la frontera con todo lo suyo en una carretilla",
+          "Un correo real con el caballo reventado ofrece plata por el vuestro",
+          "Lobos que siguen al grupo sin acercarse"
+        ]
+      },
+      "thraengarde": {
+        "nombre": "Thraengarde",
+        "umbral": 14,
+        "tabla": [
+          "Ventisca: hay que buscar abrigo antes de que cierre",
+          "Jinetes del clan Varnok cortan el paso y preguntan a quién servís",
+          "Peregrinos del culto camino de las cumbres, descalzos",
+          "Un alud ha borrado el sendero",
+          "Una reata de prisioneros hacia Hierrohondo, con dos guardias cansados",
+          "Huellas grandes en la nieve, que no son de oso"
+        ]
+      },
+      "marendol": {
+        "nombre": "Marendol",
+        "umbral": 19,
+        "tabla": [
+          "Carreteros con una rueda rota y el grano al sol",
+          "Jabalíes en los sembrados y un labrador furioso",
+          "Un recaudador con escolta, de mal humor",
+          "Fiesta de siega en una aldea: no dejan pasar sin beber",
+          "Un hermano del Surco bendiciendo una linde en disputa"
+        ]
+      },
+      "astravan": {
+        "nombre": "Astravan",
+        "umbral": 18,
+        "tabla": [
+          "Una caravana de la Casa Ilvane ofrece compañía, a cambio de vigilar de noche",
+          "Contrabandistas que no quieren testigos",
+          "Niebla espesa que sube del lago",
+          "Un cobrador de peaje que no figura en ningún registro",
+          "Un cobrador de la Casa Draveth busca a un deudor y describe a uno del grupo"
+        ]
+      },
+      "marisma": {
+        "nombre": "la Marisma Callada",
+        "umbral": 13,
+        "tabla": [
+          "El suelo cede bajo los pies",
+          "Luces frías entre los juncos",
+          "Sanguijuelas y fiebre",
+          "Algo se mueve bajo el agua",
+          "Silencio total: ni una rana",
+          "Un juncalero que hace señas de volver atrás, y no dice por qué"
+        ]
+      },
+      "mar": {
+        "nombre": "el Mar del Sur",
+        "umbral": 17,
+        "tabla": [
+          "Mar picada",
+          "Una vela sin bandera en el horizonte",
+          "Bancos de niebla",
+          "Una barcaza de los Merrow a la deriva, con la carga intacta"
+        ]
+      }
     }
   },
   "regiones": [
-    {
-      "id": "valcoria", "nombre": "Reino de Valcoria", "lema": "Tierras de los Robles", "color": "#4f8a3c",
-      "etiqueta": [250, 150],
-      "poligono": [[40,560],[60,250],[200,90],[450,50],[680,80],[800,160],[835,290],[880,400],[940,450],[900,520],[820,580],[700,570],[640,560],[400,545],[200,555]]
-    },
-    {
-      "id": "thraengarde", "nombre": "Dominio de Thraengarde", "lema": "Tierra de Clanes", "color": "#7fa6c9",
-      "etiqueta": [1380, 130],
-      "poligono": [[800,160],[870,80],[1000,40],[1250,35],[1480,60],[1500,300],[1490,440],[1380,430],[1200,400],[1050,410],[940,450],[880,400],[835,290]]
-    },
-    {
-      "id": "marendol", "nombre": "Señorío de Marendol", "lema": "Campos Dorados", "color": "#c79a3a",
-      "etiqueta": [170, 790],
-      "poligono": [[40,560],[200,555],[400,545],[640,560],[660,700],[650,850],[600,950],[420,975],[220,960],[70,900],[35,720]]
-    },
-    {
-      "id": "astravan", "nombre": "Confederación de Astravan", "lema": "Tierras de los Lagos", "color": "#7a63b8",
-      "etiqueta": [1390, 500],
-      "poligono": [[940,450],[1050,410],[1200,400],[1380,430],[1490,440],[1500,700],[1510,850],[1420,890],[1300,945],[1120,940],[980,905],[870,880],[760,930],[660,1010],[600,950],[650,850],[660,700],[640,560],[700,570],[820,580],[900,520]]
-    }
+    {"id": "valcoria", "nombre": "Reino de Valcoria", "lema": "Tierras de los Robles", "color": "#4f8a3c", "etiqueta": [250, 150], "poligono": [[40, 560], [60, 250], [200, 90], [450, 50], [680, 80], [800, 160], [835, 290], [880, 400], [940, 450], [900, 520], [820, 580], [700, 570], [640, 560], [400, 545], [200, 555]], "texto": "El reino viejo. Tiene más tierra, más castillos y más hombres de armas que ningún vecino, y un tesoro que no alcanza para pagarlos. Al norte, la frontera con Thraengarde es una franja de aldeas vacías y atalayas quemadas; al sur, Marendol le da de comer."},
+    {"id": "thraengarde", "nombre": "Dominio de Thraengarde", "lema": "Tierra de Clanes", "color": "#7fa6c9", "etiqueta": [1380, 130], "poligono": [[800, 160], [870, 80], [1000, 40], [1250, 35], [1480, 60], [1500, 300], [1490, 440], [1380, 430], [1200, 400], [1050, 410], [940, 450], [880, 400], [835, 290]], "texto": "Cuatro clanes que se mataban entre sí hasta que un hombre los puso bajo una sola voz. Montaña, nieve, hierro y un culto que habla por el hielo. Baja al sur a por lo que la montaña no da."},
+    {"id": "marendol", "nombre": "Señorío de Marendol", "lema": "Campos Dorados", "color": "#c79a3a", "etiqueta": [170, 790], "poligono": [[40, 560], [200, 555], [400, 545], [640, 560], [660, 700], [650, 850], [600, 950], [420, 975], [220, 960], [70, 900], [35, 720]], "texto": "Trigo hasta donde alcanza la vista. Un señorío pequeño, rico y sin ejército, vasallo de Valcoria desde hace tres generaciones. Paga en grano la protección que recibe, y cada año se pregunta si la recibe."},
+    {"id": "astravan", "nombre": "Confederación de Astravan", "lema": "Tierras de los Lagos", "color": "#7a63b8", "etiqueta": [1390, 500], "poligono": [[940, 450], [1050, 410], [1200, 400], [1380, 430], [1490, 440], [1500, 700], [1510, 850], [1420, 890], [1300, 945], [1120, 940], [980, 905], [870, 880], [760, 930], [660, 1010], [600, 950], [650, 850], [660, 700], [640, 560], [700, 570], [820, 580], [900, 520]], "texto": "Tres Casas de mercaderes que gobiernan a votos una tierra de lagos, ríos y un puerto de mar. No tiene rey ni lo quiere. Presta dinero a todos sus vecinos y lleva la cuenta."}
   ],
-  "costa": [[0,1100],[560,1100],[660,1010],[760,930],[870,880],[980,905],[1120,940],[1300,945],[1420,890],[1536,850]],
+  "facciones": [
+    {"id": "corona", "nombre": "La Corona de Valcoria", "region": "valcoria", "quiere": "Devolver al reino las fronteras del abuelo del rey.", "problema": "Debe más de lo que recauda, y parte se lo debe a Astravan.", "gancho": "Paga por escoltas, correos y noticias del norte. Tarde, pero paga."},
+    {"id": "marca", "nombre": "La Guardia de la Marca", "region": "valcoria", "quiere": "Aguantar la frontera con lo que hay.", "problema": "La mitad de hombres que hace cinco años y nadie que quiera el siguiente destacamento.", "gancho": "Contrata batidores por jornada y compra cualquier cosa que venga del campamento abandonado."},
+    {"id": "vela", "nombre": "La Vela de Poniente", "region": "valcoria", "quiere": "Que nadie entre en las Criptas Silentes ni salga nada de ellas.", "problema": "Son seis hermanos, todos viejos, y este otoño alguien ha movido las estacas.", "gancho": "Busca brazos para reponer el cerco antes de las nieves."},
+    {"id": "juncaleros", "nombre": "Los juncaleros", "region": "valcoria", "quiere": "Vivir de la marisma sin entrar en ella más de lo justo.", "problema": "Solo ellos saben por dónde se pisa, y cada año lo saben menos.", "gancho": "Guían por un precio. Hasta donde llega la voz."},
+    {"id": "clanes", "nombre": "Los cuatro clanes", "region": "thraengarde", "quiere": "Varnok quiere hierro, Ulvreth quiere caza, Skaldur quiere los pasos y Brennach quiere que lo dejen en paz.", "problema": "Cada uno tiene un hijo en la mesa de Thraen.", "gancho": "Un clan que no puede moverse paga bien a quien se mueva por él."},
+    {"id": "voces", "nombre": "Las Voces Blancas", "region": "thraengarde", "quiere": "Que el hielo siga hablando, y que hable por una sola boca.", "problema": "Una de ellas dejó de oírlo y sigue viva en una cabaña.", "gancho": "Reciben a quien sube con ofrenda. Preguntar es otra cosa."},
+    {"id": "senorio", "nombre": "El Señorío de Marendol", "region": "marendol", "quiere": "Pagar lo justo, cosechar tranquilo y que la guerra pase de largo.", "problema": "No tiene ejército, tiene grano escondido y dos vecinos que saben contar.", "gancho": "Contrata escolta para sus carros y paga en moneda de Astravan."},
+    {"id": "surco", "nombre": "La Hermandad del Surco", "region": "marendol", "quiere": "Que la tierra siga dando. Bendice arados, reparte lindes y ata cintas en el espino.", "problema": "Un arado suyo dio con una escalera, y el señor aún no ha preguntado.", "gancho": "Quiere saber qué hay bajo el Sagrario antes que nadie con escudo."},
+    {"id": "ilvane", "nombre": "Casa Ilvane", "region": "astravan", "quiere": "El mar: más barcos, más muelles, un segundo faro.", "problema": "Todo lo que gana pasa por un solo puerto.", "gancho": "Fleta barcos y necesita quien los acompañe."},
+    {"id": "merrow", "nombre": "Casa Merrow", "region": "astravan", "quiere": "Los lagos y los ríos: pesca, barcazas y peajes.", "problema": "Ha perdido una barcaza en la marisma y no quiere que se hable de ello.", "gancho": "Paga por el cuaderno del patrón. Sin preguntas, de ida y de vuelta."},
+    {"id": "draveth", "nombre": "Casa Draveth", "region": "astravan", "quiere": "Que todos le deban.", "problema": "Un deudor que no puede pagar es un problema; un rey que no puede pagar es una oportunidad o una guerra.", "gancho": "Compra deudas y busca quien las cobre."},
+    {"id": "barqueras", "nombre": "Las barqueras del lago", "region": "astravan", "quiere": "Que el Mercado de las Barcas siga sin pagar puesto.", "problema": "La Aduana lo sabe, y de momento le conviene.", "gancho": "Llevan a cualquier orilla y venden lo que nadie más vende."}
+  ],
+  "cronica": [
+    {"cuando": "Hace cuatro generaciones", "que": "Los Rovain unen los robledales bajo una corona y levantan la capital."},
+    {"cuando": "Hace tres generaciones", "que": "Marendol jura vasallaje a Valcoria a cambio de protección. Desde entonces paga en grano."},
+    {"cuando": "Hace unos sesenta años", "que": "El abuelo del rey tiende el Paso Viejo a través de la marisma para comerciar con los lagos sin pasar por Liria."},
+    {"cuando": "Hace unos treinta años", "que": "Los juncaleros dejan los Palafitos en un solo invierno. El Paso Viejo se abandona poco después."},
+    {"cuando": "Hace doce años", "que": "Un hombre llamado Thraen baja de las cumbres del este y empieza a someter a los clanes, uno a uno."},
+    {"cuando": "Hace cinco años", "que": "Se rinde el clan Brennach, el último. Las incursiones del norte dejan de ser de un clan y pasan a ser de todos."},
+    {"cuando": "Hace dos años", "que": "Arde el Puesto de Vigía. La Guardia de la Marca se repliega a la Torre de la Marca."},
+    {"cuando": "Este año", "que": "La Casa Draveth compra deuda de la Corona de Valcoria. Una barcaza de los Merrow aparece encallada en la marisma. Alguien acampa junto a la frontera y se va sin recoger."}
+  ],
+  "costa": [[0, 1100], [560, 1100], [660, 1010], [760, 930], [870, 880], [980, 905], [1120, 940], [1300, 945], [1420, 890], [1536, 850]],
   "lagos": [
-    { "x": 1150, "y": 630, "rx": 125, "ry": 52 },
-    { "x": 1295, "y": 815, "rx": 80, "ry": 44 },
-    { "x": 1420, "y": 560, "rx": 42, "ry": 30 }
+    {"x": 1150, "y": 630, "rx": 125, "ry": 52},
+    {"x": 1295, "y": 815, "rx": 80, "ry": 44},
+    {"x": 1420, "y": 560, "rx": 42, "ry": 30}
   ],
-  "marisma": { "nombre": "Marisma Callada", "x": 770, "y": 488, "rx": 128, "ry": 88, "etiqueta": [730, 540] },
+  "marisma": {"nombre": "Marisma Callada", "x": 770, "y": 488, "rx": 128, "ry": 88, "etiqueta": [730, 540]},
   "rios": [
-    { "ancho": 6.5, "puntos": [[1000,340],[950,378],[895,420],[840,452],[795,468],[762,484]] },
-    { "ancho": 8, "puntos": [[768,502],[790,524],[815,546],[850,572],[930,602],[1000,622],[1048,630],[1082,634]] },
-    { "ancho": 10, "puntos": [[1112,652],[1100,684],[1096,738],[1042,794],[962,842],[906,874],[884,912]] },
-    { "ancho": 6, "puntos": [[1238,656],[1248,684],[1262,720],[1278,772],[1284,794]] },
-    { "ancho": 5, "puntos": [[1398,566],[1378,576],[1325,598],[1272,620],[1250,628]] }
+    {"ancho": 6.5, "puntos": [[1000, 340], [950, 378], [895, 420], [840, 452], [795, 468], [762, 484]]},
+    {"ancho": 8, "puntos": [[768, 502], [790, 524], [815, 546], [850, 572], [930, 602], [1000, 622], [1048, 630], [1082, 634]]},
+    {"ancho": 10, "puntos": [[1112, 652], [1100, 684], [1096, 738], [1042, 794], [962, 842], [906, 874], [884, 912]]},
+    {"ancho": 6, "puntos": [[1238, 656], [1248, 684], [1262, 720], [1278, 772], [1284, 794]]},
+    {"ancho": 5, "puntos": [[1398, 566], [1378, 576], [1325, 598], [1272, 620], [1250, 628]]}
   ],
-  "mar": { "nombre": "Mar del Sur", "etiqueta": [1180, 990] },
+  "mar": {"nombre": "Mar del Sur", "etiqueta": [1180, 990]},
   "lugares": [
-    { "id": "valcoria", "nombre": "Valcoria", "tipo": "capital", "region": "valcoria", "x": 430, "y": 300, "tamano": 1.55,
-      "desc": "Capital del Reino de Valcoria y la mayor ciudad de estas tierras, levantada entre robledales. Sus murallas han conocido tiempos mejores: las incursiones del norte llevan años vaciando las arcas.",
-      "gobierno": { "titulo": "Quién gobierna", "texto": "El rey Aldric Rovain III, tercero de su dinastía. Reina sobre un país más pequeño y más pobre que el que heredó." } },
-    { "id": "criptas", "nombre": "Las Criptas Silentes", "tipo": "ruina", "region": "valcoria", "x": 130, "y": 250,
-      "desc": "Ruinas al oeste del reino. En Valcoria se da por hecho que son la cripta de una dinastía antigua, y casi nadie se acerca." },
-    { "id": "roble", "nombre": "Puesto del Roble", "tipo": "posta", "region": "valcoria", "x": 272, "y": 288,
-      "desc": "Posta en el camino del oeste, a medio trayecto entre la capital y las Criptas Silentes." },
-    { "id": "villaverde", "nombre": "Villa Verde", "tipo": "pueblo", "region": "valcoria", "x": 412, "y": 452,
-      "desc": "Pueblo en el camino real que baja de Valcoria hacia Solterra. Última parada antes de los campos de Marendol." },
-    { "id": "vigia", "nombre": "Puesto de Vigía Quemado", "tipo": "quemado", "region": "valcoria", "x": 730, "y": 200,
-      "desc": "Lo que queda de una torre de vigilancia en la frontera con Thraengarde. Ardió en una incursión y nadie la ha reconstruido." },
-    { "id": "campamento", "nombre": "Campamento Abandonado", "tipo": "campamento", "region": "valcoria", "x": 758, "y": 292,
-      "desc": "Tiendas rotas y hogueras frías junto a la frontera. No está claro quién acampó aquí ni por qué se fue con tanta prisa." },
-    { "id": "palafitos", "nombre": "Los Palafitos", "tipo": "palafitos", "region": "valcoria", "x": 762, "y": 462, "suelo": "marisma",
-      "desc": "Cabañas sobre estacas en mitad de la Marisma Callada, medio hundidas y vacías. Nadie recuerda quién vivía aquí." },
-    { "id": "paso", "nombre": "El Paso Viejo", "tipo": "pasarela", "region": "valcoria", "x": 700, "y": 505, "suelo": "marisma",
-      "desc": "Restos de una calzada de troncos que cruzaba la marisma. Le faltan tramos enteros y nadie la repara." },
-    { "id": "barcaza", "nombre": "La Barcaza Hundida", "tipo": "pecio", "region": "valcoria", "x": 838, "y": 512, "suelo": "marisma",
-      "desc": "El casco de una barcaza de carga, escorado en el fango cerca de donde la marisma desagua hacia los lagos." },
-
-    { "id": "griselda", "nombre": "Fortaleza Griselda", "tipo": "capital", "region": "thraengarde", "x": 1040, "y": 270, "tamano": 1.35,
-      "desc": "Fortaleza de piedra oscura en un valle entre montañas nevadas. Desde aquí se gobierna a los clanes que antes guerreaban entre sí.",
-      "gobierno": { "titulo": "Quién gobierna", "texto": "Thraen, llamado Portavoz del Hielo. Unificó a los clanes por la fuerza y gobierna con el respaldo del culto a los demonios de hielo." } },
-    { "id": "cuervo", "nombre": "Puesto del Cuervo", "tipo": "posta", "region": "thraengarde", "x": 1220, "y": 108,
-      "desc": "Puesto de montaña al noreste de la fortaleza, el más alto y aislado del dominio." },
-    { "id": "cabana", "nombre": "La Cabaña del Renegado", "tipo": "cabana", "region": "thraengarde", "x": 1208, "y": 185,
-      "desc": "Una cabaña sola bajo el Puesto del Cuervo. Dicen que quien vive ahí rompió con el culto y con Thraen." },
-    { "id": "cuna", "nombre": "La Cuna de los Demonios", "tipo": "ruina", "region": "thraengarde", "x": 1340, "y": 290,
-      "desc": "Ruinas entre las cumbres del este. Para los clanes es suelo sagrado: aquí, cuentan, despertaron los demonios de hielo." },
-
-    { "id": "solterra", "nombre": "Solterra", "tipo": "capital", "region": "marendol", "x": 350, "y": 722, "tamano": 0.9,
-      "desc": "Sede del Señorío de Marendol, rodeada de trigales. Próspera y tranquila, sin más ejército que el que le presta Valcoria.",
-      "gobierno": { "titulo": "Quién gobierna", "texto": "El señor Beren Aldwyn, vasallo del rey de Valcoria." } },
-    { "id": "granja", "nombre": "Granja del Albo", "tipo": "granja", "region": "marendol", "x": 212, "y": 668,
-      "desc": "La granja más grande del señorío, a un paseo al oeste de Solterra." },
-    { "id": "viento", "nombre": "Posta del Viento", "tipo": "posta", "region": "marendol", "x": 300, "y": 852,
-      "desc": "Posta al sur de Solterra, en campo abierto y sin un árbol que pare el viento." },
-    { "id": "llanuras", "nombre": "Llanuras Doradas", "tipo": "pueblo", "region": "marendol", "x": 502, "y": 688,
-      "desc": "Pueblo agrícola al este de Solterra, entre los campos que dan nombre a la región." },
-    { "id": "taberna", "nombre": "La Taberna del Jabalí Contento", "tipo": "taberna", "region": "marendol", "x": 560, "y": 802,
-      "desc": "Taberna de camino entre Solterra y Puerto de Liria. Parada obligada de carreteros y viajeros." },
-    { "id": "sagrario", "nombre": "El Sagrario del Surco", "tipo": "ruina", "region": "marendol", "x": 432, "y": 892,
-      "desc": "Piedras viejas que asoman entre los cultivos del sur. Las encontró un arado, y el folclore local las tiene por un templo del campo." },
-
-    { "id": "astravan", "nombre": "Astravan", "tipo": "capital", "region": "astravan", "x": 1042, "y": 702, "tamano": 1.25,
-      "desc": "Capital de la Confederación, entre el lago grande y el río que baja al mar. Ciudad de mercaderes, almacenes y barcazas.",
-      "gobierno": { "titulo": "Quién gobierna", "texto": "El Consejo de las Tres Casas, con voto igual: Casa Ilvane (comercio marítimo), Casa Merrow (pesca y lagos) y Casa Draveth (banca y préstamos)." } },
-    { "id": "claro", "nombre": "Claro de Lunas", "tipo": "pueblo", "region": "astravan", "x": 1306, "y": 650,
-      "desc": "Pueblo de pescadores en la orilla este del lago grande." },
-    { "id": "liria", "nombre": "Puerto de Liria", "tipo": "puerto", "region": "astravan", "x": 852, "y": 873, "tamano": 1.45,
-      "desc": "El gran puerto de mar de la Confederación, en la desembocadura del río. Muelles, grúas, lonja y almacenes: por aquí sale al Mar del Sur casi todo lo que Astravan vende, y entra casi todo lo que compra." },
-    { "id": "faro", "nombre": "Faro de Astravan", "tipo": "faro", "region": "astravan", "x": 968, "y": 962, "suelo": "islote", "tamano": 1.35,
-      "desc": "Faro sobre un peñón frente a Puerto de Liria. Marca la entrada del puerto a los barcos que vienen del Mar del Sur." },
-    { "id": "ahogada", "nombre": "La Ciudad Ahogada", "tipo": "ruina", "region": "astravan", "x": 1295, "y": 812, "suelo": "agua",
-      "desc": "Torres rotas que asoman de un lago. Los pescadores la llaman así desde siempre y evitan echar las redes cerca." },
-    { "id": "torre", "nombre": "Torre de Aldrian", "tipo": "torre", "region": "astravan", "x": 1178, "y": 520, "oculto": true,
-      "desc": "Una torre entre los árboles, al norte del lago grande. En Astravan dicen que aquí vive el mago Aldrian, y que no recibe visitas." }
+    {"id": "valcoria", "nombre": "Valcoria", "tipo": "capital", "region": "valcoria", "x": 430, "y": 300, "tamano": 1.55, "desc": "Capital del Reino de Valcoria y la mayor ciudad de estas tierras, levantada entre robledales. Tiene más murallas, más torres y más hombres de armas que nadie; lo que no tiene es con qué pagarlos. Las incursiones del norte llevan años vaciando las arcas.", "gobierno": {"titulo": "Quién gobierna", "texto": "El rey Aldric Rovain III, tercero de su dinastía. Quiere devolver al reino las fronteras de su abuelo y no puede pagar la soldada de este invierno. Habla despacio, como quien dicta, y no perdona que lo interrumpan."}, "gente": [{"nombre": "Tobías Orduña", "papel": "tesorero real", "voz": "Cuenta con los dedos mientras escucha. Sabe a quién debe el rey, y cuánto."}, {"nombre": "Mirena Halloran", "papel": "maestra de postas", "voz": "Paga por carta entregada y por noticia del camino del norte. Regatea las dos."}, {"nombre": "Garrido el Cojo", "papel": "sargento retirado", "voz": "Estuvo en la torre que ardió. Lo cuenta distinto cada noche, siempre en la posada."}], "rumores": ["El rey ha empeñado la plata de la capilla, y no a un valcoriano.", "Este año no hay leva en Marendol: dicen que lord Beren ha pagado para evitarla.", "Han visto luz en el campamento de la frontera. Las tiendas siguen vacías."], "gancho": "La Corona paga por escoltas, por correos y por noticias del norte. Paga tarde."},
+    {"id": "criptas", "nombre": "Las Criptas Silentes", "tipo": "ruina", "region": "valcoria", "x": 130, "y": 250, "desc": "Una fachada de piedra hundida en la ladera, al oeste del reino, bajo un bosque que casi no deja pasar la luz. En Valcoria se da por hecho que es la cripta de una dinastía antigua, y casi nadie se acerca. La Vela de Poniente clava estacas de aviso alrededor y las repone cada otoño.", "gente": [{"nombre": "Hermano Anselmo Cardo", "papel": "estaquero de la Vela de Poniente", "voz": "Habla en voz baja aunque esté al raso. No ha visto nunca la puerta abierta y quiere morirse sin verla."}], "rumores": ["Este otoño faltaban tres estacas. No estaban caídas: estaban arrancadas y apiladas.", "Dicen que ahí yace una dinastía anterior a los Rovain. En palacio no hay un solo papel que la nombre.", "Los perros no cruzan la línea de estacas. Los cuervos, sí."], "gancho": "La Vela busca brazos para reponer estacas antes de las nieves. Nadie del lugar se apunta dos veces."},
+    {"id": "roble", "nombre": "Puesto del Roble", "tipo": "posta", "region": "valcoria", "x": 272, "y": 288, "desc": "Posta en el camino del oeste, a medio trayecto entre la capital y las Criptas Silentes.", "gente": [{"nombre": "Aldonza Requena", "papel": "maestra de la posta", "voz": "Cambia caballos, hierra y no pregunta. Cobra por adelantado desde que un correo real le dejó a deber."}], "rumores": ["El roble ya era viejo cuando se trazó el camino. Los carreteros dejan una moneda entre las raíces antes de seguir al oeste.", "Los que van hacia las Criptas pasan de día. Los que vuelven, también."], "gancho": "Caballos de refresco y la última cama antes de las Criptas."},
+    {"id": "villaverde", "nombre": "Villa Verde", "tipo": "pueblo", "region": "valcoria", "x": 412, "y": 452, "desc": "Pueblo en el camino real que baja de Valcoria hacia Solterra. Última parada antes de los campos de Marendol.", "gente": [{"nombre": "Nuño Baltar", "papel": "alcalde y molinero", "voz": "Habla de harina cuando quiere hablar de dinero."}, {"nombre": "Lía la Pozera", "papel": "vecina", "voz": "Sabe todo lo que pasa en la plaza porque no se mueve de ella."}], "rumores": ["Por el camino real suben carros de grano hacia Valcoria y bajan vacíos. Últimamente bajan con soldados.", "Un buhonero juró haber cruzado la marisma por el Paso Viejo. Traía barro hasta las cejas y no quiso repetirlo."], "gancho": "Mercado los días de plaza. Buen sitio para contratar carro o guía hacia Marendol."},
+    {"id": "vigia", "nombre": "Puesto de Vigía Quemado", "tipo": "quemado", "region": "valcoria", "x": 730, "y": 200, "desc": "Lo que queda de una torre de vigilancia en la frontera con Thraengarde. Ardió en una incursión y nadie la ha reconstruido.", "rumores": ["Ardió de dentro afuera. Eso dice Garrido el Cojo cuando lleva tres jarras.", "Nadie la reconstruye porque nadie quiere ser el siguiente destacamento."], "gancho": "La Guardia de la Marca quiere saber qué pasó la última noche. Entre los escombros debería seguir el libro de guardia."},
+    {"id": "campamento", "nombre": "Campamento Abandonado", "tipo": "campamento", "region": "valcoria", "x": 758, "y": 292, "desc": "Tiendas rotas y hogueras frías junto a la frontera. No está claro quién acampó aquí ni por qué se fue con tanta prisa: dejaron hasta la olla.", "rumores": ["Las tiendas son de lona valcoriana. Los nudos, no.", "Quien huye de un enemigo se lleva al menos el cuchillo. Aquí hay tres tirados."], "gancho": "Las huellas salen hacia el sur, hacia la marisma. Ninguna vuelve."},
+    {"id": "palafitos", "nombre": "Los Palafitos", "tipo": "palafitos", "region": "valcoria", "x": 762, "y": 462, "suelo": "marisma", "desc": "Cabañas sobre estacas en mitad de la Marisma Callada, medio hundidas y vacías. Fue la aldea de los juncaleros hasta el invierno en que dejaron de bajar al mercado.", "rumores": ["Los juncaleros de ahora viven en la orilla y no entran más allá de donde llega la voz.", "La marisma se llama Callada porque hay noches en que no canta ni una rana. Esas noches no se sale."], "gancho": "Los juncaleros guían hasta la primera cabaña por un precio. Ni un paso más."},
+    {"id": "paso", "nombre": "El Paso Viejo", "tipo": "pasarela", "region": "valcoria", "x": 700, "y": 505, "suelo": "marisma", "desc": "Restos de una calzada de troncos que cruzaba la marisma. La mandó tender el abuelo del rey para vender madera en los lagos sin pagar peaje en Liria. Le faltan tramos enteros y nadie la repara.", "rumores": ["Con el Paso entero, Valcoria vendería su madera en Astravan a mitad de precio. A alguien en el Consejo no le corre prisa.", "Hay un mojón por legua. El tercero está del revés."], "gancho": "Quien lo cruce entero y vuelva con un croquis tiene comprador en dos cortes."},
+    {"id": "barcaza", "nombre": "La Barcaza Hundida", "tipo": "pecio", "region": "valcoria", "x": 838, "y": 512, "suelo": "marisma", "desc": "El casco de una barcaza de carga, escorado en el fango cerca de donde la marisma desagua hacia los lagos. Lleva en la proa la marca de la Casa Merrow.", "rumores": ["No naufragó: la encallaron. El timón está atado.", "La carga flotó hasta Astravan durante un mes. El arcón del patrón, no."], "gancho": "La Casa Merrow paga por el cuaderno del patrón. No dice por qué."},
+    {"id": "griselda", "nombre": "Fortaleza Griselda", "tipo": "capital", "region": "thraengarde", "x": 1040, "y": 270, "tamano": 1.35, "desc": "Fortaleza de piedra oscura en un valle entre montañas nevadas. Desde aquí se gobierna a los clanes que antes guerreaban entre sí.", "gobierno": {"titulo": "Quién gobierna", "texto": "Thraen, llamado Portavoz del Hielo. Unificó a los clanes por la fuerza y gobierna con el respaldo del culto a los demonios de hielo. No levanta la voz: baja la de los demás. Cada clan le entrega un hijo como huésped."}, "gente": [{"nombre": "Madre Yrsa la Escarchada", "papel": "primera de las Voces Blancas", "voz": "Habla por el hielo, y el hielo siempre opina lo que Thraen. Lleva los dedos vendados."}, {"nombre": "Kettil Brennach", "papel": "jefe del clan Brennach", "voz": "El último en doblar la rodilla. Ríe fuerte en el salón y no bebe nada que no se haya servido él."}, {"nombre": "Sigrun Varnok", "papel": "maestra armera", "voz": "Prueba cada hoja contra su propio escudo. Debe tres espadas a cada clan y las entrega en el orden que le conviene."}], "rumores": ["Los huéspedes de Thraen comen a su mesa. Ninguno ha vuelto a casa ni de visita.", "El fuego azul del salón no calienta. Los viejos se sientan lejos.", "Hierrohondo lleva dos lunas sin mandar carros."], "gancho": "Thraen recibe a los forasteros útiles. Serlo dos veces es más difícil que serlo una."},
+    {"id": "cuervo", "nombre": "Puesto del Cuervo", "tipo": "posta", "region": "thraengarde", "x": 1220, "y": 108, "desc": "Puesto de montaña al noreste de la fortaleza, el más alto y aislado del dominio.", "gente": [{"nombre": "Hallgerd Ulvreth", "papel": "guardiana del puesto", "voz": "Habla al viento antes que a la gente. Enciende la almenara y no pregunta para quién."}], "rumores": ["Desde el Cuervo se ve humo en la cabaña del Renegado cada mañana. Thraen lo sabe y no manda a nadie.", "El paso de más arriba no tiene nombre: quien lo cruzó no bajó a ponérselo."], "gancho": "Refugio y fuego para quien suba. Las noticias del valle se pagan con leña."},
+    {"id": "cabana", "nombre": "La Cabaña del Renegado", "tipo": "cabana", "region": "thraengarde", "x": 1208, "y": 185, "desc": "Una cabaña sola bajo el Puesto del Cuervo. Dicen que quien vive ahí rompió con el culto y con Thraen, y que sigue vivo porque nadie quiere ser quien lo mate.", "gente": [{"nombre": "Orm el Callado", "papel": "el Renegado", "voz": "Fue Voz Blanca. Contesta con otra pregunta y parte leña mientras piensa. Quiere que alguien más sepa lo que vio; teme que lo crean."}], "rumores": ["Orm habló por el hielo hasta el día en que dijo que el hielo no decía nada.", "Le dejan comida en el sendero. Nadie admite que es suya."], "gancho": "Orm cambia leña y pieles por noticias de Griselda. Lo que sabe del culto no lo cambia por nada. Todavía."},
+    {"id": "cuna", "nombre": "La Cuna de los Demonios", "tipo": "ruina", "region": "thraengarde", "x": 1340, "y": 290, "desc": "Ruinas entre las cumbres del este. Para los clanes es suelo sagrado: aquí, cuentan, despertaron los demonios de hielo.", "rumores": ["Solo las Voces Blancas pasan de los postes. Entran de noche y no hablan hasta el alba.", "Thraen subió una vez siendo nadie y bajó siendo el Portavoz."], "gancho": "Los clanes dejan ofrendas en los postes. Quien las toque responde ante los cuatro."},
+    {"id": "solterra", "nombre": "Solterra", "tipo": "capital", "region": "marendol", "x": 350, "y": 722, "tamano": 0.9, "desc": "Sede del Señorío de Marendol, rodeada de trigales. Próspera y tranquila, sin más ejército que el que le presta Valcoria.", "gobierno": {"titulo": "Quién gobierna", "texto": "El señor Beren Aldwyn, vasallo del rey de Valcoria. Paga puntual, sonríe siempre y guarda grano en trojes que no figuran en ningún censo. Llama «primo» a todo el mundo."}, "gente": [{"nombre": "Jimena Aldwyn", "papel": "hija del señor", "voz": "Lleva las cuentas de verdad. Quiere una mesnada propia para Marendol y sabe lo que cuesta."}, {"nombre": "Fulco Ardanza", "papel": "almotacén del grano", "voz": "Pesa dos veces y apunta una."}], "rumores": ["Hay más trigo en Marendol del que sube a Valcoria. Los carreteros lo saben.", "Lord Beren cenó a puerta cerrada con un hombre de la Casa Draveth."], "gancho": "El señorío contrata escolta para los carros de grano. Paga bien, y en moneda de Astravan."},
+    {"id": "granja", "nombre": "Granja del Albo", "tipo": "granja", "region": "marendol", "x": 212, "y": 668, "desc": "La granja más grande del señorío, a un paseo al oeste de Solterra.", "gente": [{"nombre": "Edda del Albo", "papel": "matriarca", "voz": "Manda a tres generaciones con una cuchara de palo. No vende tierra: compra."}], "rumores": ["Los del Albo tienen más yuntas que el señor.", "Algo se come las gallinas de la linde sur y no deja ni plumas."], "gancho": "Jornal y cama en tiempo de siega. Edda paga aparte por librarse de lo que ronda la linde."},
+    {"id": "viento", "nombre": "Posta del Viento", "tipo": "posta", "region": "marendol", "x": 300, "y": 852, "desc": "Posta al sur de Solterra, en campo abierto y sin un árbol que pare el viento.", "gente": [{"nombre": "Ciro Mancebo", "papel": "postero", "voz": "Grita siempre, por costumbre: aquí no se oye otra cosa."}], "rumores": ["El viento trae polvo los días de labranza y olor a sal cuando va a cambiar el tiempo.", "Los correos de Astravan ya no paran: cambian de caballo sin apearse."], "gancho": "Caballos y recados hacia el sur."},
+    {"id": "llanuras", "nombre": "Llanuras Doradas", "tipo": "pueblo", "region": "marendol", "x": 502, "y": 688, "desc": "Pueblo agrícola al este de Solterra, entre los campos que dan nombre a la región.", "gente": [{"nombre": "Benita Rastrojo", "papel": "alcaldesa", "voz": "Calcula en fanegas hasta las distancias."}], "rumores": ["La cosecha de este año es la mejor en diez. Nadie lo dice en voz alta, no vaya a subir el diezmo.", "Un recaudador durmió aquí hace un mes. Su mula sigue en el corral."], "gancho": "Fiesta de la siega al acabar el verano: lucha, carreras y contratos para todo el año."},
+    {"id": "taberna", "nombre": "La Taberna del Jabalí Contento", "tipo": "taberna", "region": "marendol", "x": 560, "y": 802, "desc": "Taberna de camino entre Solterra y Puerto de Liria. Parada obligada de carreteros y viajeros.", "gente": [{"nombre": "Brunilda Cazo", "papel": "tabernera", "voz": "Te llama por lo que bebes. Fía una vez."}, {"nombre": "Ilario Bru", "papel": "tratante de mulas", "voz": "Compra y vende lo que le pidan, mientras quepa en un carro."}], "rumores": ["El jabalí de la chimenea lo mató Brunilda con una sartén. La sartén también está colgada.", "En la mesa del fondo se cierran tratos entre Marendol y Liria que no pasan por la Aduana."], "gancho": "Camas, noticias y trabajo de escolta. El tablón junto a la barra tiene encargos."},
+    {"id": "sagrario", "nombre": "El Sagrario del Surco", "tipo": "ruina", "region": "marendol", "x": 432, "y": 892, "desc": "Los muros de un cenobio viejo, hundidos hasta media altura en un trigal del sur. Los encontró un arado, que dio con el primer peldaño de una escalera. El folclore local lo tiene por un templo del campo.", "rumores": ["El labrador que lo encontró no ha vuelto a arar esa besana. Siembra alrededor.", "Las cintas del espino son promesas. Se atan antes de la siega y nadie las desata.", "Bajan veinte peldaños. Después, la luz de la antorcha no llega a las paredes."], "gancho": "La Hermandad del Surco quiere saber qué hay abajo antes de que lo sepa el señor."},
+    {"id": "astravan", "nombre": "Astravan", "tipo": "capital", "region": "astravan", "x": 1042, "y": 702, "tamano": 1.25, "desc": "Capital de la Confederación, entre el lago grande y el río que baja al mar. Ciudad de mercaderes, almacenes y barcazas.", "gobierno": {"titulo": "Quién gobierna", "texto": "El Consejo de las Tres Casas, con voto igual: Casa Ilvane (comercio marítimo), Casa Merrow (pesca y lagos) y Casa Draveth (banca y préstamos). Serafine Ilvane vota con el mar, Odo Merrow con el lago y Lucan Draveth con quien le debe. Dos votos mandan, y nunca son los mismos dos."}, "gente": [{"nombre": "Tadea Quirce", "papel": "escribana del Consejo", "voz": "Lo apunta todo y no opina nada. Vende copias."}, {"nombre": "Bastián Oro", "papel": "pregonero de precios", "voz": "Canta el precio del grano tres veces al día. La tercera siempre es más cara."}], "rumores": ["La Casa Draveth ha comprado deuda del rey de Valcoria. Quien manda en la deuda, manda en el deudor.", "El mago de la torre encarga cosas al mercado y paga en monedas que ya no se acuñan.", "Los Merrow han perdido una barcaza y no han puesto recompensa. Raro en ellos."], "gancho": "Las tres Casas contratan por separado y se espían entre sí. Hay trabajo para quien sepa callar."},
+    {"id": "claro", "nombre": "Claro de Lunas", "tipo": "pueblo", "region": "astravan", "x": 1306, "y": 650, "desc": "Pueblo de pescadores en la orilla este del lago grande.", "gente": [{"nombre": "Mateu Garza", "papel": "patrón de pesca", "voz": "Mira el lago antes de contestar. No sale con luna nueva."}], "rumores": ["Cuando baja el lago de la Ciudad Ahogada, asoma una torre más. Este verano ha bajado.", "Hay noches en que el agua está tan quieta que se cuentan dos lunas. De ahí el nombre."], "gancho": "Barcas de alquiler y pescadores que saben dónde no echar las redes."},
+    {"id": "liria", "nombre": "Puerto de Liria", "tipo": "puerto", "region": "astravan", "x": 852, "y": 873, "tamano": 1.45, "desc": "El gran puerto de mar de la Confederación, en la desembocadura del río. Muelles, grúas, lonja y almacenes: por aquí sale al Mar del Sur casi todo lo que Astravan vende, y entra casi todo lo que compra.", "gente": [{"nombre": "Corvin Aldaya", "papel": "capitán del puerto", "voz": "Habla en plazos y mareas. Todo barco que entra le debe algo."}, {"nombre": "Úrsula Bao", "papel": "oficial de la Aduana", "voz": "Huele la carga antes de abrirla. Insobornable, dicen los que no han probado con bastante."}], "rumores": ["Un barco sin bandera fondea de noche fuera de la bocana y zarpa antes del alba.", "La Casa Ilvane quiere un segundo faro. La Casa Merrow dice que con uno ya se ve demasiado."], "gancho": "Pasaje a cualquier parte del Mar del Sur, estiba a jornal y trabajos que la Aduana no debe ver."},
+    {"id": "faro", "nombre": "Faro de Astravan", "tipo": "faro", "region": "astravan", "x": 968, "y": 962, "suelo": "islote", "tamano": 1.35, "desc": "Faro sobre un peñón frente a Puerto de Liria. Marca la entrada del puerto a los barcos que vienen del Mar del Sur.", "gente": [{"nombre": "Nela Fanal", "papel": "farera", "voz": "Lleva la cuenta de las velas en un cuaderno. Habla a los barcos como a perros: por su nombre y con cariño."}], "rumores": ["Nela tiene apuntada una vela que no figura en la Capitanía.", "El aceite del fanal llega cada luna. Este mes se ha retrasado dos veces."], "gancho": "Nela cambia aceite y compañía por una mirada a su cuaderno: sabe quién entra y quién no quiere que se sepa."},
+    {"id": "ahogada", "nombre": "La Ciudad Ahogada", "tipo": "ruina", "region": "astravan", "x": 1295, "y": 812, "suelo": "agua", "desc": "Torres rotas que asoman en mitad de un lago. Los pescadores la llaman así desde siempre y no echan las redes más allá de las boyas.", "rumores": ["Los días de calma se oye una campana. No hay campana.", "Las redes que se echan cerca salen cortadas, limpias, como a cuchillo."], "gancho": "Los de Claro de Lunas llevan hasta las boyas. Más allá, la barca la pone uno."},
+    {"id": "torre", "nombre": "Torre de Aldrian", "tipo": "torre", "region": "astravan", "x": 1178, "y": 520, "oculto": true, "desc": "Una torre entre los árboles, al norte del lago grande. En Astravan dicen que aquí vive el mago Aldrian, y que no recibe visitas.", "rumores": ["El mago baja al mercado una vez al año. Al día siguiente nadie recuerda su cara.", "Los árboles de alrededor echan hoja antes que los demás."], "gancho": "Aldrian no recibe visitas. Encargos, sí: deja una lista clavada junto al camino."},
+    {"id": "marca", "nombre": "Torre de la Marca", "tipo": "posta", "region": "valcoria", "x": 600, "y": 244, "desc": "La última atalaya con guarnición en el camino del norte. De aquí a la frontera, lo que queda en pie está vacío o quemado.", "gente": [{"nombre": "Ysolt Carrasca", "papel": "capitana de la Guardia de la Marca", "voz": "Dice «mis muertos» cuando habla de la torre que ardió. Tiene la mitad de hombres que hace cinco años y el doble de camino que vigilar."}, {"nombre": "Pinto", "papel": "mozo de cuadra", "voz": "Doce años. Cuenta jinetes en el horizonte mejor que los centinelas."}], "rumores": ["La capitana paga de su bolsa a quien le traiga algo del campamento abandonado: una hebilla, un trozo de lona, lo que diga quién acampó.", "Los del norte ya no queman por quemar. Las tres últimas granjas las vaciaron antes: se llevaron hasta los goznes."], "gancho": "La Guardia contrata batidores por jornada. Se cobra al volver."},
+    {"id": "hierrohondo", "nombre": "Hierrohondo", "tipo": "mina", "region": "thraengarde", "x": 1110, "y": 345, "desc": "La mina que arma al Dominio, abierta en la falda de la montaña al sureste de Griselda. La trabajan deudores y prisioneros de los cuatro clanes; el hierro baja a la fortaleza en carros con escolta.", "gente": [{"nombre": "Dagny Skaldur", "papel": "capataz", "voz": "Mide a la gente por lo que carga. Lleva la cuenta de los hombres con nudos en una cuerda, y la cuerda se le ha quedado corta."}], "rumores": ["La galería baja se inundó con el deshielo. A los muertos los sacaron de noche.", "Los prisioneros valcorianos pican más despacio desde que oyeron que hay rescate. No lo hay."], "gancho": "Entre los que pican hay gente de Valcoria por la que alguien pagaría, y gente del Dominio por la que nadie."},
+    {"id": "barcas", "nombre": "El Mercado de las Barcas", "tipo": "mercado", "region": "astravan", "x": 1130, "y": 640, "suelo": "agua", "desc": "Un mercado que flota en el lago grande: barcazas amarradas borda con borda, toldos de colores y pasarelas de tabla. Aquí se vende lo que no paga puesto en la plaza de Astravan.", "gente": [{"nombre": "Nana Remo", "papel": "decana de las barqueras", "voz": "Reparte los amarres y los pleitos. Dice que el lago es de quien sabe volver."}, {"nombre": "Zito Sinluz", "papel": "revendedor", "voz": "Vende lo que «se cayó de un barco». Nunca dice de cuál."}], "rumores": ["Todo lo que la marisma devuelve acaba aquí antes que en la Aduana.", "Nana Remo no deja amarrar por el lado que mira a la torre del mago."], "gancho": "Se compra sin preguntas y se vende sin recibo. Las barqueras llevan a cualquier orilla del lago."}
   ],
   "cruces": [
-    { "id": "x-lagos", "x": 1225, "y": 722 }
+    {"id": "x-lagos", "x": 1225, "y": 722}
   ],
   "caminos": [
-    { "de": "criptas", "a": "roble", "tipo": "camino", "puntos": [[200,278]] },
-    { "de": "roble", "a": "valcoria", "tipo": "camino", "puntos": [[345,300]] },
-    { "de": "valcoria", "a": "villaverde", "tipo": "camino", "puntos": [[432,380]] },
-    { "de": "villaverde", "a": "solterra", "tipo": "camino", "puntos": [[392,545],[362,640]] },
-    { "de": "valcoria", "a": "vigia", "tipo": "camino", "puntos": [[540,270],[640,226]] },
-    { "de": "vigia", "a": "griselda", "tipo": "camino", "puntos": [[825,214],[930,256]] },
-    { "de": "vigia", "a": "campamento", "tipo": "senda", "puntos": [[750,245]] },
-    { "de": "griselda", "a": "cuervo", "tipo": "camino", "puntos": [[1120,215],[1170,140]] },
-    { "de": "cuervo", "a": "cabana", "tipo": "senda", "puntos": [[1218,145]] },
-    { "de": "griselda", "a": "cuna", "tipo": "senda", "puntos": [[1140,300],[1250,305]] },
-    { "de": "griselda", "a": "astravan", "tipo": "camino", "puntos": [[1085,340],[1075,430],[1030,520],[985,592],[992,655]] },
-    { "de": "solterra", "a": "granja", "tipo": "camino", "puntos": [[280,690]] },
-    { "de": "solterra", "a": "viento", "tipo": "camino", "puntos": [[318,790]] },
-    { "de": "solterra", "a": "llanuras", "tipo": "camino", "puntos": [[425,700]] },
-    { "de": "solterra", "a": "taberna", "tipo": "camino", "puntos": [[440,760]] },
-    { "de": "solterra", "a": "sagrario", "tipo": "senda", "puntos": [[385,810]] },
-    { "de": "taberna", "a": "liria", "tipo": "camino", "puntos": [[680,848],[780,868]] },
-    { "de": "liria", "a": "astravan", "tipo": "camino", "puntos": [[918,812],[985,752]] },
-    { "de": "astravan", "a": "x-lagos", "tipo": "camino", "puntos": [[1120,738],[1180,730]] },
-    { "de": "x-lagos", "a": "claro", "tipo": "camino", "puntos": [[1280,702]] },
-    { "de": "x-lagos", "a": "ahogada", "tipo": "senda", "puntos": [[1248,765]] },
-    { "de": "liria", "a": "faro", "tipo": "barca", "puntos": [[905,925]] }
+    {"de": "criptas", "a": "roble", "tipo": "camino", "puntos": [[200, 278]]},
+    {"de": "roble", "a": "valcoria", "tipo": "camino", "puntos": [[345, 300]]},
+    {"de": "valcoria", "a": "villaverde", "tipo": "camino", "puntos": [[432, 380]]},
+    {"de": "villaverde", "a": "solterra", "tipo": "camino", "puntos": [[392, 545], [362, 640]]},
+    {"de": "valcoria", "a": "marca", "tipo": "camino", "puntos": [[540, 270]]},
+    {"de": "vigia", "a": "griselda", "tipo": "camino", "puntos": [[825, 214], [930, 256]]},
+    {"de": "vigia", "a": "campamento", "tipo": "senda", "puntos": [[750, 245]]},
+    {"de": "griselda", "a": "cuervo", "tipo": "camino", "puntos": [[1120, 215], [1170, 140]]},
+    {"de": "cuervo", "a": "cabana", "tipo": "senda", "puntos": [[1218, 145]]},
+    {"de": "griselda", "a": "cuna", "tipo": "senda", "puntos": [[1140, 300], [1250, 305]]},
+    {"de": "griselda", "a": "astravan", "tipo": "camino", "puntos": [[1085, 340], [1075, 430], [1030, 520], [985, 592], [992, 655]]},
+    {"de": "solterra", "a": "granja", "tipo": "camino", "puntos": [[280, 690]]},
+    {"de": "solterra", "a": "viento", "tipo": "camino", "puntos": [[318, 790]]},
+    {"de": "solterra", "a": "llanuras", "tipo": "camino", "puntos": [[425, 700]]},
+    {"de": "solterra", "a": "taberna", "tipo": "camino", "puntos": [[440, 760]]},
+    {"de": "solterra", "a": "sagrario", "tipo": "senda", "puntos": [[385, 810]]},
+    {"de": "taberna", "a": "liria", "tipo": "camino", "puntos": [[680, 848], [780, 868]]},
+    {"de": "liria", "a": "astravan", "tipo": "camino", "puntos": [[918, 812], [985, 752]]},
+    {"de": "astravan", "a": "x-lagos", "tipo": "camino", "puntos": [[1120, 738], [1180, 730]]},
+    {"de": "x-lagos", "a": "claro", "tipo": "camino", "puntos": [[1280, 702]]},
+    {"de": "x-lagos", "a": "ahogada", "tipo": "senda", "puntos": [[1248, 765]]},
+    {"de": "liria", "a": "faro", "tipo": "barca", "puntos": [[905, 925]]},
+    {"de": "marca", "a": "vigia", "tipo": "camino", "puntos": [[640, 226]]},
+    {"de": "griselda", "a": "hierrohondo", "tipo": "senda", "puntos": [[1072, 312]]},
+    {"de": "astravan", "a": "barcas", "tipo": "barca", "puntos": [[1078, 668]]},
+    {"de": "barcas", "a": "claro", "tipo": "barca", "puntos": [[1225, 645]]}
   ],
   "decorado": {
     "nota": "Ambiente sin nombre ni ficha, repartido con semilla: [tipo, cuántos, opciones]. No es canon; quita o cambia lo que no encaje. En 'arrasado', la franja de una región pegada a otra queda con menos poblamiento y en ruinas.",
-    "valcoria": [["arrabal", 8, { "junto": "valcoria", "tamano": 0.75 }], ["casafuerte", 5], ["aldea", 14], ["atalaya", 10], ["molino", 4], ["granja", 8], ["ermita", 3]],
-    "thraengarde": [["arrabal", 4, { "junto": "griselda", "tamano": 0.75 }], ["fuerte", 6], ["almenara", 8], ["mina", 5], ["campamento", 5], ["menhires", 3], ["aldea", 6]],
-    "marendol": [["cortijo", 9], ["granero", 4], ["molino", 4], ["palomar", 3], ["aldea", 7], ["almiar", 9]],
-    "astravan": [["embarcadero", 7], ["pesqueria", 5], ["acena", 3], ["barca", 12], ["aldea", 7], ["granja", 5]],
-    "arrasado": { "valcoria": { "hacia": "thraengarde", "distancia": 170 } }
+    "valcoria": [
+      [
+        "arrabal",
+        8,
+        {
+          "junto": "valcoria",
+          "tamano": 0.75
+        }
+      ],
+      [
+        "casafuerte",
+        5
+      ],
+      [
+        "aldea",
+        14
+      ],
+      [
+        "atalaya",
+        10
+      ],
+      [
+        "molino",
+        4
+      ],
+      [
+        "granja",
+        8
+      ],
+      [
+        "ermita",
+        3
+      ]
+    ],
+    "thraengarde": [
+      [
+        "arrabal",
+        4,
+        {
+          "junto": "griselda",
+          "tamano": 0.75
+        }
+      ],
+      [
+        "fuerte",
+        6
+      ],
+      [
+        "almenara",
+        8
+      ],
+      [
+        "mina",
+        5
+      ],
+      [
+        "campamento",
+        5
+      ],
+      [
+        "menhires",
+        3
+      ],
+      [
+        "aldea",
+        6
+      ]
+    ],
+    "marendol": [
+      [
+        "cortijo",
+        9
+      ],
+      [
+        "granero",
+        4
+      ],
+      [
+        "molino",
+        4
+      ],
+      [
+        "palomar",
+        3
+      ],
+      [
+        "aldea",
+        7
+      ],
+      [
+        "almiar",
+        9
+      ]
+    ],
+    "astravan": [
+      [
+        "embarcadero",
+        7
+      ],
+      [
+        "pesqueria",
+        5
+      ],
+      [
+        "acena",
+        3
+      ],
+      [
+        "barca",
+        12
+      ],
+      [
+        "aldea",
+        7
+      ],
+      [
+        "granja",
+        5
+      ]
+    ],
+    "arrasado": {
+      "valcoria": {
+        "hacia": "thraengarde",
+        "distancia": 170
+      }
+    }
   },
   "rutasBarcos": [
-    { "en": "mar", "puntos": [[892,912],[900,988],[1100,1002],[1300,996],[1460,942],[1380,988],[1150,994],[1040,1000]] },
-    { "en": "mar", "puntos": [[872,902],[800,962],[722,1004],[770,1012],[880,1008],[900,975]] },
-    { "en": "mar", "puntos": [[840,905],[790,985],[900,1012],[1250,1008],[1500,960],[1250,985],[1040,985]] },
-    { "en": "mar", "puntos": [[1010,935],[1150,975],[1350,965],[1480,905],[1350,985],[1120,1005]] },
-    { "en": "lago", "puntos": [[1080,630],[1150,612],[1225,630],[1150,648]] },
-    { "en": "lago", "puntos": [[1250,812],[1295,790],[1345,815],[1295,838]] }
+    {"en": "mar", "puntos": [[892, 912], [900, 988], [1100, 1002], [1300, 996], [1460, 942], [1380, 988], [1150, 994], [1040, 1000]]},
+    {"en": "mar", "puntos": [[872, 902], [800, 962], [722, 1004], [770, 1012], [880, 1008], [900, 975]]},
+    {"en": "mar", "puntos": [[840, 905], [790, 985], [900, 1012], [1250, 1008], [1500, 960], [1250, 985], [1040, 985]]},
+    {"en": "mar", "puntos": [[1010, 935], [1150, 975], [1350, 965], [1480, 905], [1350, 985], [1120, 1005]]},
+    {"en": "lago", "puntos": [[1080, 630], [1150, 612], [1225, 630], [1150, 648]]},
+    {"en": "lago", "puntos": [[1250, 812], [1295, 790], [1345, 815], [1295, 838]]}
   ]
 }

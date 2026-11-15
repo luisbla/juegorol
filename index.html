@@ -33,6 +33,7 @@
     </div>
     <input id="buscar" type="search" list="lugaresLista" placeholder="Buscar lugar…" aria-label="Buscar un lugar por su nombre" autocomplete="off">
     <datalist id="lugaresLista"></datalist>
+    <button id="abrirCodice" class="suelto texto" type="button" title="Regiones, facciones, gente y rumores">Códice</button>
     <button id="musica" type="button" class="suelto" aria-pressed="false" title="Poner música" aria-label="Música">♪</button>
     <details class="capas" id="partida">
       <summary>Partida</summary>
@@ -44,6 +45,7 @@
       <label><input type="checkbox" data-capa="fronteras" checked> Fronteras</label>
       <label><input type="checkbox" data-capa="caminos" checked> Caminos</label>
       <label><input type="checkbox" data-capa="clima" checked> Nubes, nieve y niebla</label>
+      <button id="modoFoto" type="button" class="enCapas">Modo foto (F)</button>
       <label class="calidad">Calidad <select id="calidad"><option value="auto">Automática</option><option value="alta">Alta</option><option value="media">Media</option><option value="baja">Baja</option></select></label>
     </details>
   </div>
@@ -62,7 +64,20 @@
   <div id="velo" aria-hidden="true"></div>
 
   <div id="carga" role="status">
-    <p>Levantando el terreno…</p>
+    <div class="portada">
+      <p class="sobre">Un mapa de campaña</p>
+      <h2>Tierras de Alden</h2>
+      <p id="cargaTexto">Levantando el terreno…</p>
+      <div class="entradas" hidden>
+        <button id="entrarSon" type="button">Entrar con sonido</button>
+        <button id="entrarMudo" type="button" class="segundo">Entrar en silencio</button>
+      </div>
+    </div>
+  </div>
+  <div id="barraFoto" hidden>
+    <button id="fotoGuardar" type="button">Guardar imagen</button>
+    <label><input id="fotoMaqueta" type="checkbox"> Efecto maqueta</label>
+    <button id="fotoSalir" type="button">Salir del modo foto</button>
   </div>
 
   <script type="module" src="assets/js/main.js"></script>

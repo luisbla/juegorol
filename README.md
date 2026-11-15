@@ -35,6 +35,8 @@ assets/
   js/sonido.js         ambiente sonoro sin archivos: viento, mar, gentío, fuego, grillos y pájaros
   js/campo.js          trigo y hierba: matas instanciadas que se mecen con el viento
   js/clima.js          chubascos sobre Valcoria y Astravan, los mismos en el mapa y en los parajes
+  js/render.js         posproceso: oclusión ambiental, resplandor, etalonaje y viñeta; modo maqueta para las fotos
+  js/codice.js         el códice: regiones, facciones, gente, rumores y crónica, leídos de mundo.json
   js/modelos.js        carga opcional de modelos glTF de artista
   js/ambiente.js       cielo, sombras, nubes, nieve, niebla, humo, barcos, pájaros, faro, luces de noche
   js/viaje.js          rutas y viajero
@@ -57,6 +59,10 @@ Todo se edita en `assets/data/mundo.json`. Las coordenadas van en una rejilla de
 - **Notas y marcas**: en el panel Partida, con el modo edición puesto, cada ficha tiene un cuadro de notas y se pueden clavar marcas en el centro de la vista. Se guardan en `partida.json` con lo demás: si lo subes, las lee cualquiera.
 - **Partida por enlace**: «Copiar partida como enlace» mete la partida entera en la dirección (`…/#partida=…`). Quien lo abra la ve tal cual, sin subir nada al repositorio.
 - **Enlace a un lugar**: `…/#lugar=id` abre el mapa centrado en él; la ficha tiene un botón que lo copia.
+- **`gente`, `rumores`, `gancho`** (en cada lugar): quién anda por allí (`nombre`, `papel`, `voz`), lo que se dice y lo que se puede hacer. Salen en la ficha y en el códice.
+- **`facciones`** y **`cronica`**: los bandos (`quiere`, `problema`, `gancho`) y la historia conocida, para el códice.
+- **Calidad**: en Capas. Alta lleva todo el posproceso; media quita la oclusión ambiental; baja dibuja directo y sin sombras.
+- **Modo foto**: tecla F. Quita la interfaz y guarda la vista en PNG.
 - **`decorado`**: ambiente sin nombre ni ficha (aldeas, atalayas, casas fuertes, fuertes, minas, almenaras...). Por región, una lista de `[tipo, cuántos, { junto, tamano }]`; el mapa lo reparte solo donde el terreno lo permite. Para quitarlo de una región, borra su línea.
 - **`gobierno`**: texto que solo se muestra dentro de la ciudad. El interior se genera solo: su tamaño sale de `tamano` y sus puertas, de los caminos que llegan a esa capital.
 - **Caminos**: `de`, `a` (ids de lugares o de `cruces`), `tipo` (`camino`, `senda` o `barca`) y `puntos` intermedios. Se suavizan solos y el terreno abre paso. Los de tipo `barca` no se dibujan: solo cuentan para las rutas.

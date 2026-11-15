@@ -9,6 +9,9 @@ import { crearCiudad } from './ciudad.js';
 import { crearPartida } from './partida.js';
 import { crearMusica } from './musica.js';
 import { crearSonido } from './sonido.js';
+import { crearRender } from './render.js';
+import { crearCodice } from './codice.js';
+import { lluvia } from './clima.js';
 import { crearInterior } from './interior.js';
 import { crearSala } from './salas.js';
 import { crearEntrada } from './ruinas.js';
@@ -28,6 +31,7 @@ const h = (tag, attrs = {}, ...hijos) => {
 const TIPOS = {
   capital: 'Capital', pueblo: 'Pueblo', posta: 'Posta', ruina: 'Ruinas antiguas', quemado: 'Puesto de vigía', campamento: 'Campamento',
   granja: 'Granja', taberna: 'Taberna', cabana: 'Cabaña', faro: 'Faro', puerto: 'Puerto', torre: 'Torre',
+  mina: 'Mina', mercado: 'Mercado flotante', palafitos: 'Aldea abandonada', pasarela: 'Calzada vieja', pecio: 'Pecio',
 };
 const SEG_POR_DIA = 240;   // un día entero dura 4 minutos
 
@@ -37,7 +41,7 @@ async function iniciar() {
   try {
     renderer = new THREE.WebGLRenderer({ canvas: lienzo, antialias: true, powerPreference: 'high-performance' });
   } catch {
-    carga.querySelector('p').textContent = 'Este navegador no puede mostrar el mapa en 3D (WebGL no está disponible).';
+    $('#cargaTexto').textContent = 'Este navegador no puede mostrar el mapa en 3D (WebGL no está disponible).';
     return;
   }
   // calidad: alta, media o baja; "auto" deja que decida el tamaño de pantalla. Se guarda en este navegador.
@@ -51,6 +55,7 @@ async function iniciar() {
   const mundo = await (await fetch('assets/data/mundo.json')).json();
   await new Promise(r => setTimeout(r, 30));   // deja pintar el aviso de carga antes del cálculo
 
+  const render = crearRender(renderer, calidad, movil);
   const escena = new THREE.Scene();
   const terreno = crearTerreno(mundo, { movil });
   escena.add(terreno.grupo);
@@ -63,7 +68,7 @@ async function iniciar() {
   cargarModelos(mundo.modelos, lugares, ambiente.barcos);
   // qué lugares tienen interior y cómo se llama el botón
   const INTERIOR = { capital: 'Entrar en la ciudad', puerto: 'Entrar en el puerto', taberna: 'Entrar en la taberna', ruina: 'Acercarse a la entrada',
-    pueblo: 'Acercarse', posta: 'Acercarse', quemado: 'Acercarse', campamento: 'Acercarse', palafitos: 'Acercarse', pasarela: 'Acercarse', pecio: 'Acercarse', cabana: 'Acercarse', granja: 'Acercarse', faro: 'Acercarse', torre: 'Acercarse' };
+    pueblo: 'Acercarse', posta: 'Acercarse', quemado: 'Acercarse', campamento: 'Acercarse', palafitos: 'Acercarse', pasarela: 'Acercarse', pecio: 'Acercarse', cabana: 'Acercarse', granja: 'Acercarse', faro: 'Acercarse', torre: 'Acercarse', mina: 'Acercarse', mercado: 'Acercarse' };
   const { W, H } = terreno;
 
   /* ---------- cámara ---------- */
@@ -103,7 +108,7 @@ async function iniciar() {
 
   function ajustar() {
     const w = innerWidth, a = innerHeight;
-    renderer.setSize(w, a, false);
+    renderer.setSize(w, a, false); render.ajustar(w, a);
     camara.aspect = w / a; camara.updateProjectionMatrix();
   }
   addEventListener('resize', ajustar);
@@ -269,6 +274,18 @@ async function iniciar() {
     pintarFicha();
   }
 
+  // Lo que se sabe del lugar: quién anda por allí, qué se dice y qué se puede hacer. El rumor cambia con el día de la partida.
+  let vueltaRumor = 0;
+  function lore(d) {
+    const n = [];
+    if (d.gente?.length) n.push(h('div', { class: 'lore' }, h('h3', {}, 'Gente'), ...d.gente.map(g => h('div', { class: 'persona' }, h('b', {}, g.nombre), ' ', h('i', {}, g.papel), h('p', {}, g.voz)))));
+    if (d.rumores?.length) {
+      const cual = () => d.rumores[((partida.estado.dia || 1) + vueltaRumor + d.id.length) % d.rumores.length], texto = h('p', { class: 'rumor' }, `«${cual()}»`);
+      n.push(h('div', { class: 'lore' }, h('h3', {}, 'Se dice'), texto, d.rumores.length > 1 ? h('button', { class: 'otro', type: 'button', onclick: () => { vueltaRumor++; texto.textContent = `«${cual()}»`; } }, 'Otro rumor') : null));
+    }
+    if (d.gancho) n.push(h('div', { class: 'lore' }, h('h3', {}, 'Qué hay que hacer aquí'), h('p', { class: 'gancho' }, d.gancho)));
+    return n;
+  }
   function pintarFicha() {
     const l = elegido, d = l.datos;
     const nodos = [
@@ -298,6 +315,7 @@ async function iniciar() {
       nodos.push(h('div', { class: 'notas' }, h('h3', {}, 'Notas del grupo'), campo));
     } else if (nota) nodos.push(h('div', { class: 'notas' }, h('h3', {}, 'Notas del grupo'), h('p', {}, nota)));
     if (INTERIOR[d.tipo]) nodos.push(h('button', { class: 'accion', type: 'button', onclick: () => entrar(l) }, INTERIOR[d.tipo]));
+    nodos.push(...lore(d));
     if (partida.edicion && partida.estado.grupo !== d.id && !d.oculto) nodos.push(h('button', { class: 'accion', type: 'button', onclick: () => partida.ponerGrupo(d.id) }, 'Poner aquí al grupo'));
     if (!d.oculto) {
       const copiar = h('button', { class: 'enlace', type: 'button', onclick: async () => {
@@ -394,6 +412,16 @@ async function iniciar() {
   barra.addEventListener('input', () => { hora = Number(barra.value); ponerReloj(false); pintarHora(); });
   ponerReloj(corriendo); pintarHora();
 
+  // códice
+  const codice = crearCodice({ mundo, h, visible: l => !l.oculto && !porId[l.id]?.tapado, ir: id => { if (dentro) return; seleccionar(id, true); } });
+  $('#abrirCodice').addEventListener('click', () => codice.abrir());
+  // modo foto: fuera la interfaz, y la imagen se puede guardar tal cual se ve
+  let pedirFoto = false;
+  const modoFoto = v => { document.body.classList.toggle('foto', v); $('#barraFoto').hidden = !v; if (!v) { render.foco = 0; $('#fotoMaqueta').checked = false; } };
+  $('#modoFoto').addEventListener('click', () => { modoFoto(true); document.querySelector('.capas').open = false; });
+  $('#fotoSalir').addEventListener('click', () => modoFoto(false)); $('#fotoMaqueta').addEventListener('change', ev => { render.foco = ev.target.checked ? 1 : 0; });
+  $('#fotoGuardar').addEventListener('click', () => { pedirFoto = true; });
+  addEventListener('keydown', ev => { if (ev.target.matches('input, textarea, select')) return; if (ev.key === 'f' || ev.key === 'F') modoFoto(!document.body.classList.contains('foto')); else if (ev.key === 'Escape' && document.body.classList.contains('foto')) modoFoto(false); });
   const selCalidad = $('#calidad'); selCalidad.value = calidad;
   selCalidad.addEventListener('change', () => { try { localStorage.setItem('alden-calidad', selCalidad.value); } catch { /* no se puede guardar */ } location.reload(); });
   // buscador: escribe el nombre de un lugar y el mapa vuela hasta él
@@ -432,31 +460,41 @@ async function iniciar() {
     actualizarAnimaciones(ahora);
     if (sonido.activo && (ticSonido++ % 20) === 0) {   // ambiente sonoro: según el interior o, en el mapa, lo que haya bajo la cámara
       const noche = ambiente.estado.noche, dia = 1 - noche;
-      if (ciudad) { const s = ciudad.sonido || {}; sonido.mezcla(s.calle ? { gentio: (s.gentio || 0) * dia, pajaros: (s.pajaros || 0) * dia, grillos: noche * 0.5, mar: s.mar, viento: 0.12 } : s); }
+      if (ciudad) { const s = ciudad.sonido || {}, bajoTecho = !ciudad.escena.fog, agua = dentro ? lluvia(t, dentro.datos.region) * (bajoTecho ? 0.35 : 1) : 0; sonido.mezcla(s.calle ? { gentio: (s.gentio || 0) * dia * (1 - agua * 0.6), pajaros: (s.pajaros || 0) * dia * (1 - agua), grillos: noche * 0.5, mar: s.mar, viento: 0.12, lluvia: agua } : { ...s, pajaros: (s.pajaros || 0) * (1 - agua), lluvia: agua }); }
       else {
         const zona = terreno.zonaEn(control.target.x + terreno.cx, control.target.z + terreno.cz), alto = Math.min(1, camara.position.y / 260);
         sonido.mezcla(zona === 'mar' ? { mar: 0.9 - alto * 0.5, viento: 0.2 + alto * 0.4 } : zona === 'thraengarde' ? { viento: 0.75 + alto * 0.25 }
-          : zona === 'marisma' ? { grillos: 0.4 + noche * 0.6, viento: 0.15 + alto * 0.4 } : { viento: 0.18 + alto * 0.5, pajaros: dia * (1 - alto) * 0.8, grillos: noche * (1 - alto) * 0.6 });
+          : zona === 'marisma' ? { grillos: 0.4 + noche * 0.6, viento: 0.15 + alto * 0.4 } : { viento: 0.18 + alto * 0.5, pajaros: dia * (1 - alto) * 0.8 * (1 - (ambiente.estado.lluvia || 0)), grillos: noche * (1 - alto) * 0.6, lluvia: (ambiente.estado.lluvia || 0) * (1 - alto * 0.5) });
       }
     }
     if (corriendo) { hora = (hora + dt * 24 / SEG_POR_DIA) % 24; barra.value = hora; pintarHora(); }
+    if (enPortada) { const a = t * 0.02; control.target.set(Math.sin(a * 0.7) * 260, 4, Math.cos(a) * 120 - 40); camara.position.set(control.target.x + Math.sin(a) * 330, 190, control.target.z + Math.cos(a) * 330); }
     control.update();
     if (camara.position.y < (ciudad ? 3 : 6)) camara.position.y = ciudad ? 3 : 6;
     aguja.style.transform = `rotate(${control.getAzimuthalAngle()}rad)`;
     if (ciudad) {
       ciudad.actualizar(t, ambiente.luz, ambiente.estado.noche);
-      renderer.render(ciudad.escena, camara);
+      render.dibujar(ciudad.escena, camara, { noche: ambiente.estado.noche, lejos: camara.position.distanceTo(control.target), interior: !ciudad.escena.fog && ciudad.R <= 30 });
     } else {
       ambiente.actualizar(t, dt, camara, control.target);
       partida.actualizar(t);
       if (anillo.visible) { const r = anillo.userData.radio * (1 + 0.06 * Math.sin(t * 3)); anillo.scale.set(r, r, 1); }
-      renderer.render(escena, camara);
+      render.dibujar(escena, camara, { noche: ambiente.estado.noche, lejos: camara.position.distanceTo(control.target) });
     }
+    if (pedirFoto) { pedirFoto = false; lienzo.toBlob(b => { if (!b) return; const a = h('a', { href: URL.createObjectURL(b), download: `tierras-de-alden-${Date.now()}.png` }); a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); }, 'image/png'); }
     colocarEtiquetas();
     requestAnimationFrame(cuadro);
   }
   requestAnimationFrame(cuadro);
-  carga.classList.add('fuera');
+  // Portada: el mapa gira despacio detrás del título hasta que se entra. El clic de entrada sirve además para poder sonar.
+  const conEnlace = /(lugar|partida)=/.test(location.hash);
+  let enPortada = !conEnlace && !reducir;
+  const entrarAlMapa = conSonido => { enPortada = false; carga.classList.add('fuera'); document.body.classList.remove('portada-activa'); if (conSonido && !musica.activa) botonMusica.click(); vistaGeneral(true); lienzo.focus(); };
+  if (enPortada) {
+    document.body.classList.add('portada-activa'); carga.classList.add('lista'); $('#cargaTexto').textContent = 'Cuatro tierras, una frontera que arde y un invierno que llega pronto.'; $('#carga .entradas').hidden = false;
+    $('#entrarSon').addEventListener('click', () => entrarAlMapa(true)); $('#entrarMudo').addEventListener('click', () => entrarAlMapa(false)); $('#entrarSon').focus();
+    control.target.set(-250, 4, -160); camara.position.set(-250, 150, 120);
+  } else carga.classList.add('fuera');
   // Para trastear desde la consola: mapa.seleccionar('faro'), mapa.ponerHora(22)…
   // enlace a un lugar: …/#lugar=id abre el mapa ya centrado en él
   const irAlEnlace = () => { const id = new URLSearchParams(location.hash.slice(1)).get('lugar'), l = id && porId[id]; if (l && !l.tapado && !l.datos.oculto && !dentro) seleccionar(id, true); };
@@ -470,5 +508,5 @@ async function iniciar() {
 
 iniciar().catch(e => {
   console.error(e);
-  document.querySelector('#carga p').textContent = 'No se ha podido cargar el mapa. Recarga la página.';
+  document.querySelector('#cargaTexto').textContent = 'No se ha podido cargar el mapa. Recarga la página.';
 });

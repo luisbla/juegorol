@@ -137,8 +137,10 @@ export function crearAmbiente(escena, renderer, mundo, terreno, lugares, { movil
   }
 
   /* ---------- lluvia: chubascos sobre Valcoria y Astravan, alrededor de donde se mira ---------- */
-  const NG = movil ? 600 : 1500, pg = new Float32Array(NG * 6), cajaG = { a: 320, h: 130 };
-  for (let i = 0; i < NG; i++) { const x = (R.rnd() - 0.5) * cajaG.a, y = R.rnd() * cajaG.h, z = (R.rnd() - 0.5) * cajaG.a; pg.set([x, y, z, x + 0.8, y - 5, z], i * 6); }
+  // Las gotas viven en un cubo unidad que se coloca delante de la cámara y se estira con la distancia a la que se mira:
+  // así llenan la vista a cualquier zoom y nunca se ve el borde del cubo. Caen con el reloj real, no con el del mapa.
+  const NG = movil ? 700 : 1800, pg = new Float32Array(NG * 6), semG = new Float32Array(NG * 3), frenteG = new THREE.Vector3();
+  for (let i = 0; i < NG; i++) semG.set([R.rnd() - 0.5, R.rnd(), R.rnd() - 0.5], i * 3);
   const gotas = new THREE.LineSegments(new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(pg, 3)), new THREE.LineBasicMaterial({ color: 0xc8d6e4, transparent: true, opacity: 0, depthWrite: false, fog: false }));
   gotas.frustumCulled = false; gotas.visible = false; clima.add(gotas);
 
@@ -187,7 +189,7 @@ export function crearAmbiente(escena, renderer, mundo, terreno, lugares, { movil
       s.scale.set(t, t, 1);
       s.position.copy(l.base); s.position.y += (l.info.luzAlta ?? 2) * l.escala;
       if (l.info.luzAlta) s.scale.set(9, 9, 1);
-      s.userData = { fuerza: 0.22 + l.info.luz * 0.38, fase: R.rnd() * 6 };
+      s.userData = { fuerza: 0.1 + l.info.luz * 0.16, fase: R.rnd() * 6 };   // suave: el resplandor del posproceso ya pone el resto
       luces.push(s); escena.add(s);
     }
     if (l.info.brillo) {
@@ -355,7 +357,13 @@ export function crearAmbiente(escena, renderer, mundo, terreno, lugares, { movil
     mReses.instanceMatrix.needsUpdate = true;
     // lluvia donde se está mirando, si allí hay chubasco
     const agua = estado.clima ? lluvia(t, terreno.zonaEn(objetivo.x + cx, objetivo.z + cz)) : 0; estado.lluvia = agua; gotas.visible = agua > 0.02;
-    if (gotas.visible) { gotas.position.set(objetivo.x, 0, objetivo.z); gotas.material.opacity = agua * 0.45 * (0.5 + 0.5 * luzDia); for (let i = 0; i < NG; i++) { let y = pg[i * 6 + 1] - dt * 95; if (y < 0) y += cajaG.h; pg[i * 6 + 1] = y; pg[i * 6 + 4] = y - 5; } gotas.geometry.attributes.position.needsUpdate = true; }
+    if (gotas.visible) {
+      const lejos = Math.min(camara.position.distanceTo(objetivo), 500), ahora = performance.now() / 1000;
+      gotas.position.copy(camara.position).addScaledVector(camara.getWorldDirection(frenteG), lejos * 0.55); gotas.scale.set(lejos * 1.9, lejos * 1.3, lejos * 1.9);
+      gotas.material.opacity = agua * 0.42 * (0.5 + 0.5 * luzDia);
+      for (let i = 0; i < NG; i++) { const x = semG[i * 3], z = semG[i * 3 + 2], y = ((semG[i * 3 + 1] - ahora * (0.75 + (i % 7) * 0.05)) % 1 + 1) % 1 - 0.5; pg[i * 6] = x; pg[i * 6 + 1] = y; pg[i * 6 + 2] = z; pg[i * 6 + 3] = x + 0.006; pg[i * 6 + 4] = y - 0.03; pg[i * 6 + 5] = z; }
+      gotas.geometry.attributes.position.needsUpdate = true;
+    }
     for (const s of humos) {
       const u = s.userData, k = (t * (u.oscuro ? 0.09 : 0.14) + u.fase) % 1, alto = u.oscuro ? 34 : u.flojo ? 9 : 15;
       const deriva = k * k * (u.oscuro ? 22 : 10);   // el viento lo tumba según sube

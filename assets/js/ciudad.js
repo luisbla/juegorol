@@ -417,6 +417,18 @@ export function crearCiudad(l, mundo, { movil = false } = {}) {
   const texSuelo = new THREE.CanvasTexture(lienzo); texSuelo.colorSpace = THREE.SRGBColorSpace; texSuelo.anisotropy = 8;
   const suelo = new THREE.Mesh(new THREE.PlaneGeometry(2 * L, 2 * L), new THREE.MeshStandardMaterial({ map: texSuelo, roughness: 1 }));
   suelo.rotation.x = -Math.PI / 2; suelo.receiveShadow = true; escena.add(suelo);
+  // más allá del recuadro pintado: campo del mismo color que se ondula hacia el horizonte (o mar abierto, en el puerto), para que no se vea el borde
+  {
+    const px0 = lienzo.getContext('2d').getImageData(3, 3, 1, 1).data, tierra = new THREE.Color(`rgb(${px0[0]},${px0[1]},${px0[2]})`), mar = new THREE.Color(0x1f5f80);
+    const g = new THREE.PlaneGeometry(3600, 3600, 110, 110).rotateX(-Math.PI / 2), p = g.attributes.position, c = new Float32Array(p.count * 3), f1 = rnd() * 6, f2 = rnd() * 6;
+    for (let i = 0; i < p.count; i++) {
+      const x = p.getX(i), z = p.getZ(i), enMarAbierto = lago?.mar && z > lago.corte + 8, k = Math.min(1, Math.max(0, (Math.max(Math.abs(x), Math.abs(z)) - L * 1.05) / 380)), s = k * k * (3 - 2 * k);
+      p.setY(i, enMarAbierto ? -0.5 : -0.12 + s * (16 + 12 * Math.sin(x * 0.011 + f1) * Math.cos(z * 0.013 + f2) + 5 * Math.sin(x * 0.03 + z * 0.027)));
+      const col = enMarAbierto ? mar : tierra, t = enMarAbierto ? 1 : 0.9 + 0.14 * Math.sin(x * 0.02 + f2) * Math.cos(z * 0.018 + f1); c[i * 3] = col.r * t; c[i * 3 + 1] = col.g * t; c[i * 3 + 2] = col.b * t;
+    }
+    g.setAttribute('color', new THREE.BufferAttribute(c, 3)); g.computeVertexNormals();
+    const fuera2 = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1 })); fuera2.receiveShadow = true; escena.add(fuera2);
+  }
   let agua = null;
   if (lago) {
     agua = new THREE.Mesh(lago.mar ? new THREE.PlaneGeometry(2 * L, L - lago.corte - 6) : new THREE.CircleGeometry(lago.r, 128), new THREE.MeshStandardMaterial({ color: 0x236a8e, roughness: 0.2, metalness: 0.25, transparent: true, opacity: 0.92 }));
@@ -491,7 +503,7 @@ export function crearCiudad(l, mundo, { movil = false } = {}) {
   Object.assign(sol.shadow.camera, { left: -R - 60, right: R + 60, top: R + 60, bottom: -R - 60, near: 20, far: 1600 });
   sol.shadow.bias = -0.0004; sol.shadow.normalBias = 0.5;
   escena.add(sol, luna, cielo);
-  escena.background = new THREE.Color(0x9cc4e8); escena.fog = new THREE.FogExp2(0x9cc4e8, 0.0011);
+  escena.background = new THREE.Color(0x9cc4e8); escena.fog = new THREE.FogExp2(0x9cc4e8, 0.0015);
 
   const matMiembro = new THREE.Matrix4(), matLocal = new THREE.Matrix4(), eulerTmp = new THREE.Euler();
   // un miembro cuelga de su articulación (x, y en el cuerpo) y gira en ella; "mat" es la matriz de la persona

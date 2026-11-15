@@ -357,6 +357,29 @@ const CONSTRUCTORES = {
     for (let i = 0; i < 4; i++) cil(g, 0.32, 0.6, -2 + rnd() * 5, -0.1, 2 + rnd() * 1.5, matLiso(0x5a4630));   // barriles en el fango
     return { humos: [], luz: 0, alto: 4 };
   },
+  mina(g, l, rnd, ctx) {
+    DECORADO.mina(g, { region: l.region }, rnd);
+    const e = estiloDe(l.region);
+    casa(g, 4.4, 1.6, 4.6, 1.6, 1.2, matPared(0x4a3f36), e.teja, 0.4, true); casa(g, -1.6, 4.2, 2.0, 1.5, 1.2, e.pared, e.teja, -0.3, true);
+    for (let i = 0; i < 26; i++) { const a = 0.3 + i / 25 * 2.5; const q = nido(g, Math.cos(a) * 7.4, Math.sin(a) * 6.4 + 0.6); cil(q, 0.14, 1.7, 0, 0, 0, e.madera); cono(q, 0.14, 0.34, 0, 1.7, 0, e.madera); }
+    const t = nido(g, 5.6, 4.6); for (const sx of [-0.5, 0.5]) for (const sz of [-0.5, 0.5]) cil(t, 0.09, 3.2, sx, 0, sz, e.madera); caja(t, 1.5, 0.12, 1.5, 0, 3.2, 0, e.tabla); pieza(t, gCono, e.teja, 1.2, 0.9, 1.2, 0, 4.7, 0);
+    bandera(t, 0, 5.0, 0, ctx.colorRegion, ctx.banderas); hoguera(g, 1.6, 4.4, 1.2);
+    return { humos: [[4.6, 3.2, 1.6]], luz: 0.6, alto: 7 };
+  },
+  // mercado flotante: barcazas en dos hileras, toldos de colores y un bote o dos
+  mercado(g, l, rnd) {
+    const TOLDOS = [0xb23a2e, 0x2f6aa0, 0xd9a23a, 0x3f8a54, 0x8a4a8e, 0xe0d8c0], tabla = matLiso(0x8a6a48), toldo = c => new THREE.MeshStandardMaterial({ color: c, roughness: 1, side: THREE.DoubleSide });
+    for (let i = 0; i < 10; i++) {
+      const x = -6 + Math.floor(i / 2) * 3.0, z = i % 2 ? 1.9 : -1.9, b = crearBarcoModelo({ eslora: 2.8, palos: 1, velas: 'ninguna', color: [0x5a3f2b, 0x4a3a30, 0x6a4a2e][i % 3] });
+      b.position.set(x, 0.02, z); b.rotation.y = (i % 2 ? Math.PI : 0) + (rnd() - 0.5) * 0.2; g.add(b);
+      if (i % 4 !== 3) pieza(g, gCono, toldo(TOLDOS[i % 6]), 1.5, 0.5, 0.9, x, 1.25, z, Math.PI / 4); else caja(g, 0.7, 0.4, 0.5, x, 0.25, z, tabla);
+      if (i % 2 === 0 && i < 8) caja(g, 0.8, 0.05, 0.4, x + 1.5, 0.28, z, tabla);
+    }
+    for (const x of [-6, 0, 6]) caja(g, 0.4, 0.05, 3.2, x, 0.28, 0, tabla);
+    const d = crearBarcoModelo({ eslora: 5, palos: 2, velas: 'recogidas', color: 0x3f2f24, lona: 0xb23a2e }); d.position.set(9.4, 0.02, 0); d.rotation.y = Math.PI / 2; g.add(d);
+    pieza(g, gCono, toldo(0xb23a2e), 2.2, 0.6, 1.5, 9.4, 1.9, 0.9, Math.PI / 4);
+    return { humos: [], luz: 0.7, alto: 5 };
+  },
   // Cada ruina tiene su propia traza: nada en el mapa debe hacer pensar que son lo mismo.
   ruina(g, l, rnd) {
     if (l.id === 'cuna') {   // una grieta entre peñas negras, con los pebeteros de los clanes
