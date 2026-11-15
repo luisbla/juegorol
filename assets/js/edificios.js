@@ -82,20 +82,8 @@ export function crearEdificios(k) {
     });
   }
   const PELO = [0x2a1f18, 0x5a3a22, 0x8a6a3a, 0x1a1a1a, 0xb8b0a4];
-  function figura(x, z, ry, color, arma) {
-    const ropa = L(color), piel = L(0xd9b08c), calzas = L(0x3a3028);
-    sub(x, z, ry, () => {
-      for (const s of [-0.13, 0.13]) { cil(calzas, 0.1, 0.8, s, 0, 0); caja(L(0x2a2018), 0.2, 0.1, 0.32, s, 0, 0.05); }
-      cil(ropa, 0.27, 0.74, 0, 0.72, 0); caja(ropa, 0.62, 0.18, 0.3, 0, 1.38, 0); cil(osc, 0.285, 0.07, 0, 0.98, 0);   // sayo, hombros y cinto
-      for (const s of [-1, 1]) { poner(G.cil, ropa, s * 0.35, 1.12, 0.03, 0.07, 0.62, 0.07, 0, s * 0.12); poner(G.esfera, piel, s * 0.39, 0.8, 0.05, 0.08, 0.08, 0.08); }
-      cil(piel, 0.07, 0.12, 0, 1.5, 0); poner(G.esfera, piel, 0, 1.7, 0, 0.17, 0.19, 0.17);
-      if (arma) {
-        poner(G.esfera, acero, 0, 1.76, 0, 0.19, 0.16, 0.19); cil(acero, 0.2, 0.04, 0, 1.7, 0);                                   // capacete
-        caja(tabla, 0.05, 2.5, 0.05, 0.43, 0, 0.1); cono(acero, 0.08, 0.32, 0.43, 2.5, 0.1); disco(L(0x6a2f2a), 0.36, 0.06, -0.4, 1.05, 0.18); disco(acero, 0.1, 0.08, -0.4, 1.05, 0.2);
-        caja(L(0x4a1f1c), 0.5, 0.9, 0.05, 0, 0.6, -0.2);                                                                          // capa corta
-      } else poner(G.esfera, L(PELO[Math.floor(rnd() * PELO.length)]), 0, 1.75, -0.03, 0.18, 0.15, 0.19);
-    });
-  }
+  // la gente que está quieta junto a los edificios la dibuja ciudad.js con figuras de verdad (figuras.js); aquí solo se apunta dónde va
+  function figura(x, z, ry, color, arma) { if (!arma) rnd(); k.figura(x, z, ry, color, arma); }
   function muneco(x, z, ry = 0) { sub(x, z, ry, () => { caja(tabla, 0.25, 2.5, 0.25, 0, 0, 0); caja(tabla, 1.9, 0.2, 0.2, 0, 1.75, 0); cil(saca, 0.42, 1.1, 0, 0.95, 0.02); cil(saca, 0.28, 0.45, 0, 2.1, 0); disco(L(0x6a2f2a), 0.5, 0.1, -0.75, 1.5, 0.2); }); }
   function diana(x, z, ry = 0) { sub(x, z, ry, () => { for (const s of [-0.5, 0.5]) poner(G.caja, tabla, s, 1.1, -0.35, 0.12, 2.4, 0.12, 0, 0, -0.3); poner(G.caja, tabla, 0, 1.0, -0.9, 0.12, 2.2, 0.12, 0, 0, 0.45); disco(saca, 1.0, 0.3, 0, 1.9, 0, 0, PI / 2 - 0.3); disco(L(0xb03a2a), 0.65, 0.32, 0, 1.9, 0, 0, PI / 2 - 0.3); disco(L(0xf0ead8), 0.3, 0.34, 0, 1.9, 0, 0, PI / 2 - 0.3); }); }
   function armero(x, z, ry = 0, n = 6, espadas = false) {

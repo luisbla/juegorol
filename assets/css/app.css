@@ -68,7 +68,7 @@ button.etq:hover, button.etq.activa { border-color: var(--oro); background: rgba
 .etq-geo { font: italic 0.85rem var(--serif); letter-spacing: 0.18em; color: #dfe9e6; text-shadow: 0 1px 3px #000, 0 0 10px rgba(0, 0, 0, 0.8); }
 
 /* ---------- ficha ---------- */
-#ficha { position: fixed; right: 12px; top: 64px; width: min(340px, calc(100vw - 24px)); max-height: calc(100vh - 80px); overflow: auto; padding: 16px 18px 18px; }
+#ficha { position: fixed; right: 12px; top: 64px; width: min(340px, calc(100vw - 24px)); max-height: calc(100vh - 80px); max-height: calc(100dvh - 80px); overflow: auto; padding: 16px 18px 18px; }
 #ficha[hidden] { display: none; }
 #ficha .tipo { margin: 0 28px 4px 0; font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--oro); }
 #ficha h2 { margin: 0 0 8px; font: 600 1.35rem/1.15 var(--serif); }
@@ -183,6 +183,41 @@ button.etq:hover, button.etq.activa { border-color: var(--oro); background: rgba
 #carga .entradas button { font: 600 0.95rem var(--ui); padding: 12px 22px; border-radius: 10px; border: 1px solid var(--oro); background: var(--oro); color: #1a1408; }
 #carga .entradas button.segundo { background: none; color: var(--crema); border-color: var(--borde); }
 #carga.fuera { opacity: 0; pointer-events: none; }
+
+/* vista de máster: solo existe si el máster carga su archivo */
+.capas .deMaster { border-top: 1px solid var(--borde); margin-top: 4px; padding-top: 4px; }
+.capas .enCapas.menor { font-size: 0.76rem; color: var(--tenue); }
+#chipMaster { display: inline-block; pointer-events: auto; margin: 8px 0 0 8px; padding: 3px 9px; border: 1px solid #b0503a; border-radius: 999px; background: rgba(120, 40, 28, 0.55); font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase; text-shadow: none; vertical-align: middle; }
+#chipMaster[hidden] { display: none; }
+#ficha .lore.master { border-top: 0; border-left: 2px solid #b0503a; background: rgba(120, 40, 28, 0.14); padding: 8px 10px 4px 12px; border-radius: 0 8px 8px 0; }
+#ficha .lore.master h3 { color: #e08a70; }
+#ficha .master h4, #codice h4 { margin: 10px 0 4px; font: 600 0.7rem var(--ui); letter-spacing: 0.1em; text-transform: uppercase; color: var(--oro); }
+#ficha .master p, #ficha .master li { margin: 0 0 6px; font-size: 0.86rem; line-height: 1.42; }
+#ficha .master .secreto { font-size: 0.92rem; color: #f2e6d0; }
+#ficha .master ul, #ficha .master ol { margin: 0 0 6px; padding-left: 18px; }
+#ficha .master .verdades { list-style: none; padding-left: 0; }
+#ficha .master em { font-style: normal; color: #f2e6d0; }
+.verdad { display: inline-block; padding: 0 6px; border-radius: 4px; font-size: 0.66rem; letter-spacing: 0.08em; text-transform: uppercase; border: 1px solid; }
+.verdad.v-cierto { color: #9fd08a; } .verdad.v-a-medias { color: #e0c070; } .verdad.v-falso { color: #e08a70; }
+#codice article.ancho { grid-column: 1 / -1; border-left-color: #b0503a; }
+#codice ol { margin: 6px 0 6px; padding-left: 20px; }
+.foto #chipMaster { display: none; }
+
+/* volver: siempre a mano dentro de un lugar, también sin teclado */
+#volver { pointer-events: auto; margin-top: 8px; padding: 6px 12px; background: var(--panel, rgba(14, 16, 21, 0.82)); border: 1px solid var(--borde); border-radius: 8px; font-size: 0.84rem; text-shadow: none; }
+#volver:hover, #volver:focus-visible { border-color: var(--oro); }
+.foto #volver, .portada-activa #volver { display: none; }
+
+/* pantallas táctiles (iPad): nada de zoom de página ni de selección al mantener el dedo, y botones del tamaño de una yema */
+html, body { overscroll-behavior: none; }
+body.tactil { touch-action: manipulation; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+body.tactil #ficha, body.tactil #codice, body.tactil input, body.tactil textarea { -webkit-user-select: text; user-select: text; }
+body.tactil .hora button, body.tactil #partidaCuerpo button, body.tactil #abrirCodice, body.tactil #musica, body.tactil summary, body.tactil #volver, body.tactil #ficha button, body.tactil #codice button { min-height: 44px; min-width: 44px; }
+body.tactil .camara button { height: 46px; }
+body.tactil .camara { grid-template-columns: repeat(5, 46px); }
+body.tactil button.etq { padding-top: 7px; padding-bottom: 7px; }
+body.tactil input, body.tactil textarea, body.tactil select { font-size: 16px; }   /* por debajo de 16 px, Safari amplía la página al escribir */
+body.tactil .hora input[type="range"] { height: 34px; }
 
 @media (max-width: 720px) {
   .cabecera h1 { font-size: 1.15rem; }

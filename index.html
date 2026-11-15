@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>Tierras de Alden · Mapa</title>
   <meta name="description" content="Mapa interactivo en relieve de las Tierras de Alden.">
   <meta name="theme-color" content="#12141a">
@@ -22,6 +22,8 @@
   <header class="cabecera">
     <h1>Tierras de Alden</h1>
     <p id="pista">Arrastra para moverte · rueda para acercar · botón derecho para girar</p>
+    <button id="volver" type="button" hidden>← Volver al mapa</button>
+    <span id="chipMaster" hidden title="Se ven las notas de máster. Pulsa M para ocultarlas.">Máster</span>
   </header>
 
   <div class="mandos" role="group" aria-label="Hora y capas">
@@ -47,6 +49,13 @@
       <label><input type="checkbox" data-capa="clima" checked> Nubes, nieve y niebla</label>
       <button id="modoFoto" type="button" class="enCapas">Modo foto (F)</button>
       <label class="calidad">Calidad <select id="calidad"><option value="auto">Automática</option><option value="alta">Alta</option><option value="media">Media</option><option value="baja">Baja</option></select></label>
+      <div class="deMaster">
+        <button id="masterCargar" type="button" class="enCapas" title="Carga tu archivo de máster desde este equipo. No se sube a ninguna parte.">Vista de máster…</button>
+        <input id="masterArchivo" type="file" accept=".json,application/json" hidden>
+        <label id="masterVer" hidden><input type="checkbox"> Notas de máster (M)</label>
+        <button id="masterLibro" type="button" class="enCapas" hidden>Abrir el cuaderno del máster</button>
+        <button id="masterQuitar" type="button" class="enCapas menor" hidden>Quitar de este equipo</button>
+      </div>
     </details>
   </div>
 

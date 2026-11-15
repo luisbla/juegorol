@@ -37,6 +37,8 @@ assets/
   js/clima.js          chubascos sobre Valcoria y Astravan, los mismos en el mapa y en los parajes
   js/render.js         posproceso: oclusión ambiental, resplandor, etalonaje y viñeta; modo maqueta para las fotos
   js/codice.js         el códice: regiones, facciones, gente, rumores y crónica, leídos de mundo.json
+  js/figuras.js        la gente: figuras con esqueleto (una malla continua con huesos), oficios, posturas y lo que llevan en la mano
+  js/master.js         lector de la vista de máster; los datos van en un archivo aparte que no está en el repositorio
   js/modelos.js        carga opcional de modelos glTF de artista
   js/ambiente.js       cielo, sombras, nubes, nieve, niebla, humo, barcos, pájaros, faro, luces de noche
   js/viaje.js          rutas y viajero
@@ -61,7 +63,7 @@ Todo se edita en `assets/data/mundo.json`. Las coordenadas van en una rejilla de
 - **Enlace a un lugar**: `…/#lugar=id` abre el mapa centrado en él; la ficha tiene un botón que lo copia.
 - **`gente`, `rumores`, `gancho`** (en cada lugar): quién anda por allí (`nombre`, `papel`, `voz`), lo que se dice y lo que se puede hacer. Salen en la ficha y en el códice.
 - **`facciones`** y **`cronica`**: los bandos (`quiere`, `problema`, `gancho`) y la historia conocida, para el códice.
-- **Calidad**: en Capas. Alta lleva todo el posproceso; media quita la oclusión ambiental; baja dibuja directo y sin sombras.
+- **Calidad**: en Capas. Alta lleva todo el posproceso; media quita la oclusión ambiental; baja dibuja directo y sin sombras. En automática, un teléfono va en baja, una tableta (iPad) lleva todos los efectos con algo menos de resolución, y un ordenador lo lleva todo; si el equipo no llega, la oclusión se apaga sola.
 - **Modo foto**: tecla F. Quita la interfaz y guarda la vista en PNG.
 - **`decorado`**: ambiente sin nombre ni ficha (aldeas, atalayas, casas fuertes, fuertes, minas, almenaras...). Por región, una lista de `[tipo, cuántos, { junto, tamano }]`; el mapa lo reparte solo donde el terreno lo permite. Para quitarlo de una región, borra su línea.
 - **`gobierno`**: texto que solo se muestra dentro de la ciudad. El interior se genera solo: su tamaño sale de `tamano` y sus puertas, de los caminos que llegan a esa capital.
@@ -81,6 +83,20 @@ La niebla de guerra es una capa visual, no un secreto: `partida.json` y `mundo.j
 
 Ojo: el repositorio es público. Lo que se escriba en `mundo.json` lo puede leer cualquiera, aunque en el mapa no se vea.
 
+## La gente
+
+Todas las personas salen de `js/figuras.js`: un cuerpo de una pieza con esqueleto dentro (rodillas, codos y cintura doblan), vestido según su oficio (`aldeano`, `aldeana`, `crio`, `guardia`, `noble`, `clan`, `mercader`, `minero`, `escriba`, `marino`, `monje`) y con una postura (`reposo`, `habla`, `escucha`, `golpea`, `remueve`, `bebe`, `come`, `escribe`, `reza`, `carga`, `empuja`…). En los parajes y los interiores cada figura es una malla con huesos; echa a andar sola en cuanto se la mueve. En las calles de las ciudades, donde hay más de cien, el ciclo de andar se hornea en doce geometrías fijas y se dibuja instanciado.
+
+## Vista de máster
+
+Lo que los jugadores no deben saber (qué hay de cierto en cada rumor, lo que calla cada personaje, qué hay dentro de cada ruina, los frentes que avanzan) no está en este repositorio ni debe estarlo: el repositorio es público. Va en un archivo aparte, `alden-master.json`, que guarda el máster.
+
+- En **Capas → Vista de máster…** se elige ese archivo desde el equipo. Se lee en el navegador y se queda guardado solo en ese navegador; no se sube a ninguna parte.
+- Con la vista puesta, la ficha de cada lugar añade un bloque «Solo máster» y el códice gana una pestaña «Máster».
+- La tecla **M** la oculta y la muestra. Al abrir la página siempre empieza oculta, por si la pantalla está a la vista de los jugadores.
+- «Quitar de este equipo» borra el archivo del navegador.
+- El `.gitignore` ya excluye `alden-master*.json`. Aun así: no lo metas en la carpeta del repositorio.
+
 ## Probar en local
 
 Hace falta servirlo por HTTP (los módulos y el JSON no cargan con `file://`):
@@ -93,10 +109,10 @@ y abrir `http://localhost:8000`.
 
 ## Publicar en GitHub Pages
 
-Subir `index.html`, `README.md` y la carpeta `assets` entera a la raíz del repositorio y activar Pages (Settings → Pages → Deploy from a branch → `main` / root).
+Subir `index.html`, `README.md`, `.gitignore` y la carpeta `assets` entera a la raíz del repositorio y activar Pages (Settings → Pages → Deploy from a branch → `main` / root).
 
 ## Controles
 
 - Ratón: arrastrar mueve, rueda acerca, botón derecho gira.
-- Táctil: un dedo mueve, dos dedos acercan y giran.
-- Teclado: Tab recorre los nombres, Intro abre la ficha, Esc la cierra; con el mapa enfocado, las flechas lo desplazan.
+- Táctil: un dedo mueve; con dos dedos, pellizcar acerca, retorcer gira y arrastrar los dos a la vez inclina. Un toque abre un lugar. Dentro de un lugar hay un botón «Volver» arriba a la izquierda.
+- Teclado: Tab recorre los nombres, Intro abre la ficha, Esc la cierra; con el mapa enfocado, las flechas lo desplazan. F, modo foto; M, notas de máster (si hay archivo cargado).

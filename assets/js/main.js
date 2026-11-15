@@ -11,6 +11,7 @@ import { crearMusica } from './musica.js';
 import { crearSonido } from './sonido.js';
 import { crearRender } from './render.js';
 import { crearCodice } from './codice.js';
+import { crearMaster } from './master.js';
 import { lluvia } from './clima.js';
 import { crearInterior } from './interior.js';
 import { crearSala } from './salas.js';
@@ -47,15 +48,20 @@ async function iniciar() {
   // calidad: alta, media o baja; "auto" deja que decida el tamaño de pantalla. Se guarda en este navegador.
   let calidad = 'auto';
   try { calidad = localStorage.getItem('alden-calidad') || 'auto'; } catch { /* sin almacenamiento */ }
-  renderer.setPixelRatio(Math.min(devicePixelRatio, { alta: 2, media: 1.25, baja: 1 }[calidad] ?? (matchMedia('(max-width: 720px)').matches ? 1.5 : 2)));
+  // Tres clases de equipo: teléfono (pantalla pequeña), tableta (táctil y grande, como un iPad) y ordenador.
+  // En automática, el teléfono va en baja; la tableta lleva todos los efectos con algo menos de resolución; el ordenador, todo.
+  const tactil = matchMedia('(pointer: coarse)').matches || (navigator.maxTouchPoints > 1 && /Mac|iPad/.test(navigator.platform || ''));
+  const pequena = Math.min(screen.width, screen.height) < 700 || matchMedia('(max-width: 720px)').matches, tableta = tactil && !pequena;
+  document.body.classList.toggle('tactil', tactil);
+  renderer.setPixelRatio(Math.min(devicePixelRatio, { alta: 2, media: 1.25, baja: 1 }[calidad] ?? (pequena || tableta ? 1.5 : 2)));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.0;
 
-  const movil = calidad === 'baja' || (calidad === 'auto' && matchMedia('(max-width: 720px), (pointer: coarse)').matches);
+  const movil = calidad === 'baja' || (calidad === 'auto' && pequena);
   const mundo = await (await fetch('assets/data/mundo.json')).json();
   await new Promise(r => setTimeout(r, 30));   // deja pintar el aviso de carga antes del cálculo
 
-  const render = crearRender(renderer, calidad, movil);
+  const render = crearRender(renderer, calidad, movil, { muestras: tableta ? 2 : 4 });
   const escena = new THREE.Scene();
   const terreno = crearTerreno(mundo, { movil });
   escena.add(terreno.grupo);
@@ -161,8 +167,8 @@ async function iniciar() {
   }
 
   /* ---------- selección ---------- */
-  let elegido = null, dentro = null, ciudad = null;
-  const ciudades = new Map(), velo = $('#velo'), titulo = $('.cabecera h1'), pista = $('#pista');
+  let elegido = null, dentro = null, ciudad = null, master = null;
+  const ciudades = new Map(), velo = $('#velo'), titulo = $('.cabecera h1'), pista = $('#pista'), volver = $('#volver');
   const espera = ms => new Promise(r => setTimeout(r, reducir ? 0 : ms));
   const anillo = new THREE.Mesh(new THREE.RingGeometry(0.94, 1, 64), new THREE.MeshBasicMaterial({ color: 0xffd35c, transparent: true, opacity: 0.75, side: THREE.DoubleSide, depthTest: false }));
   anillo.rotation.x = -Math.PI / 2; anillo.visible = false; anillo.renderOrder = 4; escena.add(anillo);
@@ -204,7 +210,8 @@ async function iniciar() {
       capaEtq.append(e.el);
     }
     control.minDistance = c.minDist ?? 20; control.maxDistance = c.R * 5; limite.x = limite.z = c.limite;
-    titulo.textContent = nombre; pista.textContent = `Interior · Esc para volver ${pila.length > 1 ? 'atrás' : 'al mapa'}`; pista.classList.remove('fuera');
+    titulo.textContent = nombre; pista.textContent = tactil ? 'Interior · arrastra para moverte, pellizca para acercar y girar' : `Interior · Esc para volver ${pila.length > 1 ? 'atrás' : 'al mapa'}`; pista.classList.remove('fuera');
+    volver.textContent = `← Volver ${pila.length > 1 ? 'atrás' : 'al mapa'}`; volver.hidden = false;
     document.body.classList.add('en-ciudad'); musica.ambiente(clave);
   }
   async function abrir(c, nombre, clave, antes) {
@@ -245,7 +252,7 @@ async function iniciar() {
     else {
       dentro = null; ciudad = null; hito = null;
       control.minDistance = nivel.min; control.maxDistance = nivel.max; limite.x = W / 2; limite.z = H / 2;
-      titulo.textContent = mundo.meta.nombre; pista.classList.add('fuera');
+      titulo.textContent = mundo.meta.nombre; pista.classList.add('fuera'); volver.hidden = true;
       document.body.classList.remove('en-ciudad'); musica.ambiente(elegido ? elegido.datos.tipo : null);
     }
     camara.position.copy(nivel.pos); control.target.copy(nivel.objetivo);
@@ -303,6 +310,7 @@ async function iniciar() {
       if (ciudad.plantas) nodos.push(h('div', { class: 'plantas', role: 'group', 'aria-label': 'Planta' }, ...ciudad.plantas.map((p, i) =>
         h('button', { type: 'button', 'aria-pressed': String(ciudad.planta === i), onclick: () => { ciudad.verPlanta(i); hito = null; pintarFicha(); } }, p.nombre))));
       nodos.push(h('button', { class: 'accion', type: 'button', onclick: salir }, enEdificio ? `← Volver a ${d.nombre}` : '← Volver al mapa'));
+      if (!enEdificio) nodos.push(...(master?.ficha(d) ?? []));
       ficha.replaceChildren(...nodos); ficha.hidden = false;
       return;
     }
@@ -315,7 +323,7 @@ async function iniciar() {
       nodos.push(h('div', { class: 'notas' }, h('h3', {}, 'Notas del grupo'), campo));
     } else if (nota) nodos.push(h('div', { class: 'notas' }, h('h3', {}, 'Notas del grupo'), h('p', {}, nota)));
     if (INTERIOR[d.tipo]) nodos.push(h('button', { class: 'accion', type: 'button', onclick: () => entrar(l) }, INTERIOR[d.tipo]));
-    nodos.push(...lore(d));
+    nodos.push(...lore(d), ...(master?.ficha(d) ?? []));
     if (partida.edicion && partida.estado.grupo !== d.id && !d.oculto) nodos.push(h('button', { class: 'accion', type: 'button', onclick: () => partida.ponerGrupo(d.id) }, 'Poner aquí al grupo'));
     if (!d.oculto) {
       const copiar = h('button', { class: 'enlace', type: 'button', onclick: async () => {
@@ -378,18 +386,34 @@ async function iniciar() {
     return rayo.intersectObjects(lugares.dianas, false).map(i => i.object.userData.id).find(id => !porId[id].tapado) ?? null;
   }
   let ticSonido = 0, esperaPunto = null;   // esperaPunto: alguien aguarda a que se pulse un sitio del mapa
-  const soltarPunto = p => { const si = esperaPunto; esperaPunto = null; lienzo.style.cursor = 'grab'; pista.classList.add('fuera'); si?.(p); };
-  const partida = await crearPartida({ mundo, terreno, lugares, escena, viajes, h, cuerpo: $('#partidaCuerpo'), pedirPunto: () => new Promise(si => { esperaPunto?.(null); esperaPunto = si; lienzo.style.cursor = 'crosshair'; $('#partida').open = false; pista.textContent = 'Pulsa en el mapa donde quieras clavar la marca · Esc para dejarlo'; pista.classList.remove('fuera'); }), alCambiar: () => { if (elegido?.tapado) cerrar(); else if (elegido && !dentro) pintarFicha(); } });
+  const soltarPunto = p => { const si = esperaPunto; esperaPunto = null; lienzo.style.cursor = 'grab'; pista.classList.add('fuera'); volver.hidden = !pila.length; if (pila.length) volver.textContent = `← Volver ${pila.length > 1 ? 'atrás' : 'al mapa'}`; si?.(p); };
+  volver.addEventListener('click', () => { if (esperaPunto) soltarPunto(null); else salir(); });
+  const partida = await crearPartida({ mundo, terreno, lugares, escena, viajes, h, cuerpo: $('#partidaCuerpo'), pedirPunto: () => new Promise(si => { esperaPunto?.(null); esperaPunto = si; lienzo.style.cursor = 'crosshair'; $('#partida').open = false; pista.textContent = tactil ? 'Toca el mapa donde quieras clavar la marca' : 'Pulsa en el mapa donde quieras clavar la marca · Esc para dejarlo'; pista.classList.remove('fuera'); volver.textContent = 'Dejar la marca'; volver.hidden = false; }), alCambiar: () => { if (elegido?.tapado) cerrar(); else if (elegido && !dentro) pintarFicha(); } });
   const botonMusica = $('#musica');
   botonMusica.addEventListener('click', () => { musica.activar(!musica.activa); sonido.activar(musica.activa); botonMusica.setAttribute('aria-pressed', String(musica.activa)); botonMusica.title = musica.activa ? 'Quitar la música' : 'Poner música'; });
-  let pulsado = null;
-  lienzo.addEventListener('pointerdown', ev => { pulsado = { x: ev.clientX, y: ev.clientY, t: performance.now() }; });
+  // Un toque elige; arrastrar o usar dos dedos, no. El dedo tiembla más que el ratón, así que se le da más margen.
+  let pulsado = null, dedos = 0;
+  lienzo.addEventListener('pointerdown', ev => { dedos++; pulsado = dedos > 1 ? null : { x: ev.clientX, y: ev.clientY, t: performance.now() }; });
+  for (const fin of ['pointercancel', 'pointerleave']) lienzo.addEventListener(fin, () => { dedos = 0; pulsado = null; });
   lienzo.addEventListener('pointerup', ev => {
-    if (!pulsado || Math.hypot(ev.clientX - pulsado.x, ev.clientY - pulsado.y) > 6 || performance.now() - pulsado.t > 600) return;
+    dedos = Math.max(0, dedos - 1); const margen = ev.pointerType === 'mouse' ? 6 : 14, toque = pulsado; pulsado = null;
+    if (!toque || dedos || Math.hypot(ev.clientX - toque.x, ev.clientY - toque.y) > margen || performance.now() - toque.t > 700) return;
     if (esperaPunto) { raton.set(ev.clientX / innerWidth * 2 - 1, -(ev.clientY / innerHeight) * 2 + 1); rayo.setFromCamera(raton, camara); const toque = rayo.intersectObject(terreno.malla, false)[0]; soltarPunto(toque ? [toque.point.x + terreno.cx, toque.point.z + terreno.cz] : null); return; }
     const id = lugarEn(ev);
     if (id) seleccionar(id, true);
   });
+  // Girar retorciendo dos dedos, como en cualquier mapa. Los mandos de serie solo giran si los dos dedos se desplazan juntos
+  // (eso sigue valiendo para inclinar la vista); el giro de muñeca se añade aquí.
+  const yemas = new Map(), ejeGiro = new THREE.Vector3(0, 1, 0); let anguloYemas = null;
+  const anguloDe = () => { const [a, b] = [...yemas.values()]; return Math.atan2(b.y - a.y, b.x - a.x); };
+  lienzo.addEventListener('pointerdown', ev => { if (ev.pointerType !== 'touch') return; yemas.set(ev.pointerId, { x: ev.clientX, y: ev.clientY }); anguloYemas = yemas.size === 2 ? anguloDe() : null; });
+  lienzo.addEventListener('pointermove', ev => {
+    if (!yemas.has(ev.pointerId)) return; yemas.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+    if (yemas.size !== 2 || anguloYemas === null || document.body.classList.contains('portada-activa')) return;
+    const a = anguloDe(), d = Math.atan2(Math.sin(a - anguloYemas), Math.cos(a - anguloYemas)); anguloYemas = a;
+    if (Math.abs(d) > 0.0004) camara.position.sub(control.target).applyAxisAngle(ejeGiro, d).add(control.target);
+  });
+  for (const fin of ['pointerup', 'pointercancel']) lienzo.addEventListener(fin, ev => { yemas.delete(ev.pointerId); anguloYemas = null; });
   let ultimoHover = 0;
   lienzo.addEventListener('pointermove', ev => {
     if (ev.pointerType !== 'mouse' || ev.buttons || esperaPunto || performance.now() - ultimoHover < 60) return;
@@ -413,7 +437,22 @@ async function iniciar() {
   ponerReloj(corriendo); pintarHora();
 
   // códice
-  const codice = crearCodice({ mundo, h, visible: l => !l.oculto && !porId[l.id]?.tapado, ir: id => { if (dentro) return; seleccionar(id, true); } });
+  // Vista de máster: sale de un archivo que solo tiene el máster y que se lee en este equipo; la web no lleva nada de eso.
+  const mm = { cargar: $('#masterCargar'), archivo: $('#masterArchivo'), ver: $('#masterVer'), libro: $('#masterLibro'), quitar: $('#masterQuitar'), chip: $('#chipMaster') };
+  let codice = null;
+  master = crearMaster({ h, mundo, alCambiar: () => {
+    mm.cargar.textContent = master.cargado ? 'Cambiar archivo de máster…' : 'Vista de máster…';
+    mm.ver.hidden = mm.quitar.hidden = !master.cargado; mm.libro.hidden = mm.chip.hidden = !master.visible; mm.ver.querySelector('input').checked = master.visible;
+    if (elegido) pintarFicha(); codice?.repintar();
+  } });
+  mm.cargar.addEventListener('click', () => mm.archivo.click());
+  mm.archivo.addEventListener('change', async () => { const f = mm.archivo.files[0]; mm.archivo.value = ''; if (!f) return; try { await master.cargar(f); } catch (e) { mm.cargar.textContent = 'Ese archivo no vale'; setTimeout(() => master.ver(master.visible), 2200); console.warn(e); } });
+  mm.ver.querySelector('input').addEventListener('change', ev => master.ver(ev.target.checked));
+  mm.quitar.addEventListener('click', () => master.quitar());
+  mm.libro.addEventListener('click', () => codice.abrir('Máster'));
+  addEventListener('keydown', ev => { if ((ev.key === 'm' || ev.key === 'M') && master.cargado && !ev.target.matches('input, textarea, select') && !ev.ctrlKey && !ev.metaKey) master.ver(!master.visible); });
+  codice = crearCodice({ mundo, h, master, visible: l => !l.oculto && !porId[l.id]?.tapado, ir: id => { if (dentro) return; seleccionar(id, true); } });
+  master.ver(false);   // aunque el archivo esté guardado, al abrir no se enseña nada: hay que pedirlo
   $('#abrirCodice').addEventListener('click', () => codice.abrir());
   // modo foto: fuera la interfaz, y la imagen se puede guardar tal cual se ve
   let pedirFoto = false;
@@ -450,7 +489,7 @@ async function iniciar() {
   };
   document.querySelectorAll('[data-cam]').forEach(b => b.addEventListener('click', () => ACCIONES[b.dataset.cam]()));
   const aguja = $('#brujula span');
-  if (matchMedia('(pointer: coarse)').matches) $('#pista').textContent = 'Arrastra para moverte · pellizca para acercar y girar';
+  if (tactil) $('#pista').textContent = 'Arrastra para moverte · pellizca con dos dedos para acercar y girar · toca un lugar para abrirlo';
   setTimeout(() => $('#pista')?.classList.add('fuera'), 9000);
 
   /* ---------- bucle ---------- */
@@ -502,6 +541,7 @@ async function iniciar() {
   window.mapa = { get interior() { return ciudad; },
     seleccionar, entrar: id => { seleccionar(id, false); return entrar(porId[id]); }, salir, camara, control, partida,
     ponerHora: v => { hora = v; ponerReloj(false); barra.value = v; pintarHora(); },
+    equipo: { tactil, tableta, pequena, get nivel() { return render.nivel; }, get oclusion() { return render.oclusion; }, pixeles: renderer.getPixelRatio() },
     enPantalla: id => { const v = porId[id].base.clone().project(camara); return [(v.x * 0.5 + 0.5) * innerWidth, (-v.y * 0.5 + 0.5) * innerHeight]; },
   };
 }

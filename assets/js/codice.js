@@ -1,6 +1,6 @@
 // codice.js — el libro del mundo: regiones, facciones, gente y crónica, sacados de mundo.json.
 // Con la niebla de guerra puesta solo aparece la gente de los lugares ya descubiertos.
-export function crearCodice({ mundo, h, visible, ir }) {
+export function crearCodice({ mundo, h, visible, ir, master }) {
   const dlg = h('dialog', { id: 'codice', 'aria-label': 'Códice de las Tierras de Alden' });
   document.body.append(dlg);
   const region = id => mundo.regiones.find(r => r.id === id)?.nombre ?? '';
@@ -15,16 +15,18 @@ export function crearCodice({ mundo, h, visible, ir }) {
   };
   let actual = 'Regiones', filtro = '';
   function pintar() {
-    const cuerpo = h('div', { class: 'cuerpo' }, ...PESTANAS[actual]().filter(n => !filtro || n.textContent.toLowerCase().includes(filtro)));
+    // con la vista de máster puesta hay una pestaña más; sin ella, ni rastro
+    const pestanas = master?.visible ? { ...PESTANAS, 'Máster': () => master.paginas() } : PESTANAS; if (!pestanas[actual]) actual = 'Regiones';
+    const cuerpo = h('div', { class: 'cuerpo' }, ...pestanas[actual]().filter(n => !filtro || n.textContent.toLowerCase().includes(filtro)));
     if (!cuerpo.children.length) cuerpo.append(h('p', { class: 'menor' }, 'Nada con ese nombre.'));
     const buscar = h('input', { type: 'search', placeholder: 'Buscar en el códice…', 'aria-label': 'Buscar en el códice' }); buscar.value = filtro;
     buscar.addEventListener('input', () => { filtro = buscar.value.trim().toLowerCase(); pintar(); dlg.querySelector('input').focus(); });
     dlg.replaceChildren(
       h('header', {}, h('h2', {}, 'Códice'), h('button', { type: 'button', class: 'cerrar', 'aria-label': 'Cerrar el códice', onclick: () => dlg.close() }, '×')),
-      h('nav', { role: 'tablist' }, ...Object.keys(PESTANAS).map(n => h('button', { type: 'button', role: 'tab', 'aria-selected': String(n === actual), onclick: () => { actual = n; filtro = ''; pintar(); } }, n))),
+      h('nav', { role: 'tablist' }, ...Object.keys(pestanas).map(n => h('button', { type: 'button', role: 'tab', 'aria-selected': String(n === actual), onclick: () => { actual = n; filtro = ''; pintar(); } }, n))),
       buscar, cuerpo,
-      h('p', { class: 'menor pie' }, 'Lo que aquí se cuenta es lo que se sabe o se dice en estas tierras. No todo tiene por qué ser verdad.'));
+      h('p', { class: 'menor pie' }, actual === 'Máster' ? 'Esto solo lo ves tú: sale de tu archivo de máster, que no está en la web. Pulsa M para ocultarlo.' : 'Lo que aquí se cuenta es lo que se sabe o se dice en estas tierras. No todo tiene por qué ser verdad.'));
   }
   dlg.addEventListener('click', ev => { if (ev.target === dlg) dlg.close(); });
-  return { abrir() { pintar(); dlg.showModal(); }, get abierto() { return dlg.open; } };
+  return { abrir(pestana) { if (pestana) actual = pestana; pintar(); dlg.showModal(); }, repintar() { if (dlg.open) pintar(); }, get abierto() { return dlg.open; } };
 }

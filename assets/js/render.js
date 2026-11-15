@@ -34,14 +34,16 @@ const Etalonaje = {
     }`,
 };
 
-export function crearRender(renderer, calidad, movil) {
+export function crearRender(renderer, calidad, movil, { muestras = 4 } = {}) {
   const nivel = calidad === 'baja' || (calidad === 'auto' && movil) ? 0 : calidad === 'media' ? 1 : 2;   // 0 directo · 1 resplandor y color · 2 además oclusión
   const api = { nivel, foco: 0, oclusion: nivel === 2, ajustar() {}, dibujar: (escena, camara) => renderer.render(escena, camara) };
   if (!nivel) return api;
   let composer, base, ao, resplandor, etalonaje;
   try {
     const t = renderer.getDrawingBufferSize(new THREE.Vector2());
-    const lienzo = new THREE.WebGLRenderTarget(t.x, t.y, { type: THREE.HalfFloatType, samples: 4 });
+    // sin lienzos de media precisión (algún navegador viejo) se sigue en 8 bits: se pierde algo de resplandor, nada más
+    const hdr = renderer.extensions.has('EXT_color_buffer_half_float') || renderer.extensions.has('EXT_color_buffer_float');
+    const lienzo = new THREE.WebGLRenderTarget(t.x, t.y, { type: hdr ? THREE.HalfFloatType : THREE.UnsignedByteType, samples: muestras });
     composer = new EffectComposer(renderer, lienzo);
     base = new RenderPass(new THREE.Scene(), new THREE.PerspectiveCamera());
     composer.addPass(base);

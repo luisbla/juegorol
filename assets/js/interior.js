@@ -2,6 +2,7 @@
 // una maqueta abierta por delante, con barra, chimenea, mesas, parroquianos y una escalera a las habitaciones.
 import * as THREE from 'three';
 import { azarDe } from './ruido.js';
+import { crearFigura } from './figuras.js';
 
 function lienzo(w, h, pintar, repetir) {
   const c = document.createElement('canvas'); c.width = w; c.height = h; pintar(c.getContext('2d'), w, h);
@@ -63,11 +64,11 @@ export function crearInterior(l) {
 
   /* ---------- barra, estantes y toneles ---------- */
   const bx = 11, bz = -FO / 2 + 6;
-  caja(madera, 18, 3.3, 2.0, bx, 0, bz); caja(clara, 19, 0.35, 2.8, bx, 3.3, bz); caja(oscura, 18, 0.5, 2.1, bx, 0, bz);
+  caja(madera, 18, 2.75, 2.0, bx, 0, bz); caja(clara, 19, 0.35, 2.8, bx, 2.75, bz); caja(oscura, 18, 0.5, 2.1, bx, 0, bz);
   for (let i = 0; i < 2; i++) caja(oscura, 17, 0.3, 1.3, bx, 5.6 + i * 2.2, -FO / 2 + 0.9);
   const VIDRIO = [0x3f6a4a, 0x7a4a2a, 0x8a2f2f, 0x4a5a7a, 0xb09a4a];
   for (let i = 0; i < 26; i++) cil(mat(VIDRIO[i % 5], { roughness: 0.25 }), 0.22, 0.8 + rnd() * 0.5, bx - 8 + (i % 13) * 1.3 + rnd() * 0.2, 5.9 + Math.floor(i / 13) * 2.2, -FO / 2 + 0.9, undefined, 8);
-  for (let i = 0; i < 4; i++) cil(mat(0xc9b06a, { roughness: 0.5 }), 0.3, 0.75, bx - 6 + i * 3.6 + rnd(), 3.65, bz + 0.3, undefined, 10);   // jarras en la barra
+  for (let i = 0; i < 4; i++) cil(mat(0xc9b06a, { roughness: 0.5 }), 0.3, 0.75, bx - 6 + i * 3.6 + rnd(), 3.1, bz + 0.3, undefined, 10);   // jarras en la barra
   for (let i = 0; i < 3; i++) {   // toneles tumbados en su caballete
     const tx = 19.5, tz = -FO / 2 + 3 + i * 3.4, t = cil(mat(0x7a5a3a), 1.45, 3.0, tx, 1.0, tz, undefined, 14); t.rotation.z = Math.PI / 2; t.position.y = 2.45;
     for (const dx of [-1.0, 1.0]) { const aro = cil(hierro, 1.5, 0.18, tx + dx, 0, tz, undefined, 14); aro.rotation.z = Math.PI / 2; aro.position.y = 2.45; }
@@ -82,40 +83,32 @@ export function crearInterior(l) {
   etiquetas.push({ nombre: 'Escalera a las habitaciones', pos: new THREE.Vector3(AN / 2 - 4, 11, FO / 2 - 12), clase: 'hito', planta: 0 });
 
   /* ---------- mesas y parroquianos ---------- */
-  const ROPA = [0x7a3b2e, 0x2f4f6f, 0x5a6b3a, 0x8a7a55, 0x4a3a5a, 0xb09a6a, 0x6a2f3a, 0x3f5a52], PIEL = [0xd9b08c, 0xc49a78, 0xe6c3a2, 0xa87a5a];
+  const ROPA = [0x7a3b2e, 0x2f4f6f, 0x5a6b3a, 0x8a7a55, 0x4a3a5a, 0xb09a6a, 0x6a2f3a, 0x3f5a52];
   const gente = [];
-  function persona(x, z, mira, sentado) {
-    const g = new THREE.Group(); g.position.set(x, sentado ? 0.95 : 0, z); g.rotation.y = mira; destino.add(g);
-    const ropa = mat(ROPA[Math.floor(rnd() * ROPA.length)], { roughness: 1 }), piel = mat(PIEL[Math.floor(rnd() * PIEL.length)], { roughness: 0.9 });
-    pieza(new THREE.CylinderGeometry(0.42, sentado ? 0.6 : 0.52, sentado ? 1.5 : 2.3, 8), ropa, 0, sentado ? 0.85 : 1.15, 0, g);
-    pieza(new THREE.SphereGeometry(0.4, 10, 8), piel, 0, sentado ? 1.95 : 2.7, 0, g);
-    if (sentado) { const piernas = pieza(new THREE.BoxGeometry(0.9, 0.45, 1.1), ropa, 0, 0.25, 0.55, g); piernas.material = mat(0x3a3028); }
-    const cy = sentado ? 1.95 : 2.7;
-    pieza(new THREE.SphereGeometry(0.43, 10, 6, 0, Math.PI * 2, 0, Math.PI * 0.55), mat([0x2a1f18, 0x5a3a22, 0x8a6a3a, 0x1a1a1a, 0xb8b0a4][Math.floor(rnd() * 5)], { roughness: 1 }), 0, cy + 0.04, -0.05, g);   // pelo
-    pieza(new THREE.BoxGeometry(0.12, 0.12, 0.12), piel, 0, cy - 0.04, 0.4, g);                                                                                       // nariz
-    pieza(new THREE.CylinderGeometry(0.5, 0.5, 0.12, 10), mat(0x2a2018), 0, sentado ? 0.75 : 1.2, 0, g);                                                               // cinto
-    pieza(new THREE.CylinderGeometry(0.13, 0.13, 0.95, 6), ropa, -0.5, sentado ? 1.0 : 1.6, 0.12, g).rotation.x = sentado ? -0.9 : 0;                                  // brazo izquierdo
-    const brazo = new THREE.Group(); brazo.position.set(0.48, sentado ? 1.35 : 2.0, 0.1); g.add(brazo);
-    pieza(new THREE.CylinderGeometry(0.13, 0.13, 0.95, 6), ropa, 0, -0.3, 0.3, brazo).rotation.x = -1.0;
-    const jarra = rnd() > 0.35 ? pieza(new THREE.CylinderGeometry(0.2, 0.2, 0.42, 8), mat(0xc9b06a, { roughness: 0.5 }), 0, -0.5, 0.75, brazo) : null;
-    const p = { g, brazo, f: rnd() * 6.28, bebe: !!jarra && sentado, y: g.position.y }; gente.push(p); return p;
+  // parroquianos: figuras con esqueleto (figuras.js). Sentados, beben, comen o escuchan; de pie, lo que diga "estado".
+  function persona(x, z, mira, sentado, { estado, ...ropa } = {}) {
+    const color = ROPA[Math.floor(rnd() * ROPA.length)]; rnd(); rnd(); const jarra = rnd() > 0.35, fase = rnd() * 6.28, n = gente.length;   // el mismo gasto de azar de siempre
+    const f = crearFigura({ rnd: azarDe(`taberna-${l.id}-${n}`), color, talla: 2.05, tipo: ['aldeano', 'aldeano', 'aldeana', 'mercader', 'marino'][n % 5], lleva: sentado && jarra ? 'jarra' : undefined, ...ropa });
+    Object.assign(f.estado, { fase }, sentado ? { piernas: 'sentado', brazos: jarra ? 'bebe' : ['come', 'escucha', 'habla'][n % 3] } : null, estado);
+    f.grupo.position.set(x, 0, z); f.grupo.rotation.y = mira; destino.add(f.grupo);
+    const p = { g: f.grupo, f }; gente.push(p); return p;
   }
   const MESAS = [[-11, -6, 1], [-2, -2, 0], [-12, 7, 0], [-1, 8.5, 1], [8, 5, 0], [10, -4.5, 1]];
   for (const [mx, mz, redonda] of MESAS) {
-    if (redonda) { cil(clara, 2.5, 0.3, mx, 2.3, mz); cil(oscura, 0.4, 2.3, mx, 0, mz, undefined, 8); cil(oscura, 1.2, 0.2, mx, 0, mz, undefined, 10); }
-    else { caja(clara, 6.2, 0.3, 2.8, mx, 2.3, mz); for (const dx of [-2.6, 2.6]) for (const dz of [-1.0, 1.0]) caja(oscura, 0.3, 2.3, 0.3, mx + dx, 0, mz + dz); }
+    if (redonda) { cil(clara, 2.5, 0.3, mx, 1.7, mz); cil(oscura, 0.4, 1.7, mx, 0, mz, undefined, 8); cil(oscura, 1.2, 0.2, mx, 0, mz, undefined, 10); }
+    else { caja(clara, 6.2, 0.3, 2.8, mx, 1.7, mz); for (const dx of [-2.6, 2.6]) for (const dz of [-1.0, 1.0]) caja(oscura, 0.3, 1.7, 0.3, mx + dx, 0, mz + dz); }
     const n = redonda ? 4 : 6;
     for (let i = 0; i < n; i++) {
       const a = redonda ? i / n * 6.283 + rnd() : 0, sx = redonda ? mx + Math.cos(a) * 3.5 : mx - 2 + (i % 3) * 2, sz = redonda ? mz + Math.sin(a) * 3.5 : mz + (i < 3 ? -2.3 : 2.3);
       if (redonda) cil(madera, 0.6, 1.1, sx, 0, sz, undefined, 8); else if (i % 3 === 0) caja(madera, 6, 0.3, 0.9, mx, 0.9, sz);
       if (rnd() > 0.28) persona(sx, sz, Math.atan2(mx - sx, mz - sz), true);
     }
-    for (let i = 0; i < 3; i++) cil(mat(0xc9b06a, { roughness: 0.5 }), 0.2, 0.42, mx + (rnd() - 0.5) * 3, 2.6, mz + (rnd() - 0.5) * 1.4, undefined, 8);
-    if (rnd() > 0.4) { cil(mat(0xe8dcc0), 0.09, 0.6, mx, 2.6, mz, undefined, 6); pieza(new THREE.SphereGeometry(0.12, 6, 6), new THREE.MeshBasicMaterial({ color: 0xffd98a }), mx, 3.3, mz); }   // vela
+    for (let i = 0; i < 3; i++) cil(mat(0xc9b06a, { roughness: 0.5 }), 0.2, 0.42, mx + (rnd() - 0.5) * 3, 2.0, mz + (rnd() - 0.5) * 1.4, undefined, 8);
+    if (rnd() > 0.4) { cil(mat(0xe8dcc0), 0.09, 0.6, mx, 2.0, mz, undefined, 6); pieza(new THREE.SphereGeometry(0.12, 6, 6), new THREE.MeshBasicMaterial({ color: 0xffd98a }), mx, 2.7, mz); }   // vela
   }
-  persona(bx - 2, bz - 2.4, 0, false);                      // quien atiende la barra
-  persona(bx - 6, bz + 2.6, Math.PI, false); persona(bx + 3, bz + 2.6, Math.PI + 0.3, false);   // acodados
-  const moza = persona(0, 0, 0, false);                     // va y viene entre la barra y las mesas
+  persona(bx - 2, bz - 2.6, 0, false, { tipo: 'aldeano', tocado: null, barriga: 0.06, delantal: 0xd8ceb4, estado: { brazos: 'remueve', ritmo: 0.5 } });   // quien atiende la barra
+  persona(bx - 6, bz + 2.5, Math.PI, false, { estado: { brazos: 'acodado' } }); persona(bx + 3, bz + 2.5, Math.PI + 0.2, false, { lleva: 'jarra', estado: { brazos: 'bebe' } });   // acodados
+  const moza = persona(0, 0, 0, false, { tipo: 'aldeana', delantal: 0xe0d6bc, lleva: 'jarra', llevaI: 'jarra', estado: { brazos: 'fuego' } });   // va y viene entre la barra y las mesas
   const ronda = [[bx - 4, bz + 3.4], [3, 3], [-8, 2], [-9, -2], [-2, -5.5], [6, -1]].map(p => new THREE.Vector3(p[0], 0, p[1]));
 
   /* ---------- lámpara de rueda, alfombra y trastos ---------- */
@@ -159,7 +152,7 @@ export function crearInterior(l) {
     caja(oscura, 3.6, 3.6, 0.3, xc + 1.5, 2.2, z0 + 0.25); caja(cristal, 3.0, 3.0, 0.2, xc + 1.5, 2.5, z0 + 0.42);            // ventana
     const vela = new THREE.PointLight(0xffc878, 38, 22, 1.8); vela.position.set(xc + 2.6, 3.4, z0 + 9.5); alta.add(vela);
   }
-  persona(-AN / 2 + ancho * 2.5 + 0.6, -FO / 2 + 10.5, Math.PI / 2, true);   // alguien escribiendo en su cuarto
+  persona(-AN / 2 + ancho * 2.5 + 0.6, -FO / 2 + 10.5, Math.PI / 2 + 0.45, true, { tipo: 'escriba', lleva: 'pluma', estado: { brazos: 'escribe' } });   // alguien escribiendo en su cuarto
   // dormitorio común: catres en fila
   const zd = FO / 2 - 8;
   conPuerta(-AN / 2, 4, zd, -3); caja(tabique, 0.5, AT, 8, 4, 0, zd + 4);
@@ -172,7 +165,7 @@ export function crearInterior(l) {
   pieza(new THREE.BoxGeometry(6, 0.1, 13), mat(0x0d0a08), AN / 2 - 3.2, 0.06, FO / 2 - 6.6);
   for (let i = 0; i < 7; i++) caja(oscura, 0.25, 2.2, 0.25, AN / 2 - 6.6, 0, FO / 2 - 12.6 + i * 2);
   caja(oscura, 0.3, 0.25, 12.6, AN / 2 - 6.6, 2.2, FO / 2 - 6.6);
-  persona(-6, 3.5, 0.6, false); persona(6, 4.2, -2.2, false);   // huéspedes en el pasillo
+  persona(-6, 3.5, 0.6, false, { estado: { brazos: 'habla' } }); persona(-4.2, 5.6, 0.6 + Math.PI, false, { estado: { brazos: 'escucha' } }); persona(6, 4.2, -2.2, false, { tipo: 'mercader', lleva: 'farol' });   // huéspedes en el pasillo
   const farol = new THREE.PointLight(0xffc878, 120, 55, 1.7); farol.position.set(0, 5.5, 4); alta.add(farol);
   const farol2 = new THREE.PointLight(0xffc878, 90, 45, 1.8); farol2.position.set(-12, 5, zd + 4); alta.add(farol2);
   etiquetas.push({ nombre: 'Habitaciones', pos: new THREE.Vector3(-6, 9.5, -FO / 2 + 7), clase: 'hito', planta: 1 });
@@ -197,13 +190,9 @@ export function crearInterior(l) {
     llamas.forEach((s, i) => { const k = 0.7 + 0.3 * Math.sin(t * (7 + i) + s.userData.f); s.scale.set(1.6 + k, 2.4 + k * 1.8, 1); s.position.y = 1.5 + k * 0.6; s.material.opacity = 0.75 + 0.25 * k; });
     lampara.rotation.z = Math.sin(t * 0.6) * 0.015; lampara.rotation.x = Math.cos(t * 0.47) * 0.012;
     cristal.emissiveIntensity = 0.06 + 0.9 * (1 - noche); deFuera.intensity = 0.7 * (1 - noche);
-    for (const p of gente) {
-      p.g.position.y = p.y + Math.sin(t * 1.3 + p.f) * 0.03;
-      p.g.rotation.z = Math.sin(t * 0.7 + p.f) * 0.03;
-      if (p.bebe) p.brazo.rotation.x = -Math.max(0, Math.sin(t * 0.5 + p.f) - 0.55) * 2.6;   // de vez en cuando, un trago
-    }
+    for (const p of gente) if (p.g.parent.visible) p.f.actualizar(t);
     const ciclo = (t * 0.12) % ronda.length, i = Math.floor(ciclo), a = ronda[i], b = ronda[(i + 1) % ronda.length], f = Math.min(1, (ciclo - i) * 1.6);   // anda y se para un momento en cada mesa
-    v.lerpVectors(a, b, f); moza.g.position.set(v.x, moza.y + (f < 1 ? Math.abs(Math.sin(t * 7)) * 0.1 : 0), v.z);
+    v.lerpVectors(a, b, f); moza.g.position.set(v.x, 0, v.z);
     if (f < 1) moza.g.rotation.y = Math.atan2(b.x - a.x, b.z - a.z);
   }
 
