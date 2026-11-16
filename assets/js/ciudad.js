@@ -5,7 +5,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { kit } from './lugares.js';
 import { azarDe } from './ruido.js';
 import { crearEdificios } from './edificios.js';
-import { hornear, materialMultitud } from './figuras.js';
+import { hornear, materialMultitud, ZANCADA, viva } from './figuras.js';
 import { crearBarcoModelo } from './barco.js';
 import { crearMatas } from './campo.js';
 
@@ -462,14 +462,14 @@ export function crearCiudad(l, mundo, { movil = false } = {}) {
       : { tipo: 'anillo', r: (rnd() < 0.3 ? 8 + rnd() * 10 : anillos[Math.floor(rnd() * anillos.length)] + paso / 2 + (rnd() - 0.5) * 3), f: rnd() * 6.28, v: (rnd() > 0.5 ? 1 : -1) * (2.2 + rnd() * 1.6) * (crio ? 1.5 : 1) }),
       talla, ancho: talla * (0.9 + rnd() * 0.25), px: 0, pz: 0, rumbo: 0 });
     const ropa = de(ROPA), calza = de(CALZAS), capucha = rnd() < 0.25, pelo = capucha ? 0x2a1f18 : de(PELOS), piel = de(PIELES), a = andares[i];
-    Object.assign(a, { modelo: crio ? 5 : capucha ? 2 : [0, 1, 3, 4][CALZAS.indexOf(calza)], ropa: new THREE.Color(ropa), pelo: new THREE.Color(pelo), piel: new THREE.Color(piel), dist: i * 0.37 });
+    Object.assign(a, { modelo: crio ? 5 : capucha ? 2 : [0, 1, 3, 4][CALZAS.indexOf(calza)], ropa: new THREE.Color(viva(ropa)), pelo: new THREE.Color(pelo), piel: new THREE.Color(piel), dist: i * 0.37 });
   }
   const mallasGente = DE_CALLE.map((o, v) => { const n = andares.filter(a => a.modelo === v).length; return n ? hornear({ rnd: azarDe('calle-' + v), ...o }, CUADROS).andar.map(g => instanciada(g, n)) : []; });
   // los quietos: guardias con lanza y vecinos parados, cada grupo con una postura
   { const POSES = [{ tipo: 'guardia', carga: ['vaina', 'escudo'], capa: null }, { tipo: 'aldeano', tocado: null, brazos: 'jarras' }, { tipo: 'aldeana', brazos: 'escucha' }, { tipo: 'mercader', brazos: 'habla', fase: 1 }, { tipo: 'aldeano', tocado: 'sombrero', colorTocado: 0xd8bf7a, brazos: 'habla', fase: 3 }], az = azarDe('quietos-' + l.id), esc1 = new THREE.Matrix4().makeScale(ESCALA, ESCALA, ESCALA);
     quietos.forEach((q, i) => { q.pose = q.arma ? 0 : 1 + i % 4; });
     POSES.forEach((o, v) => { const lista = quietos.filter(q => q.pose === v); if (!lista.length) return; const m = instanciada(hornear({ rnd: azarDe('quieto-' + v), ...o }, 1).quieto, lista.length), g = m.geometry.attributes;
-      lista.forEach((q, j) => { m.setMatrixAt(j, q.m.multiply(esc1)); colorTmp.setHex(q.color).toArray(g.iRopa.array, j * 3); colorTmp.setHex(PELOS[Math.floor(az() * PELOS.length)]).toArray(g.iPelo.array, j * 3); colorTmp.setHex(PIELES[Math.floor(az() * PIELES.length)]).toArray(g.iPiel.array, j * 3); }); }); }
+      lista.forEach((q, j) => { m.setMatrixAt(j, q.m.multiply(esc1)); colorTmp.setHex(viva(q.color)).toArray(g.iRopa.array, j * 3); colorTmp.setHex(PELOS[Math.floor(az() * PELOS.length)]).toArray(g.iPelo.array, j * 3); colorTmp.setHex(PIELES[Math.floor(az() * PIELES.length)]).toArray(g.iPiel.array, j * 3); }); }); }
 
   const nPerros = movil ? 3 : 9, nGallinas = movil ? 6 : 18;
   const gPerro = une([new THREE.CylinderGeometry(0.19, 0.17, 0.75, 8).rotateX(Math.PI / 2).translate(0, 0.5, 0), new THREE.SphereGeometry(0.17, 8, 6).translate(0, 0.72, 0.45), new THREE.BoxGeometry(0.13, 0.12, 0.22).translate(0, 0.68, 0.64),
@@ -522,7 +522,7 @@ export function crearCiudad(l, mundo, { movil = false } = {}) {
       const paso = Math.hypot(x - a.px, z - a.pz); if (paso > 1e-4) { a.rumbo = Math.atan2(x - a.px, z - a.pz); a.dist += Math.min(paso, 1); }
       a.px = x; a.pz = z;
       if (fuera) return;
-      const cuadro = Math.floor(a.dist / (1.52 * ESCALA * a.talla) % 1 * CUADROS), m = mallasGente[a.modelo][cuadro], j = m.count++, g = m.geometry.attributes;
+      const cuadro = Math.floor(a.dist / (ZANCADA * ESCALA * a.talla) % 1 * CUADROS), m = mallasGente[a.modelo][cuadro], j = m.count++, g = m.geometry.attributes;
       mat.compose(pos.set(x, 0, z), q.setFromAxisAngle(ejeY, a.rumbo), esc.set(a.ancho * ESCALA, a.talla * ESCALA, a.ancho * ESCALA)); m.setMatrixAt(j, mat);
       a.ropa.toArray(g.iRopa.array, j * 3); a.pelo.toArray(g.iPelo.array, j * 3); a.piel.toArray(g.iPiel.array, j * 3);
     });

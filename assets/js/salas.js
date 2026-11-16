@@ -36,7 +36,7 @@ export function crearSala(tipo, id, { color = 0x7a2e2a } = {}) {
     return { g: f.grupo, f, fase };
   }
   // sienta a alguien con las caderas a la altura que toque (y = suelo bajo sus pies)
-  const sienta = (p, y = 0, brazos = 'preside') => { Object.assign(p.f.estado, { piernas: 'sentado', brazos }); p.g.position.y = y; return p; };
+  const sienta = (p, y = 0, brazos = 'preside') => { Object.assign(p.f.estado, { piernas: 'sentado', brazos }); p.g.position.y = y + 0.16; return p; };
   function barril(x, z, r = 0.9, h = 1.8) { cil(madera, r, h, x, 0, z); cil(hierro, r + 0.04, 0.14, x, h * 0.25, z); cil(hierro, r + 0.04, 0.14, x, h * 0.75, z); }
   function luzFuego(x, y, z, fuerza, color = 0xff9a4a) {
     const l = new THREE.PointLight(color, fuerza, 60, 1.7); l.position.set(x, y, z); escena.add(l);
@@ -57,14 +57,14 @@ export function crearSala(tipo, id, { color = 0x7a2e2a } = {}) {
     const fuelle = new THREE.Group(); fuelle.position.set(fx + 7.4, 2.4, fz + 0.6); escena.add(fuelle);
     const saco = pieza(new THREE.ConeGeometry(1.5, 3.6, 8), mat(0x5a3a26, { roughness: 1 }), 0, 0, 0, fuelle); saco.rotation.z = Math.PI / 2;
     caja(oscura, 0.4, 2.4, 0.4, fx + 8.6, 0, fz + 0.6);
-    persona(fx + 9.6, fz + 2.4, -2.2, 0x6a5a2f, 0.85, { tipo: 'aldeano', tocado: null, barba: 0, delantal: 0x4a3a2a, estado: { brazos: 'fuelle' } });
+    persona(fx + 9.6, fz + 2.4, -2.2, 0x6a5a2f, 0.85, { tipo: 'aldeano', tocado: null, barba: 0, delantal: 0x7a4a28, mangaCorta: true, estado: { brazos: 'fuelle' } });
     vivos.push(t => { const k = 0.5 + 0.5 * Math.sin(t * 1.8); saco.scale.set(0.7 + k * 0.4, 1, 1); });
     // yunque sobre tocón, y el herrero martilleando una barra al rojo
     const yx = -3, yz = 1;
     cil(madera, 1.3, 1.5, yx, 0, yz, undefined, 10); caja(hierro, 2.6, 0.9, 1.1, yx, 1.5, yz); caja(hierro, 1.4, 0.5, 0.9, yx, 2.4, yz);
     const cuerno = pieza(new THREE.ConeGeometry(0.45, 1.6, 8), hierro, yx + 2.0, 2.2, yz); cuerno.rotation.z = -Math.PI / 2;
     const barra = caja(new THREE.MeshStandardMaterial({ color: 0x40100a, emissive: 0xff7a1c, emissiveIntensity: 1.6 }), 2.6, 0.16, 0.22, yx - 0.3, 2.92, yz);
-    persona(yx - 0.4, yz + 2.3, Math.PI, 0x4a3326, 1.08, { tipo: 'aldeano', tocado: null, peinado: 'calvo', barba: 0.9, ancho: 1.14, lleva: 'martillo', delantal: 0x3a2a20, estado: { brazos: 'golpea', ritmo: 1.25 / 0.9, fase: 0, flexion: 0.12 } });
+    persona(yx - 0.4, yz + 2.3, Math.PI, 0x4a3326, 1.08, { tipo: 'aldeano', color: 0xddd0b0, tocado: null, peinado: 'calvo', barba: 1, ceno: 0.22, pelo: 0x3a2a20, ancho: 1.2, mangaCorta: true, guante: 0x9a6a3e, calzas: 0x4a4d5c, lleva: 'martillo', delantal: 0x7a4a28, estado: { brazos: 'golpea', ritmo: 1.25 / 0.9, fase: 0, flexion: 0.12 } });
     const chispa = new THREE.PointLight(0xffc070, 0, 14, 2); chispa.position.set(yx, 3.4, yz); escena.add(chispa);
     vivos.push(t => {
       const f = (t * 1.25) % 1, golpe = f < 0.75 ? f / 0.75 : 1 - (f - 0.75) / 0.25;   // sube despacio, baja de golpe
@@ -194,7 +194,7 @@ export function crearSala(tipo, id, { color = 0x7a2e2a } = {}) {
     for (let i = 0; i < 3; i++) caja(piedra, 15 - i * 2, 0.5, 8 - i * 1.4, 0, i * 0.5, -FO / 2 + 4 + i * 0.1);   // estrado
     const g = sitial(0, -FO / 2 + 3.4, 0, oro, 6.2, 2.4); g.position.y = 1.5; caja(pendon, 1.6, 2.2, 0.1, 0, 3.4, -0.66, g); pieza(new THREE.ConeGeometry(0.5, 1.0, 4), oro, 0, 6.8, -0.9, g);
     sitial(4.2, -FO / 2 + 3.6, -0.2, madera, 4.4, 1.8).position.y = 1.5;
-    sienta(persona(0, -FO / 2 + 3.04, 0, 0x5a1f2a, 1.0, { tipo: 'noble', tocado: 'corona', capa: 0x7a1f26, sinPano: true, barba: 0.7, peinado: 'largo', pelo: 0xb8b0a4 }), 1.62);
+    sienta(persona(0, -FO / 2 + 3.04, 0, 0x5a1f2a, 1.0, { tipo: 'noble', color: 0xb5283a, tocado: 'corona', armino: true, capa: 0x8a1c2c, sinPano: true, barba: 1.2, peinado: 'largo', pelo: 0xddd8cf, lleva: 'cetro' }), 1.62);
     estandarte(0, 4.6, -FO / 2 + 0.3, pendon, 4.4, 5.6); for (const s of [-1, 1]) estandarte(s * 12, 1.4, -FO / 2 + 0.3, mat(s > 0 ? 0x2f3f5a : 0x4a3a1a, { roughness: 1 }), 3, 5);
     for (const s of [-1, 1]) { for (let i = 0; i < 4; i++) { columna(s * 9, -8 + i * 6.4); if (i < 3) estandarte(s * 9, 4.4, -4.8 + i * 6.4, pendon, 1.6, 3.6); } guardia(s * 5.6, -FO / 2 + 6.4, 0, 0x6a2f2a); guardia(s * 4.2, 10.5, s > 0 ? -Math.PI / 2 : Math.PI / 2, 0x6a2f2a); pebetero(s * 7.6, -FO / 2 + 5.4); }
     for (const s of [-1, 1]) { mesa(s * 16.5, 1, 4, 13, clara, MESA_BAJA); for (let i = 0; i < 5; i++) { cil(oro, 0.22, 0.5, s * 16.5 + (i % 2 - 0.5) * 1.4, 2.1, -4 + i * 2.6, undefined, 8); silla(s * 13.6, -4 + i * 2.6, s > 0 ? Math.PI / 2 : -Math.PI / 2); } }
@@ -211,7 +211,7 @@ export function crearSala(tipo, id, { color = 0x7a2e2a } = {}) {
     for (let i = 0; i < 2; i++) caja(piedra, 13 - i * 2.4, 0.7, 7 - i * 1.6, 0, i * 0.7, -FO / 2 + 3.6);
     const g = sitial(0, -FO / 2 + 3.2, 0, mat(0x2e3038, { roughness: 1 }), 7.4, 3.0); g.position.y = 1.4; caja(piel, 2.8, 0.3, 1.5, 0, 1.25, -0.1, g); caja(piel, 3.4, 2.4, 0.2, 0, 2, -0.62, g);
     for (let i = 0; i < 7; i++) { const a = (i - 3) * 0.3, c = pieza(new THREE.ConeGeometry(0.55 - Math.abs(i - 3) * 0.06, 5 - Math.abs(i - 3) * 0.7, 5), hielo, Math.sin(a) * 4.6, 6.4 - Math.abs(i - 3) * 0.5, -FO / 2 + 1.2); c.rotation.z = -a * 0.8; }   // corona de hielo tras el trono
-    const jefe = sienta(persona(0, -FO / 2 + 2.86, 0, 0x2a2e3a, 1.12, { tipo: 'clan', manto: 0xb0a898, tocado: null, peinado: 'largo', barba: 1, pelo: 0x1a1a1a, capa: 0x2a2e3a, sinPano: true }), 1.7); for (let i = 0; i < 5; i++) { const pico = pieza(new THREE.ConeGeometry(0.022, 0.13 - Math.abs(i - 2) * 0.025, 5), hielo, Math.sin((i - 2) * 0.5) * 0.105, 0.3, Math.cos((i - 2) * 0.5) * 0.105, jefe.f.h.cabeza); pico.rotation.z = -(i - 2) * 0.12; }   // corona de hielo
+    const jefe = sienta(persona(0, -FO / 2 + 2.86, 0, 0x2a2e3a, 1.12, { tipo: 'clan', manto: 0xc4bcaa, tocado: null, peinado: 'largo', barba: 1.2, pelo: 0x1a1a1a }), 1.7); for (let i = 0; i < 7; i++) { const an = Math.PI / 2 + (i - 3) * 0.42; pieza(new THREE.ConeGeometry(0.03, 0.2 - Math.abs(i - 3) * 0.035, 4), hielo, Math.cos(an) * 0.19, 0.5 - Math.abs(i - 3) * 0.012, Math.sin(an) * 0.19, jefe.f.h.cabeza); }   // corona de hielo
     luzFuego(0, 6, -FO / 2 + 3, 130, 0x8fd0ff);
     // hogar largo en el centro, con fuego azulado
     caja(piedra, 4, 0.7, 15, 0, 0, 3.4); const ascuas = caja(new THREE.MeshStandardMaterial({ color: 0x0a1420, emissive: 0x58b8ff, emissiveIntensity: 1.8 }), 3, 0.2, 14, 0, 0.7, 3.4);

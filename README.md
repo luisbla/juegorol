@@ -85,7 +85,9 @@ Ojo: el repositorio es público. Lo que se escriba en `mundo.json` lo puede leer
 
 ## La gente
 
-Todas las personas salen de `js/figuras.js`: un cuerpo de una pieza con esqueleto dentro (rodillas, codos y cintura doblan), vestido según su oficio (`aldeano`, `aldeana`, `crio`, `guardia`, `noble`, `clan`, `mercader`, `minero`, `escriba`, `marino`, `monje`) y con una postura (`reposo`, `habla`, `escucha`, `golpea`, `remueve`, `bebe`, `come`, `escribe`, `reza`, `carga`, `empuja`…). En los parajes y los interiores cada figura es una malla con huesos; echa a andar sola en cuanto se la mueve. En las calles de las ciudades, donde hay más de cien, el ciclo de andar se hornea en doce geometrías fijas y se dibuja instanciado.
+Todas las personas salen de `js/figuras.js`: un cuerpo de una pieza con esqueleto dentro (rodillas, codos y cintura doblan), de formas gruesas, cabeza grande (unas 4,4 cabezas de alto), cara de ojos grandes y piezas facetadas. Se viste según su oficio (`aldeano`, `aldeana`, `crio`, `guardia`, `noble`, `clan`, `mercader`, `minero`, `escriba`, `marino`, `monje`), lleva útiles y armas (`martillo`, `hacha`, `pico`, `lanza`, `espada`, `cetro`, `jarra`, `escudo`…) y adopta una postura (`reposo`, `habla`, `escucha`, `golpea`, `remueve`, `bebe`, `come`, `escribe`, `reza`, `carga`, `empuja`…). No hay modelos ni texturas: todo es código.
+
+En los parajes y los interiores cada figura es una malla con huesos; echa a andar sola en cuanto se la mueve. En las calles de las ciudades, donde hay más de cien, el ciclo de andar se hornea en doce geometrías fijas y se dibuja instanciado, con los colores de ropa, pelo y piel de cada persona.
 
 ## Vista de máster
 

@@ -90,7 +90,7 @@ export function crearInterior(l) {
     const color = ROPA[Math.floor(rnd() * ROPA.length)]; rnd(); rnd(); const jarra = rnd() > 0.35, fase = rnd() * 6.28, n = gente.length;   // el mismo gasto de azar de siempre
     const f = crearFigura({ rnd: azarDe(`taberna-${l.id}-${n}`), color, talla: 2.05, tipo: ['aldeano', 'aldeano', 'aldeana', 'mercader', 'marino'][n % 5], lleva: sentado && jarra ? 'jarra' : undefined, ...ropa });
     Object.assign(f.estado, { fase }, sentado ? { piernas: 'sentado', brazos: jarra ? 'bebe' : ['come', 'escucha', 'habla'][n % 3] } : null, estado);
-    f.grupo.position.set(x, 0, z); f.grupo.rotation.y = mira; destino.add(f.grupo);
+    f.grupo.position.set(x, sentado ? 0.14 : 0, z); f.grupo.rotation.y = mira; destino.add(f.grupo);
     const p = { g: f.grupo, f }; gente.push(p); return p;
   }
   const MESAS = [[-11, -6, 1], [-2, -2, 0], [-12, 7, 0], [-1, 8.5, 1], [8, 5, 0], [10, -4.5, 1]];
@@ -106,9 +106,9 @@ export function crearInterior(l) {
     for (let i = 0; i < 3; i++) cil(mat(0xc9b06a, { roughness: 0.5 }), 0.2, 0.42, mx + (rnd() - 0.5) * 3, 2.0, mz + (rnd() - 0.5) * 1.4, undefined, 8);
     if (rnd() > 0.4) { cil(mat(0xe8dcc0), 0.09, 0.6, mx, 2.0, mz, undefined, 6); pieza(new THREE.SphereGeometry(0.12, 6, 6), new THREE.MeshBasicMaterial({ color: 0xffd98a }), mx, 2.7, mz); }   // vela
   }
-  persona(bx - 2, bz - 2.6, 0, false, { tipo: 'aldeano', tocado: null, barriga: 0.06, delantal: 0xd8ceb4, estado: { brazos: 'remueve', ritmo: 0.5 } });   // quien atiende la barra
+  persona(bx - 2, bz - 2.6, 0, false, { tipo: 'aldeano', tocado: null, barriga: 0.06, delantal: 0xf0e8d4, estado: { brazos: 'remueve', ritmo: 0.5 } });   // quien atiende la barra
   persona(bx - 6, bz + 2.5, Math.PI, false, { estado: { brazos: 'acodado' } }); persona(bx + 3, bz + 2.5, Math.PI + 0.2, false, { lleva: 'jarra', estado: { brazos: 'bebe' } });   // acodados
-  const moza = persona(0, 0, 0, false, { tipo: 'aldeana', delantal: 0xe0d6bc, lleva: 'jarra', llevaI: 'jarra', estado: { brazos: 'fuego' } });   // va y viene entre la barra y las mesas
+  const moza = persona(0, 0, 0, false, { tipo: 'aldeana', delantal: 0xf0e8d4, lleva: 'jarra', llevaI: 'jarra', estado: { brazos: 'fuego' } });   // va y viene entre la barra y las mesas
   const ronda = [[bx - 4, bz + 3.4], [3, 3], [-8, 2], [-9, -2], [-2, -5.5], [6, -1]].map(p => new THREE.Vector3(p[0], 0, p[1]));
 
   /* ---------- lámpara de rueda, alfombra y trastos ---------- */
