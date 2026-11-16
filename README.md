@@ -38,6 +38,8 @@ assets/
   js/render.js         posproceso: oclusión ambiental, resplandor, etalonaje y viñeta; modo maqueta para las fotos
   js/codice.js         el códice: regiones, facciones, gente, rumores y crónica, leídos de mundo.json
   js/figuras.js        la gente: figuras con esqueleto (una malla continua con huesos), oficios, posturas y lo que llevan en la mano
+  js/utileria.js       enseres y animales del mismo estilo que la gente: barriles, cajones, carros, puestos, pozo, muebles, gallinas, perros, ovejas, vacas, caballos
+  js/mazmorra.js       levanta el interior de una ruina a partir de una planta que solo viene en el archivo del máster
   js/master.js         lector de la vista de máster; los datos van en un archivo aparte que no está en el repositorio
   js/modelos.js        carga opcional de modelos glTF de artista
   js/ambiente.js       cielo, sombras, nubes, nieve, niebla, humo, barcos, pájaros, faro, luces de noche
@@ -87,7 +89,19 @@ Ojo: el repositorio es público. Lo que se escriba en `mundo.json` lo puede leer
 
 Todas las personas salen de `js/figuras.js`: un cuerpo de una pieza con esqueleto dentro (rodillas, codos y cintura doblan), de formas gruesas, cabeza grande (unas 4,4 cabezas de alto), cara de ojos grandes y piezas facetadas. Se viste según su oficio (`aldeano`, `aldeana`, `crio`, `guardia`, `noble`, `clan`, `mercader`, `minero`, `escriba`, `marino`, `monje`), lleva útiles y armas (`martillo`, `hacha`, `pico`, `lanza`, `espada`, `cetro`, `jarra`, `escudo`…) y adopta una postura (`reposo`, `habla`, `escucha`, `golpea`, `remueve`, `bebe`, `come`, `escribe`, `reza`, `carga`, `empuja`…). No hay modelos ni texturas: todo es código.
 
+Hay además un tipo `troll` (troll de escarcha: piel azulada, colmillos, orejas de punta y collar de hierro), que se usa con una talla de 1,3 a 1,5. En las ciudades, donde la gente parada va horneada, una figura singular se pide con el sexto argumento de `figura()` en `ciudad.js`.
+
 En los parajes y los interiores cada figura es una malla con huesos; echa a andar sola en cuanto se la mueve. En las calles de las ciudades, donde hay más de cien, el ciclo de andar se hornea en doce geometrías fijas y se dibuja instanciado, con los colores de ropa, pelo y piel de cada persona.
+
+## Enseres y animales
+
+Lo que no es gente ni edificio sale de `js/utileria.js`: cada pieza es una geometría con los cantos matados y el color en los vértices, con un degradado de abajo arriba, sin texturas. Las usan los parajes (`ruinas.js`, `edificios.js`), las ciudades (`ciudad.js`), el mapa (`ambiente.js`: caminantes, carros de bueyes y rebaños) y los interiores (`interior.js`, `salas.js`). En los interiores, además, todas las cajas sueltas pasan por `cajaSala` y `acabado`, que les matan el canto y les dan el mismo degradado sobre el color de su material.
+
+El mobiliario de las salas (mesas, sillas, sitiales, literas, camas, arcones, yunque, pila, braseros, rodelas, espadas y lanzas) sale también de ahí, en unidades de sala. Hay dos alturas que no conviene tocar porque la gente sentada está ajustada a ellas: el asiento de sitiales y sillas, y el tablero de las mesas (`alto + 0.35` en `mesa()` de `salas.js`). El sitial no lleva color propio: su armazón va en grises y toma el del material que se le pase (oro, piedra, madera).
+
+La piedra de las cuatro ruinas (`ruinas.js`: criptas, sagrario, ciudad ahogada) es cantería: un material hecho con `canto(color, alto, largo, verdín)` trocea cada caja, torre o arco en sillares y `cantear` (en `utileria.js`) les reparte tonos y algo de verdín. Las hojas de la puerta de las criptas y la roca de la cuna van lisas a propósito.
+
+Para añadir un enser: una función `gAlgo()` que devuelva la geometría con el suelo en y = 0 y el frente hacia +z, y se pinta con `matUtil`. Los animales admiten `null` como color para salir en blanco y teñirse por instancia.
 
 ## Vista de máster
 
@@ -97,7 +111,21 @@ Lo que los jugadores no deben saber (qué hay de cierto en cada rumor, lo que ca
 - Con la vista puesta, la ficha de cada lugar añade un bloque «Solo máster» y el códice gana una pestaña «Máster».
 - La tecla **M** la oculta y la muestra. Al abrir la página siempre empieza oculta, por si la pantalla está a la vista de los jugadores.
 - «Quitar de este equipo» borra el archivo del navegador.
+- **Interior de las ruinas.** Si el archivo trae una `planta` para un lugar, su ficha (ya dentro del paraje) añade «Ver por dentro · solo máster». El interior se levanta en el momento con `js/mazmorra.js`; sin archivo, o con la vista oculta, el botón no existe y en esta web no hay nada que encontrar.
 - El `.gitignore` ya excluye `alden-master*.json`. Aun así: no lo metas en la carpeta del repositorio.
+
+### Formato de una planta
+
+```json
+"planta": {
+  "tono": { "suelo": 7238248, "muro": 5922389, "luz": 12570816, "fondo": 395271, "verdin": 0.08 },
+  "salas": [ { "id": "a", "nombre": "…", "x": 0, "z": 20, "w": 14, "d": 8, "texto": "lo que se lee al señalarla",
+               "rasgos": [ { "tipo": "columna", "x": -4, "z": 1 } ] } ],
+  "pasos": [ { "de": "a", "a": "b", "ancho": 3 } ]
+}
+```
+
+Las salas son rectángulos centrados en `x, z` (+z hacia quien mira). Un paso sale recto si las dos salas se solapan en un eje y hace un codo si no; el hueco en el muro se abre solo. Los rasgos van medidos desde el centro de su sala: `columna`, `yacente`, `pozo`, `eje`, `mesa`, `rueda`, `aro`, `raices`, `agua`, `hielo`, `escombro`, `escalera`, `losa`, `cofre`, `banco`, `figura`, `bestia`, `escarcha` y `nota` (un rótulo con texto).
 
 ## Probar en local
 

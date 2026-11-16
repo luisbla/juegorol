@@ -6,6 +6,9 @@ import { crearRuido } from './ruido.js';
 import { crearBarcoModelo } from './barco.js';
 import { lluvia } from './clima.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { azarDe } from './ruido.js';
+import { hornear, materialMultitud, viva } from './figuras.js';
+import { gCarroDeBueyes, gOveja, gVaca } from './utileria.js';
 
 function texturaSuave(nucleo = 0.0, color = '255,255,255') {
   const c = document.createElement('canvas'); c.width = c.height = 128;
@@ -252,32 +255,32 @@ export function crearAmbiente(escena, renderer, mundo, terreno, lugares, { movil
   const tinte = (g, hex) => { const c = new THREE.Color(hex), n = g.attributes.position.count, a = new Float32Array(n * 3); for (let i = 0; i < n; i++) { a[i * 3] = c.r; a[i * 3 + 1] = c.g; a[i * 3 + 2] = c.b; } g.setAttribute('color', new THREE.BufferAttribute(a, 3)); return g; };
   const B = (w, h, d, x, y, z, hex) => tinte(new THREE.BoxGeometry(w, h, d).translate(x, y, z), hex), C = (r0, r1, h, x, y, z, hex, seg = 7) => tinte(new THREE.CylinderGeometry(r0, r1, h, seg).translate(x, y, z), hex), E = (r, x, y, z, hex, sx = 1, sy = 1, sz = 1) => tinte(new THREE.SphereGeometry(r, 8, 6).scale(sx, sy, sz).translate(x, y, z), hex);
   const matVida = () => new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1 });
-  // caminante: capa (se tiñe por figura), cabeza, zurrón y cayado; mira hacia +z
-  const gCaminante = une([C(0.16, 0.3, 1.0, 0, 0.75, 0, 0xffffff), B(0.5, 0.16, 0.26, 0, 1.25, 0, 0xffffff), E(0.15, 0, 1.5, 0, 0xf0c8a0), E(0.165, 0, 1.55, -0.03, 0x5a4030, 1, 0.8, 1), C(0.08, 0.08, 0.3, -0.1, 0.15, 0, 0x3a3028), C(0.08, 0.08, 0.3, 0.1, 0.15, 0, 0x3a3028), C(0.025, 0.025, 1.7, 0.32, 0.85, 0.1, 0x6a5039, 5), B(0.28, 0.3, 0.16, 0, 1.0, -0.22, 0x8a6a48)]);
-  // carro de bueyes cargado
-  const rueda = (x, z) => tinte(new THREE.CylinderGeometry(0.42, 0.42, 0.08, 10).rotateZ(Math.PI / 2).translate(x, 0.42, z), 0x3a2a1c);
-  const gCarro = une([B(1.2, 0.14, 2.2, 0, 0.6, -0.8, 0x7a5c3e), B(0.08, 0.4, 2.2, -0.6, 0.86, -0.8, 0x6a5039), B(0.08, 0.4, 2.2, 0.6, 0.86, -0.8, 0x6a5039), B(1.2, 0.4, 0.08, 0, 0.86, -1.9, 0x6a5039), rueda(-0.68, -0.9), rueda(0.68, -0.9),
-    E(0.34, -0.25, 1.0, -0.5, 0xb89a62, 1, 0.7, 1), E(0.34, 0.25, 1.0, -1.1, 0xb89a62, 1, 0.7, 1), E(0.34, 0, 1.25, -0.8, 0xc9a86a, 1, 0.7, 1), B(0.07, 0.07, 1.6, -0.4, 0.62, 0.95, 0x5a4633), B(0.07, 0.07, 1.6, 0.4, 0.62, 0.95, 0x5a4633),
-    E(0.42, 0, 0.82, 1.2, 0x6a4a36, 0.9, 0.95, 1.9), E(0.24, 0, 0.98, 2.1, 0x5a3e2e, 1, 1, 1.3), C(0.03, 0.03, 0.5, -0.2, 1.2, 2.05, 0xe8dfc8, 4), C(0.03, 0.03, 0.5, 0.2, 1.2, 2.05, 0xe8dfc8, 4), ...[[-0.2, 0.7], [0.2, 0.7], [-0.2, 1.7], [0.2, 1.7]].map(([x, z]) => C(0.07, 0.06, 0.5, x, 0.25, z, 0x4a3426, 5)),
-    C(0.16, 0.26, 0.8, 0.5, 0.8, 0.4, 0x6a5a3a), E(0.14, 0.5, 1.32, 0.4, 0xf0c8a0)]);
-  // oveja (o vaca, teñida y más grande)
-  const gRes = une([E(0.3, 0, 0.42, 0, 0xffffff, 0.85, 0.8, 1.4), E(0.14, 0, 0.52, 0.42, 0x3a3028, 1, 1, 1.2), ...[[-0.14, 0.24], [0.14, 0.24], [-0.14, -0.24], [0.14, -0.24]].map(([x, z]) => C(0.04, 0.035, 0.3, x, 0.15, z, 0x3a3028, 5))]);
+  // Caminante: una figura de figuras.js horneada a media zancada, con cayado y zurrón; ropa, pelo y piel se tiñen por persona.
+  // Carro de bueyes con su boyero sentado, y rebaños de utileria.js (en blanco, para teñir cada res).
+  const conZona = g => { g.setAttribute('zona', new THREE.BufferAttribute(new Float32Array(g.attributes.position.count), 1)); return g; };
+  const tintes = (g, n) => { for (const a of ['iRopa', 'iPelo', 'iPiel']) g.setAttribute(a, new THREE.InstancedBufferAttribute(new Float32Array(Math.max(1, n) * 3), 3)); return g; };
+  const gCaminante = hornear({ rnd: azarDe('caminante'), tipo: 'aldeano', tocado: 'capucha', lleva: 'cayado', carga: ['zurron'], brazos: 'guardia' }, 4).andar[1];
+  const boyero = hornear({ rnd: azarDe('boyero'), tipo: 'aldeano', tocado: 'sombrero', colorTocado: 0xe2c56e, piernas: 'sentado', brazos: 'preside' }, 1).quieto.scale(0.8, 0.8, 0.8).translate(0, 0.72, -0.42);
+  const gCarro = mergeGeometries([conZona(gCarroDeBueyes()), boyero]);
   const viajeros = [], reses = [];
-  let mCaminantes = null, mCarros = null, mReses = null;
+  let mCaminantes = null, mCarros = null, mOvejas = null, mVacas = null;
   {
     const CAPAS = [0x7a3b2e, 0x2f4f6f, 0x5a6b3a, 0x8a7a55, 0x4a3a5a, 0x6a5a4a], col = new THREE.Color();
     const vias = mundo.caminos.filter(c => c.tipo === 'camino' && c.trazo?.length > 8).map(c => { const acum = [0]; for (let i = 1; i < c.trazo.length; i++) acum.push(acum[i - 1] + Math.hypot(c.trazo[i][0] - c.trazo[i - 1][0], c.trazo[i][1] - c.trazo[i - 1][1])); return { trazo: c.trazo, acum, largo: acum[acum.length - 1] }; });
     const caminantes = [], carros = [];
     for (const v of vias) { const n = Math.max(1, Math.round(v.largo / (movil ? 150 : 70))); for (let k = 0; k < n; k++) { const carro = (k + caminantes.length) % 3 === 0, e = { via: v, f: R.rnd(), v: (carro ? 2.2 : 1.5) + R.rnd() * 0.6, lado: (R.rnd() - 0.5) * 2.2, carro, talla: 1.25 + R.rnd() * 0.25 }; (carro ? carros : caminantes).push(e); viajeros.push(e); } }
-    mCaminantes = new THREE.InstancedMesh(gCaminante, matVida(), Math.max(1, caminantes.length)); mCarros = new THREE.InstancedMesh(gCarro, matVida(), Math.max(1, carros.length));
-    caminantes.forEach((e, i) => { e.i = i; mCaminantes.setColorAt(i, col.setHex(CAPAS[i % CAPAS.length])); }); carros.forEach((e, i) => { e.i = i; });
+    const matGente = materialMultitud(), PIELES = [0xf4c7a1, 0xe9b48c, 0xd29a6f], PELOS = [0x2a1f18, 0x5a3a22, 0x9a6a2e];
+    mCaminantes = new THREE.InstancedMesh(tintes(gCaminante, caminantes.length), matGente, Math.max(1, caminantes.length)); mCarros = new THREE.InstancedMesh(tintes(gCarro, carros.length), matGente, Math.max(1, carros.length));
+    for (const [lista, m] of [[caminantes, mCaminantes], [carros, mCarros]]) lista.forEach((e, i) => { e.i = i; const g = m.geometry.attributes; col.setHex(viva(CAPAS[i % CAPAS.length])).toArray(g.iRopa.array, i * 3); col.setHex(PELOS[i % 3]).toArray(g.iPelo.array, i * 3); col.setHex(PIELES[(i * 7) % 3]).toArray(g.iPiel.array, i * 3); });
     mCaminantes.count = caminantes.length; mCarros.count = carros.length;
     // rebaños: ovejas en Valcoria y Thraengarde, vacas en Marendol y Astravan
     const pastos = (terreno.decorado || []).filter(d => !d.arrasado && ['granja', 'cortijo', 'aldea', 'almiar'].includes(d.tipo)).filter((d, i) => i % 2 === 0).slice(0, movil ? 5 : 16);
     for (const d of pastos) { const vacas = d.region === 'marendol' || d.region === 'astravan', a0 = R.rnd() * 6.28, n = vacas ? 5 : 9; for (let k = 0; k < n; k++) reses.push({ x: d.x + Math.cos(a0) * 11 + (R.rnd() - 0.5) * 9, y: d.y + Math.sin(a0) * 11 + (R.rnd() - 0.5) * 9, f: R.rnd() * 6.28, giro: R.rnd() * 6.28, talla: vacas ? 2.3 + R.rnd() * 0.4 : 1.25 + R.rnd() * 0.3, vaca: vacas }); }
-    mReses = new THREE.InstancedMesh(gRes, matVida(), Math.max(1, reses.length)); mReses.count = reses.length;
-    reses.forEach((r, i) => mReses.setColorAt(i, col.setHex(r.vaca ? [0x7a4a2e, 0x3a2a22, 0xd8c8b0, 0x8a6a48][i % 4] : [0xf0ece0, 0xe0d8c8, 0xd0c8b8, 0x4a4038][i % 9 === 8 ? 3 : i % 3])));
-    for (const m of [mCaminantes, mCarros, mReses]) { m.castShadow = true; m.frustumCulled = false; escena.add(m); }
+    const ovejas = reses.filter(r => !r.vaca), vacas = reses.filter(r => r.vaca);
+    mOvejas = new THREE.InstancedMesh(gOveja(null), matVida(), Math.max(1, ovejas.length)); mOvejas.count = ovejas.length; mVacas = new THREE.InstancedMesh(gVaca(null), matVida(), Math.max(1, vacas.length)); mVacas.count = vacas.length;
+    ovejas.forEach((r, i) => { r.i = i; r.malla = mOvejas; r.talla *= 0.66; mOvejas.setColorAt(i, col.setHex([0xf4efe4, 0xe6dece, 0xd8d0c0, 0x5a5048][i % 9 === 8 ? 3 : i % 3])); });
+    vacas.forEach((r, i) => { r.i = i; r.malla = mVacas; r.talla *= 0.45; mVacas.setColorAt(i, col.setHex([0x9a5a36, 0x4a3228, 0xe8dcc8, 0xa87a50][i % 4])); });
+    for (const m of [mCaminantes, mCarros, mOvejas, mVacas]) { m.castShadow = true; m.frustumCulled = false; escena.add(m); }
   }
   const mVida = new THREE.Matrix4(), qVida = new THREE.Quaternion(), pVida = new THREE.Vector3(), eVida = new THREE.Vector3(), ejeArriba = new THREE.Vector3(0, 1, 0), oculto = new THREE.Vector3(0, 0, 0);
   const enVia = (v, s) => { let i = 1; while (i < v.acum.length - 1 && v.acum[i] < s) i++; const k = (s - v.acum[i - 1]) / (v.acum[i] - v.acum[i - 1] || 1), a = v.trazo[i - 1], b = v.trazo[i]; return [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k, b[0] - a[0], b[1] - a[1]]; };
@@ -345,16 +348,16 @@ export function crearAmbiente(escena, renderer, mundo, terreno, lugares, { movil
       const [x, y, dx, dy] = enVia(e.via, Math.max(6, Math.min(e.via.largo - 6, s))), l = Math.hypot(dx, dy) || 1, sx = ida ? 1 : -1;
       const px = x - dy / l * e.lado * sx, py = y + dx / l * e.lado * sx, fuera = estado.noche > 0.6 || terreno.alturaEn(px, py) < 0.15;
       pVida.set(px - cx, Math.max(terreno.alturaEn(px, py), 0) + (e.carro ? 0 : Math.abs(Math.sin(t * 7 + e.f * 40)) * 0.08), py - cz);
-      mVida.compose(pVida, qVida.setFromAxisAngle(ejeArriba, Math.atan2(dx * sx, dy * sx)), fuera ? oculto : eVida.setScalar(e.talla));
+      mVida.compose(pVida, qVida.setFromAxisAngle(ejeArriba, Math.atan2(dx * sx, dy * sx)), fuera ? oculto : eVida.setScalar(e.talla * (e.carro ? 1 : 0.9)));
       (e.carro ? mCarros : mCaminantes).setMatrixAt(e.i, mVida);
     }
     mCaminantes.instanceMatrix.needsUpdate = true; mCarros.instanceMatrix.needsUpdate = true;
     // rebaños: pacen despacio alrededor de su sitio
     reses.forEach((r, i) => {
       const paso = t * 0.05 + r.f, x = r.x + Math.sin(paso) * 3 + Math.sin(paso * 2.3) * 1.2, y = r.y + Math.cos(paso * 1.4) * 3, h = terreno.alturaEn(x, y);
-      pVida.set(x - cx, h, y - cz); mVida.compose(pVida, qVida.setFromAxisAngle(ejeArriba, r.giro + Math.sin(paso * 0.7) * 2), h < 0.3 ? oculto : eVida.setScalar(r.talla)); mReses.setMatrixAt(i, mVida);
+      pVida.set(x - cx, h, y - cz); mVida.compose(pVida, qVida.setFromAxisAngle(ejeArriba, r.giro + Math.sin(paso * 0.7) * 2), h < 0.3 ? oculto : eVida.setScalar(r.talla)); r.malla.setMatrixAt(r.i, mVida);
     });
-    mReses.instanceMatrix.needsUpdate = true;
+    mOvejas.instanceMatrix.needsUpdate = true; mVacas.instanceMatrix.needsUpdate = true;
     // lluvia donde se está mirando, si allí hay chubasco
     const agua = estado.clima ? lluvia(t, terreno.zonaEn(objetivo.x + cx, objetivo.z + cz)) : 0; estado.lluvia = agua; gotas.visible = agua > 0.02;
     if (gotas.visible) {

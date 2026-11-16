@@ -3,6 +3,11 @@
 // que luego lo funde todo por material. Devuelve lo que no se puede fundir: fuegos, humos, bandera y altura.
 import * as THREE from 'three';
 
+import { matUtil, gBarril, gTonel, gCajon, gSaco, gCarro, gLena, gBanco, gMesa, gJarra, gCaballo, gMuneco, gArmero, gPozo, gPuesto } from './utileria.js';
+
+// los enseres de utileria.js se calculan una vez y se reparten
+const memo = new Map(), U = (clave, fn) => { if (!memo.has(clave)) memo.set(clave, fn()); return memo.get(clave); };
+
 export function crearEdificios(k) {
   const { caja, cil, cono, poner, sub, casa, torre, G, rnd, matLiso: L, matPiedra, matTejado, vidrio, farolM, brasaM } = k;
   const pc = k.piedraClara, muro = k.piedra, enl = L(k.colPared), teja = k.teja, teja2 = k.teja2;
@@ -13,6 +18,7 @@ export function crearEdificios(k) {
   const PI = Math.PI;
 
   /* ---------- piezas sueltas ---------- */
+  const enser = (g, x, z, ry = 0, e = 1, y = 0) => poner(g, matUtil, x, y, z, e, e, e, ry);
   const tumbado = (m, r, h, x, y, z, ry = 0) => poner(G.cil, m, x, y, z, r, h, r, ry, PI / 2);      // cilindro con el eje a lo largo de x
   const disco = (m, r, h, x, y, z, ry = 0, rx = PI / 2) => poner(G.cil, m, x, y, z, r, h, r, ry, 0, rx);   // cilindro de canto, eje hacia z
   const tejado = (w, d, alto, x, y, z, m, ry = 0) => { poner(G.dosAguas, m, x, y, z, w, alto, d, ry); sub(x, z, ry, () => caja(osc, w + 0.3, 0.24, 0.34, 0, y + alto - 0.12, 0)); };
@@ -45,23 +51,15 @@ export function crearEdificios(k) {
   function cartel(x, y, z, ry, color) {
     sub(x, z, ry, () => { caja(hierro, 0.1, 0.1, 1.7, 0, y, 0.85); for (const s of [0.45, 1.35]) caja(hierro, 0.04, 0.3, 0.04, 0, y - 0.3, s); caja(tabla, 0.12, 0.95, 1.25, 0, y - 1.25, 0.9); caja(L(color), 0.17, 0.5, 0.65, 0, y - 1.03, 0.9); });
   }
-  function barril(x, z, { r = 0.55, h = 1.15, y = 0 } = {}) { cil(tabla, r, h, x, y, z); for (const f of [0.22, 0.78]) cil(hierro, r + 0.03, 0.08, x, y + h * f, z); cil(osc, r - 0.06, 0.03, x, y + h, z); }
-  function tonel(x, z, ry = 0, r = 0.6) { tumbado(tabla, r, 1.3, x, r, z, ry); for (const s of [-0.4, 0.4]) sub(x, z, ry, () => tumbado(hierro, r + 0.03, 0.08, s, r, 0)); }
-  function cajon(x, z, s = 1, ry = 0, y = 0) { sub(x, z, ry, () => { caja(clara, s, s * 0.8, s, 0, y, 0); for (const f of [0.15, 0.6]) caja(osc, s + 0.04, s * 0.09, s + 0.04, 0, y + s * f, 0); }); }
-  function saco(x, z, y = 0, s = 0.6) { poner(G.roca, saca, x, y + s * 0.55, z, s, s * 0.62, s * 0.8, rnd() * 6); }
-  function carro(x, z, ry = 0, carga) {
-    sub(x, z, ry, () => {
-      caja(tabla, 3.2, 0.2, 1.6, 0, 0.95, 0); for (const s of [-0.8, 0.8]) caja(tablon, 3.2, 0.5, 0.1, 0, 1.15, s); for (const s of [-1.6, 1.6]) caja(tablon, 0.1, 0.5, 1.6, s, 1.15, 0);
-      for (const s of [-1, 1]) { disco(osc, 0.8, 0.12, -0.3, 0.8, s * 0.95); disco(hierro, 0.2, 0.2, -0.3, 0.8, s * 0.98); for (let i = 0; i < 4; i++) poner(G.caja, clara, -0.3, 0.8, s * 1.02, 0.08, 1.5, 0.05, 0, i * PI / 4); }
-      for (const s of [-0.6, 0.6]) caja(tabla, 2.4, 0.1, 0.1, 2.7, 0.85, s); caja(osc, 0.12, 0.85, 0.12, 3.8, 0, 0);
-      if (carga === 'sacos') for (let i = 0; i < 5; i++) saco(-1 + (i % 3) * 0.9, -0.3 + (i % 2) * 0.6, 1.15 + (i > 2 ? 0.45 : 0), 0.55);
-      if (carga === 'pacas') for (let i = 0; i < 3; i++) caja(paja, 1.3, 0.75, 0.9, -0.8 + (i % 2) * 1.4, 1.15 + (i > 1 ? 0.75 : 0), 0);
-      if (carga === 'cajas') for (let i = 0; i < 4; i++) cajon(-0.9 + (i % 2) * 1.2, -0.35 + (i > 1 ? 0.7 : 0), 0.7, 0, 1.15);
-    });
-  }
-  function lena(x, z, ry = 0) { sub(x, z, ry, () => { for (let f = 0; f < 3; f++) for (let i = 0; i < 4 - f; i++) tumbado(L(f % 2 ? 0x7a5a3a : 0x6a4a2e), 0.24, 1.6, 0, 0.24 + f * 0.42, -0.75 + i * 0.5 + f * 0.25); for (const s of [-1.05, 1.05 + 0.0]) caja(osc, 0.14, 1.5, 0.14, 0, 0, s); }); }
-  function banco(x, z, ry = 0, w = 2.2) { sub(x, z, ry, () => { caja(tabla, w, 0.14, 0.5, 0, 0.55, 0); for (const s of [-1, 1]) caja(osc, 0.14, 0.55, 0.44, s * (w / 2 - 0.2), 0, 0); }); }
-  function mesa(x, z, ry = 0, w = 2.4) { sub(x, z, ry, () => { caja(clara, w, 0.14, 1.1, 0, 0.95, 0); for (const sx of [-1, 1]) for (const sz of [-1, 1]) caja(osc, 0.14, 0.95, 0.14, sx * (w / 2 - 0.2), 0, sz * 0.4); for (let i = 0; i < 3; i++) cil(L(0xc9a45a), 0.1, 0.2, -0.6 + i * 0.6, 1.09, (i % 2) * 0.3 - 0.15); }); }
+  function barril(x, z, { r = 0.55, y = 0 } = {}) { enser(U('barril', () => gBarril(0.5, 1.05)), x, z, (x + z * 2) % 3, r / 0.5, y); }
+  function tonel(x, z, ry = 0, r = 0.6) { enser(U('tonel', () => gTonel(0.6, 1.3)), x, z, ry, r / 0.6); }
+  function cajon(x, z, s = 1, ry = 0, y = 0) { enser(U('cajon', () => gCajon(1)), x, z, ry, s, y); }
+  function saco(x, z, y = 0, s = 0.6) { enser(U('saco', () => gSaco(1)), x, z, rnd() * 6, s * 1.05, y); }
+  // carro de varas (las varas miran a +x, como antes)
+  function carro(x, z, ry = 0, carga) { enser(U('carro-' + carga, () => gCarro({ carga })), x, z, ry + PI / 2, 1.15); }
+  function lena(x, z, ry = 0) { enser(U('lena', gLena), x, z, ry); }
+  function banco(x, z, ry = 0, w = 2.2) { enser(U('banco-' + w, () => gBanco(w)), x, z, ry); }
+  function mesa(x, z, ry = 0, w = 2.4) { sub(x, z, ry, () => { enser(U('mesa-' + w, () => gMesa(w, 1.1, 0.95)), 0, 0); for (let i = 0; i < 3; i++) enser(U('jarra', () => gJarra(1.5)), -0.6 + i * 0.6, (i % 2) * 0.3 - 0.15, i, 1, 1.09); }); }
   function chimenea(x, y, z, h, m = pc) { caja(m, 1.0, h, 1.0, x, y, z); caja(m, 1.35, 0.22, 1.35, x, y + h, z); for (const s of [-0.25, 0.25]) cil(L(0x9a4a2e), 0.18, 0.5, x + s, y + h + 0.22, z); }
   // entramado visto sobre un paño de frente
   function entramado(w, h, y, z, x = 0) {
@@ -71,27 +69,14 @@ export function crearEdificios(k) {
     const paso = (w - 0.22) / n, largo = Math.hypot(paso, h) * 0.92, ang = Math.atan2(paso, h);
     for (const [i, s] of [[0, 1], [n - 1, -1]]) poner(G.caja, osc, x - w / 2 + 0.11 + (i + 0.5) * paso, y + h / 2, z, 0.16, largo, 0.1, 0, -s * ang);
   }
-  function caballo(x, z, ry, color) {
-    const c = L(color), crin = L(0x1f1812), casco = L(0x18130f);
-    sub(x, z, ry, () => {
-      tumbado(c, 0.48, 1.5, 0, 1.45, 0); poner(G.esfera, c, 0.75, 1.5, 0, 0.55, 0.55, 0.5); poner(G.esfera, c, -0.75, 1.52, 0, 0.55, 0.57, 0.52);   // tronco, pecho y grupa
-      for (const sx of [-0.8, 0.8]) for (const sz of [-0.22, 0.22]) { cil(c, 0.13, 0.62, sx, 0.72, sz); cil(c, 0.08, 0.64, sx, 0.1, sz); cil(casco, 0.1, 0.12, sx, 0, sz); }
-      poner(G.cil, c, 1.22, 2.15, 0, 0.27, 1.15, 0.22, 0, -0.6); poner(G.esfera, c, 1.62, 2.74, 0, 0.23, 0.25, 0.2); poner(G.cil, c, 1.92, 2.56, 0, 0.14, 0.5, 0.13, 0, -1.2);   // cuello, cabeza y morro
-      for (const s of [-0.1, 0.1]) cono(c, 0.06, 0.22, 1.56, 2.92, s);
-      poner(G.caja, crin, 1.02, 2.36, 0, 0.1, 1.05, 0.12, 0, -0.6); poner(G.cil, crin, -1.34, 1.3, 0, 0.09, 0.95, 0.09, 0, -0.35);   // crin y cola
-    });
-  }
+  function caballo(x, z, ry, color) { enser(U('caballo-' + color, () => gCaballo(color)), x, z, ry + PI / 2, 1.08); }
   const PELO = [0x2a1f18, 0x5a3a22, 0x8a6a3a, 0x1a1a1a, 0xb8b0a4];
   // la gente que está quieta junto a los edificios la dibuja ciudad.js con figuras de verdad (figuras.js); aquí solo se apunta dónde va
   function figura(x, z, ry, color, arma) { if (!arma) rnd(); k.figura(x, z, ry, color, arma); }
-  function muneco(x, z, ry = 0) { sub(x, z, ry, () => { caja(tabla, 0.25, 2.5, 0.25, 0, 0, 0); caja(tabla, 1.9, 0.2, 0.2, 0, 1.75, 0); cil(saca, 0.42, 1.1, 0, 0.95, 0.02); cil(saca, 0.28, 0.45, 0, 2.1, 0); disco(L(0x6a2f2a), 0.5, 0.1, -0.75, 1.5, 0.2); }); }
+  const singular = (...a) => k.figura(...a);   // figuras con modelo propio (trolls): no gastan azar
+  function muneco(x, z, ry = 0) { enser(U('muneco', gMuneco), x, z, ry); }
   function diana(x, z, ry = 0) { sub(x, z, ry, () => { for (const s of [-0.5, 0.5]) poner(G.caja, tabla, s, 1.1, -0.35, 0.12, 2.4, 0.12, 0, 0, -0.3); poner(G.caja, tabla, 0, 1.0, -0.9, 0.12, 2.2, 0.12, 0, 0, 0.45); disco(saca, 1.0, 0.3, 0, 1.9, 0, 0, PI / 2 - 0.3); disco(L(0xb03a2a), 0.65, 0.32, 0, 1.9, 0, 0, PI / 2 - 0.3); disco(L(0xf0ead8), 0.3, 0.34, 0, 1.9, 0, 0, PI / 2 - 0.3); }); }
-  function armero(x, z, ry = 0, n = 6, espadas = false) {
-    sub(x, z, ry, () => {
-      for (const s of [-1, 1]) caja(osc, 0.2, 2.4, 0.5, s * (n * 0.25 + 0.2), 0, 0); caja(osc, n * 0.5 + 0.6, 0.14, 0.4, 0, 2.2, 0); caja(osc, n * 0.5 + 0.6, 0.14, 0.5, 0, 0.4, 0);
-      for (let i = 0; i < n; i++) { const px = -n * 0.25 + 0.25 + i * 0.5; if (espadas) { caja(acero, 0.1, 1.9, 0.05, px, 0.5, 0.14); caja(oro, 0.4, 0.07, 0.1, px, 2.0, 0.14); caja(hoja, 0.09, 0.4, 0.09, px, 2.05, 0.14); } else { caja(tabla, 0.07, 4.2, 0.07, px, 0.4, 0.1); cono(acero, 0.11, 0.5, px, 4.6, 0.1); } }
-    });
-  }
+  function armero(x, z, ry = 0, n = 6, espadas = false) { enser(U(`armero-${n}-${espadas}`, () => gArmero(n, espadas)), x, z, ry); }
   function brasero(x, z, y = 0) { for (let i = 0; i < 3; i++) { const a = i * 2.094; caja(hierro, 0.09, 1.2, 0.09, x + Math.cos(a) * 0.4, y, z + Math.sin(a) * 0.4); } cil(hierro, 0.66, 0.4, x, y + 1.1, z); cil(brasaM, 0.56, 0.08, x, y + 1.5, z); return [x, y + 2.2, z]; }
   function cerca(x0, z0, x1, z1, { alto = 1.3, paso = 1.6, m = tabla } = {}) {
     const d = Math.hypot(x1 - x0, z1 - z0), n = Math.max(1, Math.round(d / paso)), ry = -Math.atan2(z1 - z0, x1 - x0);
@@ -157,7 +142,7 @@ export function crearEdificios(k) {
       caballo(-2.9, 5.7, -PI / 2, 0x6a4326); carro(-8, 8.6, 0.3, 'cajas'); cil(pc, 0.9, 0.9, 8.2, 0, 8.4); cil(agua, 0.75, 0.05, 8.2, 0.86, 8.4);
       r.alto = 13;
     },
-    herreria() {
+    herreria(o) {
       const W = 9, D = 5.5, H = 4.4, z0 = -3, f = z0 + D / 2;
       caja(pc, W + 0.4, 0.7, D + 0.4, 0, 0, z0); caja(muroOsc, W, H, D, 0, 0, z0); tejado(W + 1.4, D + 1.6, 3, 0, H, z0, teja2);
       caja(muroOsc, 2.3, 10, 2.3, 3.0, 0, z0 - 0.6); caja(pc, 2.7, 0.3, 2.7, 3.0, 10, z0 - 0.6); caja(negro, 1.5, 0.2, 1.5, 3.0, 10.3, z0 - 0.6); r.humos.push([3.0, 11, z0 - 0.6]);
@@ -176,6 +161,10 @@ export function crearEdificios(k) {
       caja(osc, 3.2, 0.15, 0.12, 0.2, 2.5, f + 0.1); for (let i = 0; i < 6; i++) { caja(hierro, 0.09, 0.7 + (i % 3) * 0.2, 0.08, -1.1 + i * 0.5, 1.7 - (i % 3) * 0.2, f + 0.14); caja(hierro, 0.26, 0.16, 0.1, -1.1 + i * 0.5, 1.6 - (i % 3) * 0.2, f + 0.14); }
       for (let i = 0; i < 3; i++) disco([L(0x7a2e2a), L(0x2f4a6a), acero][i], 0.6, 0.1, -4.0 + i * 0.1, 2.9, f + 0.12 + i * 0, 0);
       armero(6.3, f + 1.4, PI / 2, 5, true); armero(6.3, f + 4.2, PI / 2, 4);
+      if (o?.id === 'griselda') {   // en Griselda el fuelle lo mueve un troll uncido, y la forja lleva las runas del hielo
+        singular(-1.0, f + 2.3, 2.3, 0x6a5646, false, { tipo: 'troll', piel: 0x8fa3b5, calzas: 0x8fa3b5, botas: 0x647280, pelo: 0x56606c, talla: 1.32, brazos: 'fuelle' });
+        poner(G.roca, pc, 5.2, 1.3, f + 5.6, 0.6, 1.8, 0.4, 0.3); caja(L(0x9fd0e6, { emissive: 0x4fa0d0, emissiveIntensity: 0.6 }), 0.08, 1.0, 0.4, 5.13, 0.8, f + 5.98, 0.3);
+      }
       caja(tablon, 2.6, 1.0, 1.7, -6.4, 0, f + 2.2); for (let i = 0; i < 12; i++) poner(G.roca, carbon, -7.3 + rnd() * 1.8, 1.0 + rnd() * 0.3, f + 1.6 + rnd() * 1.2, 0.32, 0.26, 0.32, rnd() * 6);
       for (let i = 0; i < 6; i++) tumbado(hierro, 0.06, 3.2, -6.2, 0.08 + (i % 2) * 0.12, f + 4.2 + i * 0.14, 0.05);
       disco(osc, 0.8, 0.12, -5.3, 0.8, f + 0.3, 0, PI / 2 - 0.2); for (let i = 0; i < 4; i++) poner(G.caja, clara, -5.3, 0.8, f + 0.38, 0.08, 1.5, 0.05, 0, i * PI / 4, -0.2);
@@ -234,6 +223,7 @@ export function crearEdificios(k) {
       for (let i = 0; i < 3; i++) diana(-8, -2.5 + i * 3.4, PI / 2);
       for (let i = 0; i < 4; i++) { const a = i * PI / 2 + PI / 4; caja(osc, 0.24, 1.3, 0.24, Math.cos(a) * 3.4, 0, 1.6 + Math.sin(a) * 3.4); caja(cuerda, 4.8, 0.07, 0.07, Math.cos(a + PI / 4) * 2.4, 1.1, 1.6 + Math.sin(a + PI / 4) * 2.4, -(a + PI / 4) - PI / 2); }
       figura(-0.9, 1.6, PI / 2, 0x6a2f2a, true); figura(0.9, 1.7, -PI / 2, 0x2f4a6a, true); figura(4.2, 2.5, -1.2, 0x4a4a4a, false);
+      singular(-5.6, 1.4, PI / 2, 0x5a4a3c, false, { tipo: 'troll', piel: 0x8fa3b5, calzas: 0x8fa3b5, botas: 0x647280, pelo: 0x56606c, talla: 1.5, brazos: 'jarras' });   // el troll del patio: contra él se prueban los que van a jurar
       casa(6.6, -4.2, 4.6, 3.6, 3, tablon, teja2, 0, false); puerta(6.6, -2.4, 0, { w: 1.5, h: 2.4, marco: osc }); armero(7.6, 1.2, -PI / 2, 6); armero(7.6, 4.4, -PI / 2, 5, true);
       for (let i = 0; i < 3; i++) disco(L([0x7a2e2a, 0x2f4a6a, 0x3f5a3a][i]), 0.6, 0.1, 4.4 + i * 0.25, 0.65, -2.2 + i * 0.05, 0, PI / 2 - 0.25);
       barril(-6.6, 5.8); for (let i = 0; i < 7; i++) caja(clara, 0.04, 1.2, 0.04, -6.8 + rnd() * 0.4, 0.8, 5.6 + rnd() * 0.4); barril(-5.4, 6.2); banco(-3.6, 6.4, 0, 2.4); banco(4.6, 6.4, 0, 2.4);
@@ -253,6 +243,14 @@ export function crearEdificios(k) {
       caja(roca, 3.2, 1.2, 3.2, 0, 1.8, 0); cono(hielo, 2.2, 14, 0, 3.0, 0);
       for (let i = 0; i < 7; i++) { const a = i / 7 * PI * 2 + 0.4, h = 3.5 + rnd() * 4; poner(G.cono, i % 2 ? hielo2 : hielo, Math.cos(a) * 2.0, 3.0 + h / 2 - 0.4, Math.sin(a) * 2.0, 0.65, h, 0.65, -a, -0.32); }
       caja(pc, 2.6, 0.9, 1.2, 0, 1.8, 3.6); caja(L(0xe8f2f8), 2.2, 0.06, 0.9, 0, 2.7, 3.6); for (let i = 0; i < 4; i++) cil(i % 2 ? oro : hielo2, 0.16, 0.3, -0.8 + i * 0.55, 2.76, 3.6);   // altar con ofrendas
+      // el Mudo: una mole de hielo arrodillada dentro del círculo, con los puños en la losa y cadenas a dos menhires
+      sub(-3.3, 0.6, 0.4, () => { const Y = 1.8, ojo = L(0x0c1c2c, { emissive: 0x7fd4ff, emissiveIntensity: 2.4 });
+        poner(G.roca, hielo2, 0, Y + 2.5, 0, 1.45, 1.7, 1.15, 0.3, 0.22); poner(G.roca, hielo, 0, Y + 1.0, 0.1, 1.25, 0.9, 1.2, 1.1);
+        for (const s of [-1, 1]) { poner(G.roca, hielo2, s * 1.55, Y + 3.5, 0.15, 0.85, 0.75, 0.85, s); poner(G.caja, hielo, s * 1.85, Y + 1.75, 0.95, 0.62, 2.9, 0.62, 0, -0.42, s * 0.08); poner(G.roca, hielo2, s * 1.95, Y + 0.5, 1.75, 0.72, 0.55, 0.72, s * 2);
+          poner(G.roca, hielo, s * 0.8, Y + 0.5, 0.9, 0.7, 0.55, 1.2, s * 0.4); caja(ojo, 0.14, 0.09, 0.06, s * 0.2, Y + 4.42, 1.02); caja(hierro, 0.8, 0.22, 0.8, s * 1.9, Y + 1.0, 1.42);
+          poner(G.caja, hierro, s * 3.3, Y + 0.6, 1.9, 2.9, 0.09, 0.09, 0, 0, s * 0.18); }
+        poner(G.roca, hielo2, 0, Y + 4.35, 0.5, 0.58, 0.62, 0.58, 0.6);
+        for (let i = 0; i < 5; i++) poner(G.cono, i % 2 ? hielo : hielo2, (i - 2) * 0.55, Y + 4.3 - Math.abs(i - 2) * 0.35, -0.75, 0.36, 2.4 - Math.abs(i - 2) * 0.4, 0.36, 0, -0.55, -(i - 2) * 0.18); });
       r.fuegos.push([0, 5, 3.0, 30, 0x8fd0ff]);
       for (const s of [-1, 1]) { for (let i = 0; i < 3; i++) { const a = i * 2.094; caja(hierro, 0.1, 1.5, 0.1, s * 3.4 + Math.cos(a) * 0.45, 0, 8.6 + Math.sin(a) * 0.45); } cil(hierro, 0.75, 0.45, s * 3.4, 1.4, 8.6); cil(brasaAzul, 0.62, 0.1, s * 3.4, 1.85, 8.6); cono(brasaAzul, 0.3, 0.9, s * 3.4, 1.9, 8.6); }
       for (let i = 0; i < 9; i++) { const a = i / 9 * PI * 2 + 0.2; if (Math.abs(Math.sin(a) - 1) < 0.25) continue; poner(G.roca, i % 3 ? L(0xcfdbe6, { roughness: 0.3 }) : roca, Math.cos(a) * 10.4, 1.2, Math.sin(a) * 9.6, 0.9, 1.6 + rnd() * 1.4, 0.8, a, 0.15); }
@@ -351,11 +349,11 @@ export function crearEdificios(k) {
     for (let i = 0; i < 4; i++) for (const f of [0.3, 0.62, 0.9]) { const a = i * PI / 2 + f * 3; sub(x, z, a, () => caja(negro, 0.3, 1.5, 0.12, 0, alto * f - 0.8, rad - 0.02)); }
   }
   function contrafuerte(x, z, ry, h, m = pc) { sub(x, z, ry, () => { caja(m, 1.1, h, 1.5, 0, 0, 0.75); poner(G.caja, m, 0, h + 0.35, 0.55, 1.1, 0.3, 1.9, 0, 0, 0.55); caja(m, 1.3, 0.9, 2.1, 0, 0, 1.0); }); }
-  function pozo(x, z) { cil(pc, 1.0, 1.0, x, 0, z); cil(agua, 0.82, 0.05, x, 0.92, z); for (const s of [-1, 1]) caja(osc, 0.16, 2.6, 0.16, x + s * 0.95, 0, z); caja(osc, 2.3, 0.16, 0.16, x, 2.5, z); poner(G.dosAguas, teja2, x, 2.6, z, 2.8, 0.7, 1.6); tumbado(tabla, 0.14, 1.6, x, 2.1, z); caja(cuerda, 0.04, 1.0, 0.04, x, 1.2, z); cil(tabla, 0.24, 0.34, x, 1.0, z); }
+  function pozo(x, z) { enser(U('pozo', gPozo), x, z, 0.3); }
   function fuente(x, z, figuraColor) { cil(pc, 3.0, 0.8, x, 0, z); cil(agua, 2.7, 0.06, x, 0.72, z); cil(pc, 0.7, 2.0, x, 0.8, z); cil(pc, 1.5, 0.3, x, 2.6, z); cil(agua, 1.3, 0.05, x, 2.88, z); if (figuraColor) { cil(L(figuraColor), 0.34, 1.6, x, 2.9, z); cil(L(figuraColor), 0.24, 0.4, x, 4.5, z); poner(G.caja, L(figuraColor), x + 0.5, 4.2, z, 0.1, 1.3, 0.1, 0, -0.9); } }
   function estatua(x, z, ry = 0) { sub(x, z, ry, () => { caja(pc, 1.4, 1.6, 1.4, 0, 0, 0); caja(pc, 1.7, 0.2, 1.7, 0, 1.6, 0); cil(L(0x8a8f8a), 0.36, 1.7, 0, 1.8, 0); cil(L(0x8a8f8a), 0.26, 0.42, 0, 3.5, 0); poner(G.caja, L(0x8a8f8a), 0.45, 3.2, 0.3, 0.09, 2.2, 0.09, 0, 0, 0.5); }); }
   function arbolito(x, z, s = 1, pino = false) { cil(osc, 0.22 * s, 1.6 * s, x, 0, z); if (pino) { cono(L(0x3f5a45), 1.3 * s, 2.6 * s, x, 1.2 * s, z); cono(L(0x3f5a45), 0.9 * s, 2.0 * s, x, 2.8 * s, z); } else { poner(G.roca, verde, x, 2.6 * s, z, 1.5 * s, 1.3 * s, 1.5 * s, x); poner(G.roca, L(0x5c8a44), x + 0.5 * s, 3.3 * s, z - 0.3 * s, 1.0 * s, 0.9 * s, 1.0 * s, z); } }
-  function puesto(x, z, ry, color, genero) { sub(x, z, ry, () => { caja(clara, 3.2, 0.14, 1.3, 0, 1.0, 0); for (const sx of [-1.5, 1.5]) for (const sz of [-0.55, 0.55]) caja(osc, 0.12, sz < 0 ? 2.9 : 2.3, 0.12, sx, 0, sz); poner(G.caja, L(color), 0, 2.65, 0, 3.6, 0.06, 1.6, 0, 0, 0.45); for (let j = 0; j < 5; j++) (genero ? cajon(-1.1 + j * 0.55, 0, 0.4, 0, 1.14) : saco(-1.1 + j * 0.55, 0, 1.1, 0.32)); figura(0, -1.1, 0, 0x6a5a2f, false); }); }
+  function puesto(x, z, ry, color, genero) { sub(x, z, ry, () => { enser(U(`puesto-${color}-${!!genero}`, () => gPuesto(color, !!genero)), 0, 0); if (!genero) for (let j = 0; j < 5; j++) rnd(); figura(0, -1.1, 0, 0x6a5a2f, false); }); }
   function balista(x, z, ry) { sub(x, z, ry, () => { caja(osc, 0.5, 0.9, 3.4, 0, 0, 0); for (const s of [-1, 1]) { caja(osc, 0.3, 1.1, 0.3, s * 0.9, 0, 0.8); disco(osc, 0.55, 0.14, s * 1.1, 0.55, -0.9, PI / 2); } caja(tabla, 0.3, 0.3, 4.2, 0, 1.0, 0.2); poner(G.caja, tabla, 1.1, 1.3, 1.6, 2.6, 0.16, 0.16, -0.35); poner(G.caja, tabla, -1.1, 1.3, 1.6, 2.6, 0.16, 0.16, 0.35); caja(acero, 0.1, 0.1, 3.0, 0, 1.3, 0.6); poner(G.cono, acero, 0, 1.35, 2.3, 0.14, 0.5, 0.14, 0, 0, PI / 2); }); }
   function recinto(o, m, pino) {   // muralla del recinto con almenas, torres y cuerpo de guardia hacia la plaza
     const R = o.rS;
@@ -445,6 +443,7 @@ export function crearEdificios(k) {
       const R = o.rS;
       balista(-R * 0.52, R * 0.5, 0.5); balista(R * 0.52, R * 0.5, -0.5);
       for (const s of [-1, 1]) for (let i = 0; i < 7; i++) poner(G.cono, osc, s * 3.6, 1.0, zf + 6.5 + i * 1.3, 0.22, 2.4, 0.22, 0, 0, s > 0 ? 0 : 0);
+      singular(R * -0.5, R * 1.1, 0.3, 0x5a4a3c, false, { tipo: 'troll', piel: 0x8fa3b5, calzas: 0x8fa3b5, botas: 0x647280, pelo: 0x56606c, talla: 1.5, piernas: 'suelo', brazos: 'reposo' }); caja(osc, 0.34, 2.6, 0.34, R * -0.5 - 1.9, 0, R * 1.1 - 0.4); poner(G.caja, hierro, R * -0.5 - 1.0, 1.2, R * 1.1 - 0.2, 1.9, 0.08, 0.08, 0.2, 0, 0.5);   // el troll de la puerta, encadenado a su poste
       armero(-R * 0.62, R * 0.12, PI / 2, 7); armero(R * 0.62, R * 0.12, -PI / 2, 6, true); lena(-R * 0.45, R * 0.32, 0.4); lena(-R * 0.36, R * 0.36, 0.4); barril(R * 0.4, R * 0.3); barril(R * 0.45, R * 0.34);
       for (let i = 0; i < 8; i++) { const a = rnd() * 6.28, d = R * (0.55 + rnd() * 0.3); if (Math.abs(Math.cos(a) * d) < 5 && Math.sin(a) > 0) continue; poner(G.roca, L(0xe8eef4), Math.cos(a) * d, 0.4, Math.sin(a) * d, 1.4 + rnd(), 0.6, 1.2 + rnd(), a); }
       figura(-2.6, zf + 3, 0.2, 0x3a4250, true); figura(2.6, zf + 3, -0.2, 0x3a4250, true); muneco(R * 0.5, R * 0.1, -0.6); muneco(R * 0.56, R * 0.02, -0.6);

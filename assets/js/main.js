@@ -15,6 +15,7 @@ import { crearMaster } from './master.js';
 import { lluvia } from './clima.js';
 import { crearInterior } from './interior.js';
 import { crearSala } from './salas.js';
+import { crearMazmorra } from './mazmorra.js';
 import { crearEntrada } from './ruinas.js';
 import { cargarModelos } from './modelos.js';
 import { animar, actualizarAnimaciones, reducir, ease } from './anim.js';
@@ -240,8 +241,13 @@ async function iniciar() {
   // Entrar en un edificio de la ciudad (de momento, la posada).
   async function entrarEdificio(e) {
     const clave = `${dentro.datos.id}-${e.interior}`;
-    if (!ciudades.has(clave)) ciudades.set(clave, e.interior === 'posada' ? crearInterior({ id: clave, trofeo: false }) : crearSala(e.interior, clave, { color: new THREE.Color(mundo.regiones.find(r => r.id === dentro.datos.region)?.color ?? '#7a2e2a').getHex() }));
+    if (!ciudades.has(clave)) ciudades.set(clave, e.interior === 'posada' ? crearInterior({ id: clave, trofeo: false }) : crearSala(e.interior, clave, { norte: dentro.datos.region === 'thraengarde', color: new THREE.Color(mundo.regiones.find(r => r.id === dentro.datos.region)?.color ?? '#7a2e2a').getHex() }));
     await abrir(ciudades.get(clave), `${e.nombre} · ${dentro.datos.nombre}`, e.interior === 'posada' ? 'taberna' : 'ciudad');
+  }
+  // El interior de una ruina: solo existe si el máster ha cargado su archivo, que es donde viene la planta.
+  async function entrarMazmorra() {
+    const planta = master?.planta(dentro.datos.id); if (!planta) return;
+    await abrir(crearMazmorra(planta, dentro.datos.id), `Bajo ${dentro.datos.nombre} · máster`, 'ruina');
   }
   async function salir() {
     if (!pila.length) return;
@@ -305,7 +311,8 @@ async function iniciar() {
       const enEdificio = pila.length > 1;
       if (enEdificio) nodos.splice(1, 3, h('p', { class: 'tipo' }, d.nombre), h('h2', {}, pila[pila.length - 1].nombre));
       else if (d.gobierno) nodos.push(h('div', { class: 'gobierno' }, h('h3', {}, d.gobierno.titulo), h('p', {}, d.gobierno.texto)));
-      if (hito) nodos.push(h('div', { class: 'gobierno' }, h('h3', {}, 'Estás mirando'), h('p', {}, hito.nombre)));
+      if (hito) nodos.push(h('div', { class: 'gobierno' }, h('h3', {}, 'Estás mirando'), h('p', {}, hito.nombre), ...(hito.texto ? [h('p', {}, hito.texto)] : [])));
+      if (!enEdificio && master?.planta(d.id)) nodos.push(h('button', { class: 'accion', type: 'button', onclick: entrarMazmorra }, 'Ver por dentro · solo máster'));
       if (hito?.interior && !enEdificio) nodos.push(h('button', { class: 'accion', type: 'button', onclick: () => entrarEdificio(hito) }, 'Ver por dentro'));
       if (ciudad.plantas) nodos.push(h('div', { class: 'plantas', role: 'group', 'aria-label': 'Planta' }, ...ciudad.plantas.map((p, i) =>
         h('button', { type: 'button', 'aria-pressed': String(ciudad.planta === i), onclick: () => { ciudad.verPlanta(i); hito = null; pintarFicha(); } }, p.nombre))));
@@ -539,7 +546,7 @@ async function iniciar() {
   const irAlEnlace = () => { const id = new URLSearchParams(location.hash.slice(1)).get('lugar'), l = id && porId[id]; if (l && !l.tapado && !l.datos.oculto && !dentro) seleccionar(id, true); };
   addEventListener('hashchange', irAlEnlace); irAlEnlace();
   window.mapa = { get interior() { return ciudad; },
-    seleccionar, entrar: id => { seleccionar(id, false); return entrar(porId[id]); }, salir, camara, control, partida,
+    seleccionar, entrar: id => { seleccionar(id, false); return entrar(porId[id]); }, salir, camara, control, partida, escena,
     ponerHora: v => { hora = v; ponerReloj(false); barra.value = v; pintarHora(); },
     equipo: { tactil, tableta, pequena, get nivel() { return render.nivel; }, get oclusion() { return render.oclusion; }, pixeles: renderer.getPixelRatio() },
     enPantalla: id => { const v = porId[id].base.clone().project(camara); return [(v.x * 0.5 + 0.5) * innerWidth, (-v.y * 0.5 + 0.5) * innerHeight]; },

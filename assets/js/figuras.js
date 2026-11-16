@@ -147,6 +147,12 @@ function cuerpo(o, rnd, neutro = false) {
   }
   PC.push(pz(en(esf(0.03, 6, 4), 0, 1.562, 0.19), piel, cab, { duro: false, grad: 0.5, ...PIEL }));
   if (!o.barba) PC.push(pz(en(caja(o.mujer ? 0.055 : 0.07, 0.014, 0.012), 0, 1.495, 0.176), o.mujer ? 0xb5483f : 0x9a5040, cab, { grad: 0 }));
+  // --- troll de escarcha: quijada, colmillos, orejas de punta, ceño de piedra y el collar de hierro con su esquirla azul
+  if (o.troll) {
+    PC.push(pz(en(caja(0.26, 0.085, 0.1), 0, 1.5, 0.12), piel, cab, { grad: 0, ...PIEL }), pz(en(caja(0.3, 0.05, 0.07), 0, 1.722, 0.15), piel, cab, { grad: 0, ...PIEL }), pz(en(esf(0.05, 6, 4).scale(1.2, 0.9, 1), 0, 1.575, 0.2), piel, cab, { duro: false, grad: 0.4, ...PIEL }));
+    for (const s of [-1, 1]) PC.push(pz(en(cono(0.024, 0.11, 5), s * 0.085, 1.565, 0.165), 0xf2ead8, cab, { grad: 0 }), pz(en(cono(0.045, 0.2, 4).rotateZ(-s * 1.15), s * 0.28, 1.66, -0.02), piel, cab, { grad: 0, ...PIEL }));
+    P.push(pz(tubo([[0, 1.365, 0, 0.105, 0.1], [0, 1.415, 0, 0.105, 0.1]], { n: 8, e: 1 }), 0x3a3d46, entre('cabeza', 'pecho', 1.44, 1.36), { grad: 0 }), pz(en(octa(0.04), 0, 1.39, 0.105), 0x6fd0ff, entre('cabeza', 'pecho', 1.44, 1.36), { grad: 0 }));
+  }
   // --- pelo y barba, a golpes de faceta
   const tapado = ['capucha', 'toca', 'casco'].includes(o.tocado), pe = o.peinado;
   if (!tapado && pe !== 'calvo') {
@@ -240,6 +246,7 @@ export function vestir(tipo = 'aldeano', rnd = Math.random, color) {
   else if (tipo === 'escriba') mas({ largo: 0.84, peinado: r < 0.5 ? 'tonsura' : 'corto', barba: 0, cinto: false });
   else if (tipo === 'marino') mas({ tocado: r < 0.5 ? 'gorro' : undefined, colorTocado: de(rnd, [0x9a3b2e, 0x2f5f8f, 0x4a4a6a]), largo: 0.24, manga: 0xe8dec4, mangaCorta: r > 0.6 });
   else if (tipo === 'monje') mas({ largo: 0.84, tocado: 'capucha', barba: 0, cuerda: true });
+  else if (tipo === 'troll') { const p = de(rnd, [0x8fa3b5, 0x7f96a8, 0x9aaab4]); mas({ troll: true, piel: p, pelo: 0x56606c, color: color ?? 0x6a5646, ancho: 1.42 + rnd() * 0.1, barriga: 0.09, largo: 0.34, peinado: 'calvo', barba: 0, ceno: 0.32, mangaCorta: true, calzas: p, botas: col.setHex(p).multiplyScalar(0.7).getHex(), botaAlta: false, cabezon: 0.9, tocado: undefined, cuerda: true, cinto: false }); }
   return o;
 }
 
@@ -345,7 +352,7 @@ export function crearFigura(opciones = {}) {
 export function hornear(opciones, cuadros = 12) {
   const rnd = opciones.rnd ?? Math.random, o = opcionesDe(opciones), huesos = esqueleto();
   const base = cuerpo(o, rnd, true), malla = new THREE.SkinnedMesh(base, material), esq = new THREE.Skeleton(huesos); malla.add(huesos[0]); malla.bind(esq);
-  const h = Object.fromEntries(huesos.map(b => [b.name, b])), f = { h, huesos, marcha: 1, paso: 0, estado: { piernas: 'pie', brazos: opciones.brazos ?? POSTURA_DE[o.lleva] ?? 'reposo', fase: opciones.fase ?? 0, ritmo: 1, brio: 1, asiento: 0.47 } };
+  const h = Object.fromEntries(huesos.map(b => [b.name, b])), f = { h, huesos, marcha: 1, paso: 0, estado: { piernas: opciones.piernas ?? 'pie', brazos: opciones.brazos ?? POSTURA_DE[o.lleva] ?? 'reposo', fase: opciones.fase ?? 0, ritmo: 1, brio: 1, asiento: 0.47 } };
   const v = new THREE.Vector3(), w = new THREE.Vector3(), extra = [...(o.lleva ? UTENSILIOS[o.lleva](o).map(q => ['manoD', q]) : []), ...(o.llevaI ? UTENSILIOS[o.llevaI](o).map(q => ['manoI', q]) : []), ...(o.carga ?? []).flatMap(c => { const [hueso, geos] = CARGAS[c](o); return geos.map(q => [hueso, q]); })];
   const foto = () => {
     malla.updateMatrixWorld(true); esq.update();

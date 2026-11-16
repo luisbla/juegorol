@@ -7,15 +7,22 @@ import { crearBarcoModelo } from './barco.js';
 import { crearMatas } from './campo.js';
 import { lluvia } from './clima.js';
 import { crearFigura } from './figuras.js';
+import { matUtil, cajaB, cantear, gBarril, gCarro, gGallina, gPerro, gOveja, gVaca, gPuesto, gPozo, gCaballo, gPebetero } from './utileria.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 export function crearEntrada(l) {
   const rnd = azarDe('entrada-' + l.id), escena = new THREE.Scene(), etiquetas = [], vivos = [];
   const mats = new Map();
   const mat = (color, extra) => { if (extra) return new THREE.MeshStandardMaterial({ color, roughness: 1, ...extra }); if (!mats.has(color)) mats.set(color, new THREE.MeshStandardMaterial({ color, roughness: 1 })); return mats.get(color); };
-  const pieza = (geo, m, x, y, z, padre = escena) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.castShadow = o.receiveShadow = true; padre.add(o); return o; };
-  const caja = (m, w, h, d, x, y, z, ry = 0, padre) => { const o = pieza(new THREE.BoxGeometry(w, h, d), m, x, y + h / 2, z, padre); o.rotation.y = ry; return o; };
-  const cil = (m, r0, r1, h, x, y, z, padre, seg = 10) => pieza(new THREE.CylinderGeometry(r0, r1, h, seg), m, x, y + h / 2, z, padre);
+  // piedra de cantería: el material lleva [alto de hilada, largo de sillar, parte con verdín] y cada pieza se trocea y se tiñe sillar a sillar
+  const canto = (color, alto = 1, largo = 1.8, verdin = 0) => { const m = mat(color, { vertexColors: true }); m.userData.sillar = [alto, largo, verdin]; return m; };
+  const pieza = (geo, m, x, y, z, padre = escena) => { if (m.userData.sillar) geo = cantear(geo, m.userData.sillar); const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.castShadow = o.receiveShadow = true; padre.add(o); return o; };
+  // las cajas llevan los cantos matados, salvo las muy grandes o las que van con textura
+  const hiladas = (v, paso) => Math.max(1, Math.round(v / paso));
+  const caja = (m, w, h, d, x, y, z, ry = 0, padre) => { const S = m.userData.sillar, o = pieza(S ? new THREE.BoxGeometry(w, h, d, hiladas(w, S[1]), hiladas(h, S[0]), hiladas(d, S[1])) : m.map || Math.max(w, h, d) > 14 ? new THREE.BoxGeometry(w, h, d) : cajaB(w, h, d), m, x, y + h / 2, z, padre); o.rotation.y = ry; return o; };
+  // enseres y animales de utileria.js: una sola malla cada uno, con su color en los vértices
+  const enser = (geo, x, z, ry = 0, s = 1, y = 0, padre) => { const o = pieza(geo, matUtil, x, y, z, padre); o.rotation.y = ry; o.scale.setScalar(s); return o; };
+  const cil = (m, r0, r1, h, x, y, z, padre, seg = 10) => pieza(new THREE.CylinderGeometry(r0, r1, h, seg, m.userData.sillar ? hiladas(h, m.userData.sillar[0] * (Math.max(r0, r1) < 1.7 ? 2 : 1)) : 1), m, x, y + h / 2, z, padre);
   const roca = (m, r, x, y, z, sy = 0.7, padre) => { const o = pieza(new THREE.DodecahedronGeometry(r, 0), m, x, y, z, padre); o.scale.set(1 + rnd() * 0.4, sy, 1 + rnd() * 0.4); o.rotation.set(rnd(), rnd() * 6, rnd()); return o; };
   const nido = (x, z, ry = 0, y = 0) => { const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.y = ry; escena.add(g); return g; };
   const rotulo = (nombre, x, y, z) => etiquetas.push({ nombre, pos: new THREE.Vector3(x, y, z), clase: 'hito' });
@@ -100,7 +107,7 @@ export function crearEntrada(l) {
   };
   // qué hace con el cuerpo: cualquiera de las posturas de figuras.js (golpea, habla, escucha, remueve, percha, carga…)
   const faena = (g, modo, ritmo = 1, extra) => { Object.assign(g.userData.f.estado, { brazos: modo, ritmo }, extra); return g; };
-  const gallina = (x, z, color = 0xe8e0d0) => { const g = nido(x, z, rnd() * 6); pieza(new THREE.SphereGeometry(0.2, 8, 6), mat(color), 0, 0.34, 0, g).scale.set(1, 0.9, 1.3); pieza(new THREE.SphereGeometry(0.1, 6, 5), mat(color), 0, 0.56, 0.22, g); pieza(new THREE.ConeGeometry(0.035, 0.1, 4), mat(0xd9a23a), 0, 0.55, 0.35, g).rotation.x = Math.PI / 2; pieza(new THREE.ConeGeometry(0.11, 0.26, 5), mat(color), 0, 0.46, -0.28, g).rotation.x = -2.2; for (const s of [-0.07, 0.07]) cil(mat(0xd9a23a), 0.016, 0.016, 0.2, s, 0, 0, g, 4);
+  const gallina = (x, z, color = 0xe8e0d0) => { const g = nido(x, z, rnd() * 6); enser(gGallina(color), 0, 0, 0, 1.15, 0, g);
     const f = rnd() * 6.28, x0 = x, z0 = z; vivos.push(t => { g.visible = nocheAhora < 0.6; const p = t * 0.25 + f; g.position.set(x0 + Math.sin(p) * 1.1 + Math.sin(p * 2.7) * 0.4, 0, z0 + Math.cos(p * 1.3) * 1.1); g.rotation.set(Math.max(0, Math.sin(t * 3 + f * 5)) * 0.7, f + Math.sin(p) * 1.5, 0, 'YXZ'); }); return g; };
   // luz de noche: cristales que se encienden, faroles y, con cuentagotas, luces de verdad
   const vidrio = new THREE.MeshStandardMaterial({ color: 0x1a1d24, roughness: 0.4, emissive: 0xffc070, emissiveIntensity: 0 }), farolM = new THREE.MeshStandardMaterial({ color: 0x6a5a30, emissive: 0xffc060, emissiveIntensity: 0.1 }), lucesNoche = [];
@@ -132,16 +139,17 @@ export function crearEntrada(l) {
   // funde por material todo lo marcado como fijo: cientos de piezas pasan a ser un puñado de mallas
   const fundir = () => {
     escena.updateMatrixWorld(true); const lotes = new Map(), quitar = [];
-    escena.traverse(o => { if (!o.isMesh || !o.userData.fijo) return; const g = (o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone()).applyMatrix4(o.matrixWorld); for (const k of Object.keys(g.attributes)) if (k !== 'position' && k !== 'normal') g.deleteAttribute(k); if (!lotes.has(o.material)) lotes.set(o.material, []); lotes.get(o.material).push(g); quitar.push(o); });
+    escena.traverse(o => { if (!o.isMesh || !o.userData.fijo) return; const g = (o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone()).applyMatrix4(o.matrixWorld); for (const k of Object.keys(g.attributes)) if (k !== 'position' && k !== 'normal' && !(k === 'color' && o.material.vertexColors)) g.deleteAttribute(k); if (!lotes.has(o.material)) lotes.set(o.material, []); lotes.get(o.material).push(g); quitar.push(o); });
     for (const o of quitar) o.parent.remove(o);
     for (const [m, gs] of lotes) { const o = new THREE.Mesh(mergeGeometries(gs), m); o.castShadow = o.receiveShadow = true; escena.add(o); }
   };
-  const barril = (x, z, s = 1) => { cil(mat(0x6a4a2e), 0.45 * s, 0.45 * s, 0.95 * s, x, 0, z); cil(mat(0x2b2b2e), 0.47 * s, 0.47 * s, 0.07, x, 0.3 * s, z); };
+  const barril = (x, z, s = 1) => { enser(gBarril(), x, z, (x * 1.7 + z) % 3, s).userData.fijo = true; };
   const cerca = (x0, z0, x1, z1, m = mat(0x5a4633), alto = 1.1) => { const d = Math.hypot(x1 - x0, z1 - z0), n = Math.max(1, Math.round(d / 1.6)), ry = -Math.atan2(z1 - z0, x1 - x0); for (let i = 0; i <= n; i++) caja(m, 0.16, alto, 0.16, x0 + (x1 - x0) * i / n, 0, z0 + (z1 - z0) * i / n); for (const f of [0.45, 0.85]) caja(m, d, 0.09, 0.07, (x0 + x1) / 2, alto * f, (z0 + z1) / 2, ry); };
   const hoguera = (x, z, viva) => { for (let i = 0; i < 7; i++) { const a = i / 7 * 6.28; roca(mat(0x55504a), 0.22, x + Math.cos(a) * 0.7, 0.12, z + Math.sin(a) * 0.7); } cil(mat(0x15120f), 0.5, 0.5, 0.1, x, 0, z); if (viva) { const f = pieza(new THREE.ConeGeometry(0.35, 1.0, 6), new THREE.MeshBasicMaterial({ color: 0xffb04a, transparent: true, opacity: 0.85 }), x, 0.6, z); vivos.push(t => { f.scale.y = 0.8 + 0.3 * Math.sin(t * 9); }); const luz = new THREE.PointLight(0xff9a4a, 60, 26, 1.8); luz.position.set(x, 1.4, z); escena.add(luz); } };
   const tienda = (x, z, ry, color, caida = 0) => { const g = nido(x, z, ry), t = pieza(gTejado, mat(color, { side: THREE.DoubleSide }), 0, 0.8, 0, g); t.scale.set(2.6, caida ? 0.5 : 1.6, 2.2); if (caida) { t.position.y = 0.25; t.rotation.z = caida * 0.12; } return g; };   // la vencida queda aplastada en el suelo, no en el aire
-  const res = (x, z, ry, color, s = 1) => { const g = nido(x, z, ry); g.scale.setScalar(s); const c = pieza(new THREE.SphereGeometry(0.5, 8, 6), mat(color), 0, 0.75, 0, g); c.scale.set(0.8, 0.8, 1.5); pieza(new THREE.SphereGeometry(0.24, 8, 6), mat(0x3a3028), 0, 0.95, 0.75, g); for (const sx of [-0.2, 0.2]) for (const sz of [-0.4, 0.4]) cil(mat(0x3a3028), 0.06, 0.05, 0.5, sx, 0, sz, g, 5); const fr = rnd() * 6.28; vivos.push(t => { g.rotation.x = Math.max(0, Math.sin(t * 0.4 + fr)) * 0.1; }); return g; };
-  const carro = (x, z, ry) => { const g = nido(x, z, ry); caja(mat(0x7a5c3e), 1.6, 0.14, 2.6, 0, 0.7, 0, 0, g); for (const s of [-0.8, 0.8]) caja(mat(0x6a5039), 0.08, 0.45, 2.6, s, 0.84, 0, 0, g); for (const s of [-0.9, 0.9]) { const r = cil(mat(0x3a2a1c), 0.55, 0.55, 0.1, s, 0, 0, g, 12); r.rotation.z = Math.PI / 2; r.position.y = 0.55; } for (const s of [-0.5, 0.5]) caja(mat(0x5a4633), 0.08, 0.08, 2, s, 0.7, 2.2, 0, g); return g; };
+  // res: según el tamaño y el color que se pida sale un perro, una oveja o una vaca; pace cabeceando
+  const res = (x, z, ry, color, s = 1) => { const g = nido(x, z, ry); if (s < 0.9) enser(gPerro(color), 0, 0, 0, s / 0.62 * 1.05, 0, g); else if (color === 0xf0ece0) enser(gOveja(), 0, 0, 0, s / 1.2 * 1.1, 0, g); else enser(gVaca(color), 0, 0, 0, s / 2.2 * 1.1, 0, g); const fr = rnd() * 6.28; vivos.push(t => { g.rotation.x = Math.max(0, Math.sin(t * 0.4 + fr)) * 0.1; }); return g; };
+  const carro = (x, z, ry, carga = ['sacos', 'pacas', 'barriles', 'cajas'][Math.floor(Math.abs(x * 7 + z * 3)) % 4]) => { const o = enser(gCarro({ carga }), x, z, ry, 1.05); o.userData.fijo = true; return o; };
   let texBlanda = null;
   const blanda = () => { if (!texBlanda) { const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d'), g = x.createRadialGradient(32, 32, 0, 32, 32, 32); g.addColorStop(0, 'rgba(255,255,255,0.55)'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.fillRect(0, 0, 64, 64); texBlanda = new THREE.CanvasTexture(c); } return texBlanda; };
   const niebla = (n, y, radio, opacidad = 0.5, color = 0xffffff, ancho = 26) => { for (let i = 0; i < n; i++) { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: blanda(), transparent: true, depthWrite: false, opacity: opacidad, color })), x0 = (rnd() - 0.5) * radio * 2, z = (rnd() - 0.5) * radio * 2; s.scale.set(ancho, ancho * 0.28, 1); s.position.set(x0, y + rnd() * 1.5, z); escena.add(s); vivos.push(t => { s.position.x = x0 + Math.sin(t * 0.05 + i) * 10; }); } };
@@ -177,7 +185,7 @@ export function crearEntrada(l) {
   const PARAJES = {
     // Las Criptas Silentes: una puerta enorme de sillería hundida en la ladera, bajo un bosque que casi no deja pasar la luz. Está cerrada.
     criptas() {
-      suelo(0x3f4a2e); bruma = 0.017; pradera(2600, (x, z) => Math.abs(x) < 13 && z > -8 && z < 12, [0x2a4226, 0x3f5a30, 0x587044], 0, 70); const sillar = mat(0x7b7f72), musgo = mat(0x4f5f3a), losa = mat(0x5c6058);
+      suelo(0x3f4a2e); bruma = 0.017; pradera(2600, (x, z) => Math.abs(x) < 13 && z > -8 && z < 12, [0x2a4226, 0x3f5a30, 0x587044], 0, 70); const sillar = canto(0x8a8e80, 1.1, 2.0, 0.14), musgo = mat(0x4f5f3a), losa = mat(0x5c6058);
       const o = pieza(new THREE.SphereGeometry(34, 28, 14, 0, 6.3, 0, 1.5), mat(0x46552f), 0, -14, -34); o.scale.set(1.5, 0.95, 1);
       // fachada: cuatro columnas, entablamento, frontón y dos hojas de piedra sin tirador
       for (const x of [-10.5, -5.4, 5.4, 10.5]) { caja(sillar, 3.4, 1.2, 3.4, x, 0, -4); cil(sillar, 1.25, 1.4, 14, x, 1.2, -4, undefined, 14); caja(sillar, 3.2, 1.0, 3.2, x, 15.2, -4); for (let i = 0; i < 3; i++) cil(musgo, 1.42 - i * 0.03, 1.42, 0.5, x, 2 + i * 4.4 + rnd() * 2, -4, undefined, 14); }
@@ -209,7 +217,7 @@ export function crearEntrada(l) {
       caja(mat(0x08090c), 3.2, 9, 3, 0, 0, -9.5); const d = caja(basalto, 9, 1.6, 3.4, 0, 9, -8.6); d.rotation.z = 0.06;
       for (let i = 0; i < 9; i++) { const c = pieza(new THREE.ConeGeometry(0.25 + rnd() * 0.25, 1.5 + rnd() * 2, 5), hielo, -3.6 + i * 0.9, 8.3 - rnd() * 0.4, -7.2 + rnd() * 0.6); c.rotation.x = Math.PI; }
       for (const s of [-1, 1]) {
-        cil(mat(0x2b2b2e), 0.22, 0.3, 2.2, s * 5.4, 0, 1.5, undefined, 6); cil(mat(0x2b2b2e), 0.9, 0.6, 0.5, s * 5.4, 2.2, 1.5); const b = cil(new THREE.MeshStandardMaterial({ color: 0x0a1420, emissive: 0x58b8ff, emissiveIntensity: 2.2 }), 0.75, 0.75, 0.14, s * 5.4, 2.65, 1.5);
+        enser(gPebetero(2.2, 0.9), s * 5.4, 1.5); const b = cil(new THREE.MeshStandardMaterial({ color: 0x0a1420, emissive: 0x58b8ff, emissiveIntensity: 2.2 }), 0.75, 0.75, 0.14, s * 5.4, 2.5, 1.5);
         const f = pieza(new THREE.ConeGeometry(0.5, 1.6, 6), new THREE.MeshBasicMaterial({ color: 0xa8dcff, transparent: true, opacity: 0.8 }), s * 5.4, 3.5, 1.5); vivos.push(t => { f.scale.y = 0.8 + 0.3 * Math.sin(t * 8 + s); b.material.emissiveIntensity = 2 + 0.4 * Math.sin(t * 3 + s); });
         const luz = new THREE.PointLight(0x8fd0ff, 120, 40, 1.7); luz.position.set(s * 5.4, 4, 1.5); escena.add(luz);
         for (let i = 0; i < 4; i++) { const x = s * (7 + i * 2.6), z = 5 + i * 3.4; cil(mat(0x3a3028), 0.1, 0.14, 4.4, x, 0, z, undefined, 5); for (let k = 0; k < 3; k++) { const t = caja(mat([0x7a2e2a, 0x2f4a6a, 0xd8d0c0][(i + k) % 3]), 0.9, 0.28, 0.03, x + 0.45, 3.8 - k * 0.5, z); vivos.push(tt => { t.rotation.y = Math.sin(tt * 3 + i + k) * 0.6; t.position.x = x + Math.cos(t.rotation.y) * 0.45; t.position.z = z - Math.sin(t.rotation.y) * 0.45; }); } }
@@ -223,7 +231,7 @@ export function crearEntrada(l) {
     },
     // El Sagrario del Surco: un cenobio hundido en el trigal. Solo asoma la mitad de arriba; lo demás lo tapa la tierra de labor.
     sagrario() {
-      const HOYA = 26, FONDO = -4.2, arenisca = mat(0xbfae8a), sombra = mat(0xa39270), tierra = mat(0x6a4e32);
+      const HOYA = 26, FONDO = -4.2, arenisca = canto(0xd2c098, 0.95, 1.7, 0.03), sombra = canto(0xb5a37c, 0.95, 1.7, 0.03), tierra = mat(0x6a4e32);
       const campo = pieza(new THREE.RingGeometry(HOYA, 150, 48), matSuelo(0xb0903e), 0, 0, 0); campo.rotation.x = -Math.PI / 2; campo.castShadow = false;
       const talud = pieza(new THREE.CylinderGeometry(HOYA + 0.4, HOYA - 4, -FONDO, 40, 1, true), mat(0x7a5a3a, { side: THREE.BackSide }), 0, FONDO / 2, 0); talud.castShadow = false;
       disco(0x5f452c, HOYA - 3.6, FONDO);
@@ -235,7 +243,7 @@ export function crearEntrada(l) {
       muro(0, -19.6, 5, 2.2, 13); for (const s of [-1, 1]) caja(arenisca, 1.2, 3.4, 2.2, s * 1.9, 13, -19.6); caja(arenisca, 2.2, 1.0, 2.2, -1.4, 16.4, -19.6); caja(mat(0x14161a), 2.4, 3, 0.4, 0, 8.4, -18.5);
       for (const s of [-1, 1]) for (let i = 0; i < 4; i++) { caja(sombra, 1.6, 9 - FONDO - i * 0.9 - (s > 0 && i > 1 ? 4 : 0), 1.2, s * 8.2, FONDO, -16 + i * 6); }   // contrafuertes
       for (const z of [-14, -8, -2]) { caja(mat(0x14161a), 0.3, 3.4, 1.6, -6.4, 1.0, z); caja(mat(0x14161a), 0.3, 3.4, 1.6, 6.4, 1.6, z); }   // ventanas ciegas
-      for (let i = 0; i < 3; i++) { const z = -14 + i * 6.5, a = pieza(new THREE.TorusGeometry(6.2, 0.6, 6, 18, Math.PI), arenisca, 0, 1.5, z); if (i === 2) { a.geometry = new THREE.TorusGeometry(6.2, 0.6, 6, 10, Math.PI * 0.55); } }   // arcos fajones; el último, roto
+      for (let i = 0; i < 3; i++) { const z = -14 + i * 6.5, a = pieza(new THREE.TorusGeometry(6.2, 0.6, 6, 18, Math.PI), arenisca, 0, 1.5, z); if (i === 2) { a.geometry = cantear(new THREE.TorusGeometry(6.2, 0.6, 6, 10, Math.PI * 0.55), arenisca.userData.sillar); } }   // arcos fajones; el último, roto
       // claustro al lado: arquerías a medias y un pozo cegado
       for (let i = 0; i < 6; i++) { const x = 11 + i * 2.9; cil(arenisca, 0.42, 0.5, 4.6 - FONDO - (i > 3 ? 2.6 : 0), x, FONDO, 4, undefined, 10); cil(arenisca, 0.42, 0.5, 3 - FONDO - (i % 2) * 2, x, FONDO, -10, undefined, 10); if (i < 3) { const a = pieza(new THREE.TorusGeometry(1.45, 0.3, 5, 12, Math.PI), arenisca, x + 1.45, 4.6, 4); } }
       for (let i = 0; i < 5; i++) cil(arenisca, 0.42, 0.5, 2.4 - FONDO + (i % 2), 25.5, FONDO, -10 + i * 3.5, undefined, 10);
@@ -259,7 +267,7 @@ export function crearEntrada(l) {
     // La Ciudad Ahogada: torres rotas en mitad del lago, vistas desde el agua. Los pescadores no pasan de las boyas.
     ahogada() {
       suelo(0x163f55, 260, { plano: true }).position.y = -3; lamina(0x1f5a78, 260, 0.02); bruma = 0.0085;
-      const cal = mat(0xb9b6ac), verdin = mat(0x5a6a52), hueco = mat(0x0a0d10);
+      const cal = canto(0xcfccc0, 1.0, 1.9, 0.12), verdin = mat(0x5a6a52), hueco = mat(0x0a0d10);
       for (const [x, z, r, h, vencida] of [[0, -14, 4.2, 20, 0], [-12, -22, 3.0, 12, 0.12], [11, -24, 3.2, 16, -0.08], [-5, -36, 2.6, 8, 0], [20, -12, 2.4, 6, 0.25], [-22, -8, 2.6, 4.5, -0.2], [6, -44, 3.6, 11, 0.05], [-18, -40, 2.4, 5, 0.3], [24, -34, 2.8, 9, -0.12]]) {
         const g = nido(x, z, 0, -1.5); g.rotation.z = vencida;
         cil(cal, r, r * 1.08, h, 0, 0, 0, g, 14); cil(verdin, r * 1.1, r * 1.12, 2.4, 0, 0, 0, g, 14);
@@ -288,8 +296,8 @@ export function crearEntrada(l) {
       for (let i = 0; i < 14; i++) { const a = i / 14 * 6.28 + 0.2, r = 15 + (i % 3) * 5, x = Math.cos(a) * r, z = Math.sin(a) * r; if (Math.abs(x) < 5 || (lago && x > 22)) continue; casa(x, z, 5 + rnd() * 2, 4.4 + rnd(), 3.2 + rnd() * 1.2, -a + Math.PI / 2 + (rnd() - 0.5) * 0.3, { pared, teja, chim: i % 2 === 0, entramado: l.region !== 'marendol' }); if (i % 4 === 0) humo(x + 1.4, 6.5, z, false); }
       // ermita con espadaña, pozo, puestos y gente
       const e = casa(-9, -9, 5.4, 9, 5, 0.6, { pared: 0xdad2c0, teja, piedra: true }); caja(mat(0xbdb4a2), 2.6, 9, 2.6, 0, 0, -5.4, 0, e); pieza(gTejado, mat(teja), 0, 10.3, -5.4, e).scale.set(3.2, 2.6, 3.2); cil(mat(0xd9b24e), 0.4, 0.5, 0.7, 0, 7.4, -4.0, e, 8);
-      cil(mat(0x8d8676), 1.3, 1.4, 1.0, 0, 0, 0); cil(mat(0x1c2a30), 1.05, 1.05, 0.1, 0, 0.95, 0); for (const s of [-1.2, 1.2]) caja(mat(0x5a4633), 0.2, 2.6, 0.2, s, 0.9, 0); caja(mat(0x5a4633), 2.8, 0.22, 0.4, 0, 3.4, 0);
-      for (let i = 0; i < 3; i++) { const x = 4 + i * 3.2, z = -5; caja(mat(0x6b5440), 2.4, 1.0, 1.4, x, 0, z); const t = pieza(gTejado, mat([0xb23a2e, 0x2f6aa0, 0xd9a23a][i], { side: THREE.DoubleSide }), x, 3, z); t.scale.set(3, 0.9, 2.2); for (const s of [-1.1, 1.1]) caja(mat(0x5a4633), 0.12, 2.6, 0.12, x + s, 0, z + 0.6); }
+      enser(gPozo(), 0, 0, 0.3, 1.25).userData.fijo = true;
+      for (let i = 0; i < 3; i++) enser(gPuesto([0xc9283c, 0x2f6fb5, 0xe8a23a][i], i !== 2), 4 + i * 3.2, -5, 0, 0.86).userData.fijo = true;
       // vecinos: dos de charla junto al pozo, los tenderos, gente que va y viene, críos corriendo y un perro detrás
       faena(figura(2.2, 2.6, -2.2, 0x7a3b2e), 'habla'); faena(figura(0.8, 3.6, 1.0, 0x2f4f6f), 'jarras');
       for (let i = 0; i < 3; i++) faena(figura(4 + i * 3.2, -6.1, 0, [0x5a6b3a, 0x8a7a55, 0x6a5a2f][i], escena, 0, 1, { tipo: i === 1 ? 'aldeana' : 'mercader' }), i === 1 ? 'remueve' : 'habla', 0.8);
@@ -322,7 +330,7 @@ export function crearEntrada(l) {
       // casa de postas, cuadra y abrevadero
       casa(7, -8, 9, 6, 4.2, -0.2, { teja, chim: true, pared: nieve ? 0x8a8478 : 0xd2c4a4 }); humo(9.4, 8, -8, false); const cu = nido(12, 3, -0.2); caja(mat(0x7a5c3e), 9, 3.2, 0.3, 0, 0, -2, 0, cu); for (const s of [-1, 1]) caja(mat(0x7a5c3e), 0.3, 3.2, 4, s * 4.35, 0, 0, 0, cu); for (let i = 0; i < 4; i++) caja(mat(0x3a2a1c), 0.3, 3.2, 0.3, -4.35 + i * 2.9, 0, 2, 0, cu); const tj = caja(mat(teja), 9.8, 0.2, 5.2, 0, 3.6, 0, 0, cu); tj.rotation.x = 0.2;
       const ab = nido(2, 6, 0.25); caja(mat(0x6a5039), 3.4, 0.7, 1.1, 0, 0, 0, 0, ab); caja(mat(0x3f6f80, { roughness: 0.2 }), 3.0, 0.05, 0.8, 0, 0.68, 0, 0, ab);
-      const cab = nido(12.5, 3.2, Math.PI - 0.2); for (const [x, c] of [[-2.9, 0x6a4326], [0, 0x2f2620]]) { const g = new THREE.Group(); g.position.set(x, 0, 0); g.scale.setScalar(2); cab.add(g); const b = pieza(new THREE.SphereGeometry(0.5, 8, 6), mat(c), 0, 0.85, 0, g); b.scale.set(0.8, 0.8, 1.6); const n = cil(mat(c), 0.16, 0.22, 0.8, 0, 1.0, 0.8, g, 6); n.rotation.x = 0.7; pieza(new THREE.SphereGeometry(0.2, 8, 6), mat(c), 0, 1.6, 1.15, g).scale.z = 1.5; for (const sx of [-0.2, 0.2]) for (const sz of [-0.45, 0.45]) cil(mat(c), 0.06, 0.05, 0.6, sx, 0, sz, g, 5); }
+      const cab = nido(12.5, 3.2, Math.PI - 0.2); for (const [x, c] of [[-2.9, 0x6a4326], [0, 0x2f2620]]) enser(gCaballo(c), x, 0, 0, 1.05, 0, cab);
       const sen = nido(-1, 10, 0.3); cil(mat(0x5a4633), 0.14, 0.16, 4, 0, 0, 0, sen, 6); for (let i = 0; i < 2; i++) caja(mat(0x8a6a48), 2.2, 0.5, 0.1, (i ? -1 : 1) * 1.0, 3.2 - i * 0.7, 0, 0, sen);
       carro(6, 12, 0.6); barril(-1, -1); barril(0, -1.6); faena(figura(9.6, 6.6, 0.4, 0x6a5a2f, escena, 0, 1, { tipo: 'aldeano', lleva: 'martillo', delantal: 0x7a4a28, mangaCorta: true }), 'golpea', 1.4, { flexion: 0.15 }); anda(figura(0, 0, 0, 0x4a5a6a, escena, 0, 1, { tipo: 'guardia', ...(l.region === 'thraengarde' ? { manto: 0x8a8478 } : {}) }), [[-3, 2], [1.4, 7.2], [8, 8], [1.4, 7.2]], 1.2); farol(-1.4, 0.6, 0.6); if (!nieve) for (let i = 0; i < 4; i++) gallina(13 + rnd() * 3, 9 + rnd() * 3, [0xe8e0d0, 0x8a5a36][i % 2]);
       if (nieve) { for (let i = 0; i < 12; i++) roca(mat(0x3a3c44), 4 + rnd() * 5, (rnd() - 0.5) * 80, 1, -30 - rnd() * 30, 1.4); for (let i = 0; i < 9; i++) pino((rnd() - 0.5) * 70, 20 + rnd() * 30, 1.2 + rnd() * 0.6, 0x3a5046); cil(mat(0x2b2b2e), 1.2, 0.8, 0.6, -6, 23.4, -4); nevada(500); rotulo('Almenara', -6, 30, -4); }
@@ -421,7 +429,7 @@ export function crearEntrada(l) {
       cerca(2, 6, 14, 6); cerca(14, 6, 14, 14); cerca(14, 14, 2, 14); cerca(2, 14, 2, 6); for (let i = 0; i < 7; i++) res(4 + (i % 4) * 2.6, 8 + Math.floor(i / 4) * 3.4, rnd() * 6, 0xf0ece0, 1.2);
       for (let i = 0; i < 8; i++) caja(mat(0xd2aa4e), 2, 1.1, 1.3, -2 + (i % 4) * 2.2, i > 3 ? 1.1 : 0, -1.4, (i % 2) * 0.1);
       const esp = nido(-14, -2, 0.3); caja(mat(0x5a4633), 0.14, 3.4, 0.14, 0, 0, 0, 0, esp); caja(mat(0x5a4633), 2.6, 0.14, 0.14, 0, 2.5, 0, 0, esp); caja(mat(0x7a3b2e), 1.4, 1.6, 0.3, 0, 1.4, 0, 0, esp); pieza(new THREE.SphereGeometry(0.4, 8, 6), mat(0xb89a62), 0, 3.5, 0, esp); pieza(new THREE.ConeGeometry(0.7, 0.5, 8), mat(0xd2aa4e), 0, 3.95, 0, esp);
-      cil(mat(0x8d8676), 1.2, 1.3, 1.0, 2, 0, -3); carro(-2, 6, 0.4); faena(figura(-1, 2.6, 2.6, 0x8a6a48, escena, 0, 1, { tipo: 'aldeana', llevaI: 'cesta' }), 'remueve'); for (let i = 0; i < 6; i++) gallina(-3.4 + rnd() * 3, 3.4 + rnd() * 2.6, [0xe8e0d0, 0x8a5a36, 0xc9a06a][i % 3]); anda(figura(0, 0, 0, 0x6a5a2f, escena, 0, 1, { tipo: 'aldeano', lleva: 'cubo', tocado: 'sombrero', colorTocado: 0xd8bf7a }), [[-21.5, 2.6], [-4.6, 2.6], [-4.6, 17.4], [-21.5, 17.4]], 1.0); faena(figura(16, 3, 4, 0x5a6b3a), 'habla', 0.6); faena(figura(17.2, 1.6, 0.9, 0x7a3b2e), 'jarras'); farol(-0.4, -3.8, 0.4);
+      enser(gPozo(), 2, -3, 0.4, 1.15).userData.fijo = true; carro(-2, 6, 0.4); faena(figura(-1, 2.6, 2.6, 0x8a6a48, escena, 0, 1, { tipo: 'aldeana', llevaI: 'cesta' }), 'remueve'); for (let i = 0; i < 6; i++) gallina(-3.4 + rnd() * 3, 3.4 + rnd() * 2.6, [0xe8e0d0, 0x8a5a36, 0xc9a06a][i % 3]); anda(figura(0, 0, 0, 0x6a5a2f, escena, 0, 1, { tipo: 'aldeano', lleva: 'cubo', tocado: 'sombrero', colorTocado: 0xd8bf7a }), [[-21.5, 2.6], [-4.6, 2.6], [-4.6, 17.4], [-21.5, 17.4]], 1.0); faena(figura(16, 3, 4, 0x5a6b3a), 'habla', 0.6); faena(figura(17.2, 1.6, 0.9, 0x7a3b2e), 'jarras'); farol(-0.4, -3.8, 0.4);
       for (let i = 0; i < 15; i++) { arbol(26 + (i % 5) * 4.4, 4 + Math.floor(i / 5) * 5, 0.8, 0x6a8a3a); }
       rotulo('Casa', -6, 10, -8); rotulo('Granero', 10, 12, -6); rotulo('Silo', 20, 14, -8); rotulo('Frutales', 34, 6, 9);
       return { pos: [16, 20, 42], objetivo: [2, 2, 0], cielo: 0xbcd0e0, R: 46, limite: 42 };
@@ -474,6 +482,7 @@ export function crearEntrada(l) {
       anda(figura(0, 0, 0, 0x2e3440, escena, 0, 1, { tipo: 'guardia', manto: 0x8a8478 }), [[-22, 14], [-6, 20], [14, 17], [22, 6], [14, 17], [-6, 20]], 1.1, true);
       anda(figura(0, 0, 0, 0x5a5048, escena, 0, 1, { tipo: 'minero', lleva: 'pico' }), [[-9, 4.4], [-3, -2], [-1.6, -14], [-3, -2]], 0.9); anda(figura(0, 0, 0, 0x4f4a44, escena, 0, 1, { tipo: 'minero', carga: ['saco'], estado: { brazos: 'carga' } }), [[10, 9], [2.4, 4], [1.6, -13], [2.4, 4]], 0.8);
       carro(-4, 18, 1.2); for (let i = 0; i < 5; i++) barril(16 + (i % 2), 3 + i * 0.9);
+      faena(figura(-6.6, 16.6, 1.2 + Math.PI, 0x6a5646, escena, 0, 1.5, { tipo: 'troll', carga: ['saco'] }), 'carga', 0.5);   // un troll uncido carga la mena en el carro
       for (let i = 0; i < 9; i++) pino(-34 + rnd() * 10 + (i % 2) * 58, 6 + rnd() * 30, 1.1 + rnd() * 0.6, 0x3a5046);
       nevada(500);
       rotulo('La bocamina', 0, 9.5, -15.4); rotulo('Barracón', -15, 8, -5); rotulo('Lavadero de mena', -10, 7.5, 6); rotulo('Escorial', 13, 5, 12); rotulo('Cuerpo de guardia', 13, 8, -4);

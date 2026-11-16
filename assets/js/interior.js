@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { azarDe } from './ruido.js';
 import { crearFigura } from './figuras.js';
+import { matUtil, acabado, cajaSala, gBarril, gTonel, gCajon, gBanco, gMesa, gMesaRedonda, gTaburete, gJarra, gCama, gCofre } from './utileria.js';
 
 function lienzo(w, h, pintar, repetir) {
   const c = document.createElement('canvas'); c.width = w; c.height = h; pintar(c.getContext('2d'), w, h);
@@ -19,8 +20,10 @@ export function crearInterior(l) {
   // dos plantas: se ve una u otra. Todo lo que se construye va a la planta que marque "destino".
   const baja = new THREE.Group(), alta = new THREE.Group(); escena.add(baja, alta); alta.visible = false;
   let destino = baja;
-  const pieza = (geo, m, x, y, z, padre = destino) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); padre.add(o); return o; };
-  const caja = (m, w, h, d, x, y, z, padre) => pieza(new THREE.BoxGeometry(w, h, d), m, x, y + h / 2, z, padre);
+  const pieza = (geo, m, x, y, z, padre = destino) => { const o = new THREE.Mesh(acabado(geo, m), m); o.position.set(x, y, z); padre.add(o); return o; };
+  const caja = (m, w, h, d, x, y, z, padre) => pieza(cajaSala(w, h, d, m), m, x, y + h / 2, z, padre);
+  // enseres de utileria.js, a la escala de la sala (el doble largo de la de fuera)
+  const jarraBarra = gJarra(5), jarraMesa = gJarra(2.8), mesaRedonda = gMesaRedonda(2.5, 1.714, 2.2), mesaLarga = gMesa(6.2, 2.8, 1.692, 2.2), taburete = gTaburete(0.6, 1.1, 2.2), banco = gBanco(3.16);
   const cil = (m, r, h, x, y, z, padre, seg = 14) => pieza(new THREE.CylinderGeometry(r, r, h, seg), m, x, y + h / 2, z, padre);
 
   /* ---------- caja de la sala ---------- */
@@ -68,10 +71,9 @@ export function crearInterior(l) {
   for (let i = 0; i < 2; i++) caja(oscura, 17, 0.3, 1.3, bx, 5.6 + i * 2.2, -FO / 2 + 0.9);
   const VIDRIO = [0x3f6a4a, 0x7a4a2a, 0x8a2f2f, 0x4a5a7a, 0xb09a4a];
   for (let i = 0; i < 26; i++) cil(mat(VIDRIO[i % 5], { roughness: 0.25 }), 0.22, 0.8 + rnd() * 0.5, bx - 8 + (i % 13) * 1.3 + rnd() * 0.2, 5.9 + Math.floor(i / 13) * 2.2, -FO / 2 + 0.9, undefined, 8);
-  for (let i = 0; i < 4; i++) cil(mat(0xc9b06a, { roughness: 0.5 }), 0.3, 0.75, bx - 6 + i * 3.6 + rnd(), 3.1, bz + 0.3, undefined, 10);   // jarras en la barra
+  for (let i = 0; i < 4; i++) pieza(jarraBarra, matUtil, bx - 6 + i * 3.6 + rnd(), 3.1, bz + 0.3).rotation.y = i * 2.1;   // jarras en la barra
   for (let i = 0; i < 3; i++) {   // toneles tumbados en su caballete
-    const tx = 19.5, tz = -FO / 2 + 3 + i * 3.4, t = cil(mat(0x7a5a3a), 1.45, 3.0, tx, 1.0, tz, undefined, 14); t.rotation.z = Math.PI / 2; t.position.y = 2.45;
-    for (const dx of [-1.0, 1.0]) { const aro = cil(hierro, 1.5, 0.18, tx + dx, 0, tz, undefined, 14); aro.rotation.z = Math.PI / 2; aro.position.y = 2.45; }
+    const tx = 19.5, tz = -FO / 2 + 3 + i * 3.4; pieza(gTonel(1.45, 3.0), matUtil, tx, 0.88, tz);
     caja(oscura, 3.2, 1.0, 0.4, tx, 0, tz - 1.0); caja(oscura, 3.2, 1.0, 0.4, tx, 0, tz + 1.0);
   }
   etiquetas.push({ nombre: 'Barra', pos: new THREE.Vector3(bx, 9.5, bz), clase: 'hito', planta: 0 });
@@ -95,15 +97,14 @@ export function crearInterior(l) {
   }
   const MESAS = [[-11, -6, 1], [-2, -2, 0], [-12, 7, 0], [-1, 8.5, 1], [8, 5, 0], [10, -4.5, 1]];
   for (const [mx, mz, redonda] of MESAS) {
-    if (redonda) { cil(clara, 2.5, 0.3, mx, 1.7, mz); cil(oscura, 0.4, 1.7, mx, 0, mz, undefined, 8); cil(oscura, 1.2, 0.2, mx, 0, mz, undefined, 10); }
-    else { caja(clara, 6.2, 0.3, 2.8, mx, 1.7, mz); for (const dx of [-2.6, 2.6]) for (const dz of [-1.0, 1.0]) caja(oscura, 0.3, 1.7, 0.3, mx + dx, 0, mz + dz); }
+    pieza(redonda ? mesaRedonda : mesaLarga, matUtil, mx, 0, mz);
     const n = redonda ? 4 : 6;
     for (let i = 0; i < n; i++) {
       const a = redonda ? i / n * 6.283 + rnd() : 0, sx = redonda ? mx + Math.cos(a) * 3.5 : mx - 2 + (i % 3) * 2, sz = redonda ? mz + Math.sin(a) * 3.5 : mz + (i < 3 ? -2.3 : 2.3);
-      if (redonda) cil(madera, 0.6, 1.1, sx, 0, sz, undefined, 8); else if (i % 3 === 0) caja(madera, 6, 0.3, 0.9, mx, 0.9, sz);
+      if (redonda) pieza(taburete, matUtil, sx, 0, sz).rotation.y = a; else if (i % 3 === 0) pieza(banco, matUtil, mx, 0, sz).scale.setScalar(1.9);
       if (rnd() > 0.28) persona(sx, sz, Math.atan2(mx - sx, mz - sz), true);
     }
-    for (let i = 0; i < 3; i++) cil(mat(0xc9b06a, { roughness: 0.5 }), 0.2, 0.42, mx + (rnd() - 0.5) * 3, 2.0, mz + (rnd() - 0.5) * 1.4, undefined, 8);
+    for (let i = 0; i < 3; i++) pieza(jarraMesa, matUtil, mx + (rnd() - 0.5) * 3, 2.0, mz + (rnd() - 0.5) * 1.4).rotation.y = i * 2.1 + mx;
     if (rnd() > 0.4) { cil(mat(0xe8dcc0), 0.09, 0.6, mx, 2.0, mz, undefined, 6); pieza(new THREE.SphereGeometry(0.12, 6, 6), new THREE.MeshBasicMaterial({ color: 0xffd98a }), mx, 2.7, mz); }   // vela
   }
   persona(bx - 2, bz - 2.6, 0, false, { tipo: 'aldeano', tocado: null, barriga: 0.06, delantal: 0xf0e8d4, estado: { brazos: 'remueve', ritmo: 0.5 } });   // quien atiende la barra
@@ -120,8 +121,8 @@ export function crearInterior(l) {
   const velas = new THREE.PointLight(0xffc878, 170, 60, 1.7); velas.position.set(0, -3.2, 0); lampara.add(velas);
   const candil = new THREE.PointLight(0xffc878, 110, 45, 1.8); candil.position.set(bx, 8.5, bz + 3); baja.add(candil);
   pieza(new THREE.BoxGeometry(11, 0.08, 6.5), mat(0x6a2f2a, { roughness: 1 }), -2.5, 0.05, 3.2);
-  for (let i = 0; i < 5; i++) cil(mat(0x7a5a3a), 0.95, 1.9, -AN / 2 + 3 + (i % 3) * 2.2, i > 2 ? 1.9 : 0, FO / 2 - 3 - (i > 2 ? 0.5 : 0), undefined, 12);
-  for (let i = 0; i < 3; i++) caja(mat(0x8a6a48), 1.8, 1.5, 1.8, AN / 2 - 9 + i * 0.4, i * 1.5, FO / 2 - 2.6).rotation.y = rnd();
+  for (let i = 0; i < 5; i++) pieza(gBarril(0.95, 1.9), matUtil, -AN / 2 + 3 + (i % 3) * 2.2, i > 2 ? 1.9 : 0, FO / 2 - 3 - (i > 2 ? 0.5 : 0)).rotation.y = i;
+  for (let i = 0; i < 3; i++) pieza(gCajon(1.8), matUtil, AN / 2 - 9 + i * 0.4, i * 1.53, FO / 2 - 2.6).rotation.y = rnd();
 
   /* ---------- planta alta: pasillo, cuatro habitaciones, dormitorio común y aseo ---------- */
   destino = alta;
@@ -132,22 +133,20 @@ export function crearInterior(l) {
   const conPuerta = (x0, x1, z, puerta) => { caja(tabique, puerta - 1.5 - x0, AT, 0.5, (x0 + puerta - 1.5) / 2, 0, z); caja(tabique, x1 - puerta - 1.5, AT, 0.5, (x1 + puerta + 1.5) / 2, 0, z); caja(oscura, 3.4, 0.5, 0.6, puerta, AT - 1.6, z); };
   function cama(x, z, doble, color, ocupada) {
     const an = doble ? 4.6 : 2.7;
-    caja(oscura, an, 0.9, 6.4, x, 0, z); caja(mat(0xe6dcc6, { roughness: 1 }), an - 0.3, 0.5, 6.0, x, 0.9, z);
-    caja(mat(color, { roughness: 1 }), an - 0.2, 0.3, 4.0, x, 1.3, z + 1.0); caja(mat(0xf2ecdc, { roughness: 1 }), an - 0.9, 0.4, 1.1, x, 1.4, z - 2.2);
-    caja(oscura, an, 2.4, 0.4, x, 0, z - 3.2);   // cabecero
+    pieza(gCama(an, 6.4, color), matUtil, x, 0, z);
     if (ocupada) { const bulto = pieza(new THREE.CapsuleGeometry(0.55, 2.6, 4, 8), mat(color, { roughness: 1 }), x, 1.75, z + 0.6); bulto.rotation.x = Math.PI / 2; pieza(new THREE.SphereGeometry(0.4, 10, 8), mat(PIEL_DORMIDO, { roughness: 0.9 }), x, 1.9, z - 2.0); }
   }
-  const PIEL_DORMIDO = 0xd9b08c;
+  const PIEL_DORMIDO = 0xd9b08c, arcon = gCofre(2.6), mesilla = gMesaRedonda(1.0, 1.992, 1.6);
   const ancho = AN / 4, fondoHab = 15;   // cuatro habitaciones contra la pared del fondo
   for (let i = 0; i < 4; i++) {
     const x0 = -AN / 2 + i * ancho, xc = x0 + ancho / 2, z0 = -FO / 2;
     if (i) caja(tabique, 0.5, AT, fondoHab, x0, 0, z0 + fondoHab / 2);
     conPuerta(x0, x0 + ancho, z0 + fondoHab, xc + 2.5);
     cama(xc - 2.2, z0 + 4.2, i === 3, COLCHAS[i], i === 1);
-    caja(clara, 2.6, 1.3, 1.5, xc + 3.2, 0, z0 + 2.0); caja(hierro, 2.7, 0.15, 1.6, xc + 3.2, 1.3, z0 + 2.0);                 // arcón
-    cil(clara, 1.0, 0.2, xc + 2.6, 2.0, z0 + 9.5, undefined, 10); cil(oscura, 0.2, 2.0, xc + 2.6, 0, z0 + 9.5, undefined, 6); // mesilla
+    pieza(arcon, matUtil, xc + 3.2, 0, z0 + 2.0);                                                                              // arcón
+    pieza(mesilla, matUtil, xc + 2.6, 0, z0 + 9.5);                                                                            // mesilla
     cil(mat(0xe8dcc0), 0.09, 0.6, xc + 2.6, 2.2, z0 + 9.5, undefined, 6); pieza(new THREE.SphereGeometry(0.13, 6, 6), new THREE.MeshBasicMaterial({ color: 0xffd98a }), xc + 2.6, 2.95, z0 + 9.5);
-    cil(madera, 0.55, 1.1, xc + 0.6, 0, z0 + 10.5, undefined, 8);                                                              // taburete
+    pieza(taburete, matUtil, xc + 0.6, 0, z0 + 10.5);                                                                          // taburete
     pieza(new THREE.BoxGeometry(5, 0.06, 3), mat([0x6a2f2a, 0x2f4a5a, 0x4a5a2f, 0x5a2f4a][i], { roughness: 1 }), xc - 0.5, 0.04, z0 + 9.5);
     caja(oscura, 3.6, 3.6, 0.3, xc + 1.5, 2.2, z0 + 0.25); caja(cristal, 3.0, 3.0, 0.2, xc + 1.5, 2.5, z0 + 0.42);            // ventana
     const vela = new THREE.PointLight(0xffc878, 38, 22, 1.8); vela.position.set(xc + 2.6, 3.4, z0 + 9.5); alta.add(vela);
@@ -160,7 +159,7 @@ export function crearInterior(l) {
   // aseo: tina, cubos y un banco
   conPuerta(4, AN / 2 - 7, zd, 8.5);
   const tina = cil(clara, 2.0, 2.0, 9, 0, zd + 4.2, undefined, 14); cil(mat(0x3f6f80, { roughness: 0.2 }), 1.8, 0.1, 9, 1.7, zd + 4.2, undefined, 14);
-  for (let i = 0; i < 3; i++) cil(madera, 0.5, 0.9, 12.5 + i * 0.3, 0, zd + 2 + i * 1.5, undefined, 8);
+  for (let i = 0; i < 3; i++) pieza(gBarril(0.5, 0.9), matUtil, 12.5 + i * 0.3, 0, zd + 2 + i * 1.5).rotation.y = i;
   // hueco de la escalera, con su barandilla
   pieza(new THREE.BoxGeometry(6, 0.1, 13), mat(0x0d0a08), AN / 2 - 3.2, 0.06, FO / 2 - 6.6);
   for (let i = 0; i < 7; i++) caja(oscura, 0.25, 2.2, 0.25, AN / 2 - 6.6, 0, FO / 2 - 12.6 + i * 2);

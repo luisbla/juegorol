@@ -24,6 +24,9 @@ export function crearMaster({ h, mundo, alCambiar }) {
     },
     quitar() { datos = null; visible = false; try { localStorage.removeItem(CLAVE); } catch { /* nada que borrar */ } marcar(); },
 
+    // la planta del interior de un lugar, si el archivo la trae: con ella se levanta la mazmorra (mazmorra.js)
+    planta(id) { return api.visible ? datos.lugares[id]?.planta ?? null : null; },
+
     // lo que se añade a la ficha de un lugar
     ficha(d) {
       const m = api.visible && datos.lugares[d.id]; if (!m) return [];
