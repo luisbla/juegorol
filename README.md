@@ -114,18 +114,27 @@ Lo que los jugadores no deben saber (qué hay de cierto en cada rumor, lo que ca
 - **Interior de las ruinas.** Si el archivo trae una `planta` para un lugar, su ficha (ya dentro del paraje) añade «Ver por dentro · solo máster». El interior se levanta en el momento con `js/mazmorra.js`; sin archivo, o con la vista oculta, el botón no existe y en esta web no hay nada que encontrar.
 - El `.gitignore` ya excluye `alden-master*.json`. Aun así: no lo metas en la carpeta del repositorio.
 
+El archivo puede traer además `reglas` (sistema, niveles y tabla de presupuesto de encuentros) y `bestiario` (una lista de criaturas con sus cifras): salen como dos páginas más en la pestaña «Máster» del códice. Las estadísticas de juego van siempre ahí, nunca en este repositorio.
+
 ### Formato de una planta
 
 ```json
 "planta": {
-  "tono": { "suelo": 7238248, "muro": 5922389, "luz": 12570816, "fondo": 395271, "verdin": 0.08 },
-  "salas": [ { "id": "a", "nombre": "…", "x": 0, "z": 20, "w": 14, "d": 8, "texto": "lo que se lee al señalarla",
+  "tono": { "suelo": 7238248, "muro": 5922389, "luz": 12570816, "fondo": 395271, "verdin": 0.08, "estilo": "cripta", "antorcha": 13625560 },
+  "salas": [ { "id": "a", "n": 1, "nombre": "…", "x": 0, "z": 30, "w": 14, "d": 8, "y": 0, "forma": "ochava", "arcos": 0,
+               "voz": "lo que se lee en alto", "secreto": "lo que solo sabe quien dirige", "peligro": "…",
                "rasgos": [ { "tipo": "columna", "x": -4, "z": 1 } ] } ],
-  "pasos": [ { "de": "a", "a": "b", "ancho": 3 } ]
+  "pasos": [ { "de": "a", "a": "b", "ancho": 3, "puerta": "losa", "nota": "…" } ]
 }
 ```
 
-Las salas son rectángulos centrados en `x, z` (+z hacia quien mira). Un paso sale recto si las dos salas se solapan en un eje y hace un codo si no; el hueco en el muro se abre solo. Los rasgos van medidos desde el centro de su sala: `columna`, `yacente`, `pozo`, `eje`, `mesa`, `rueda`, `aro`, `raices`, `agua`, `hielo`, `escombro`, `escalera`, `losa`, `cofre`, `banco`, `figura`, `bestia`, `escarcha` y `nota` (un rótulo con texto).
+- **Niveles:** en vez de `salas` y `pasos` sueltos, la planta puede llevar `"niveles": [{ "nombre": "…", "tono": {…}, "salas": […], "pasos": […] }, …]`. La ficha saca entonces un botón por nivel, como en la taberna, y el visor vuela al encuadre de cada uno. El `tono` de un nivel pisa el general.
+- **Salas:** rectángulos centrados en `x, z` (+z hacia quien mira). `y` es la altura del suelo: si dos salas unidas están a distinta altura, el paso baja en escalones. `forma: "ochava"` mata las esquinas; `arcos` pone vigas de piedra de muro a muro. Al señalar una sala, la ficha enseña `voz` («En voz alta») y, en el bloque de máster, `secreto`, `peligro` y `encuentro` (los números de juego).
+- **Pasos:** salen rectos si las dos salas se solapan en un eje y hacen un codo si no; el hueco, el marco y los escalones se ponen solos. `puerta`: `losa`, `cera`, `reja`, `derrumbe` u `oculta` (se tapia y se marca en lila por arriba, solo para quien dirige).
+- **Estilo** (`tono.estilo`): `cripta`, `hielo`, `arenisca` o `ahogada`. Decide el aderezo que se reparte solo: verdín, carámbanos y escarcha, raíces y arena, o charcos y limo. `antorcha` es el color de las llamas de pared (`false` para dejarla a oscuras).
+- **Rasgos** (medidos desde el centro de su sala): `columna`, `yacente`, `sarcofago`, `estatua`, `pozo`, `eje`, `mesa`, `altar`, `rueda`, `aro`, `raices`, `agua`, `hielo`, `bloques`, `escombro`, `escalera`, `losa`, `cofre`, `banco`, `barril`, `brasero`, `urna`, `huesos`, `astillero`, `trampa`, `marca`, `canal`, `puente`, `reja`, `tobera`, `estante`, `puesto`, `monedas`, `helado`, `valvula`, `arador`, `riada`, `figura`, `bestia`, `nido`, `escarcha` y `nota` (un rótulo con su `secreto`).
+
+Los pasos largos llevan solos sus fajas de piedra y antorchas. Toda la piedra fija de un nivel se junta en una malla por material, así que una planta grande no pesa más que una pequeña.
 
 ## Probar en local
 

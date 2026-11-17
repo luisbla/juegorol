@@ -80,6 +80,15 @@ button.etq:hover, button.etq.activa { border-color: var(--oro); background: rgba
 #ficha .gobierno { border-left: 2px solid var(--oro); padding: 2px 0 2px 12px; margin: 0 0 14px; }
 #ficha .gobierno h3, #ficha .viaje h3 { margin: 0 0 4px; font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--tenue); font-weight: 600; }
 #ficha .gobierno p { margin: 0; }
+#ficha .gobierno h4 { margin: 10px 0 4px; font: 600 0.7rem var(--ui); letter-spacing: 0.1em; text-transform: uppercase; color: var(--oro); }
+#ficha .gobierno .voz { font-family: var(--serif); font-style: italic; font-size: 0.98rem; line-height: 1.5; }
+#ficha .lore.master h4:first-child { margin-top: 0; }
+#codice .tabla { border-collapse: collapse; margin: 6px 0 8px; font-variant-numeric: tabular-nums; }
+#codice .tabla th, #codice .tabla td { padding: 3px 14px 3px 0; text-align: right; border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
+#codice .tabla thead th { color: var(--tenue); font-weight: 600; font-size: 0.78rem; }
+#codice .bicho { border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 4px; }
+#codice .bicho .cifras { font-variant-numeric: tabular-nums; color: var(--oro); margin: 0 0 4px; }
+#codice .bicho p { margin: 0 0 4px; }
 #ficha .viaje { border-top: 1px solid var(--borde); padding-top: 12px; }
 #ficha select { width: 100%; padding: 8px; background: #1b1e26; border: 1px solid var(--borde); border-radius: 7px; font-size: 0.88rem; }
 #ficha .resultado { margin: 10px 0 0; font-size: 0.9rem; }

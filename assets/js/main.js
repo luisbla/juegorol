@@ -311,11 +311,13 @@ async function iniciar() {
       const enEdificio = pila.length > 1;
       if (enEdificio) nodos.splice(1, 3, h('p', { class: 'tipo' }, d.nombre), h('h2', {}, pila[pila.length - 1].nombre));
       else if (d.gobierno) nodos.push(h('div', { class: 'gobierno' }, h('h3', {}, d.gobierno.titulo), h('p', {}, d.gobierno.texto)));
-      if (hito) nodos.push(h('div', { class: 'gobierno' }, h('h3', {}, 'Estás mirando'), h('p', {}, hito.nombre), ...(hito.texto ? [h('p', {}, hito.texto)] : [])));
+      if (hito) nodos.push(h('div', { class: 'gobierno' }, h('h3', {}, 'Estás mirando'), h('p', {}, hito.nombre), ...(hito.texto ? [h('p', {}, hito.texto)] : []), ...(hito.voz ? [h('h4', {}, 'En voz alta'), h('p', { class: 'voz' }, hito.voz)] : [])));
+      // lo que solo trae la planta de una mazmorra: va en el bloque de máster, que es de donde viene
+      if (hito?.secreto || hito?.peligro || hito?.encuentro) nodos.push(h('div', { class: 'lore master' }, ...(hito.secreto ? [h('h4', {}, 'Solo tú'), h('p', {}, hito.secreto)] : []), ...(hito.peligro ? [h('h4', {}, 'Peligro'), h('p', {}, hito.peligro)] : []), ...(hito.encuentro ? [h('h4', {}, 'Encuentro'), h('p', {}, hito.encuentro)] : [])));
       if (!enEdificio && master?.planta(d.id)) nodos.push(h('button', { class: 'accion', type: 'button', onclick: entrarMazmorra }, 'Ver por dentro · solo máster'));
       if (hito?.interior && !enEdificio) nodos.push(h('button', { class: 'accion', type: 'button', onclick: () => entrarEdificio(hito) }, 'Ver por dentro'));
       if (ciudad.plantas) nodos.push(h('div', { class: 'plantas', role: 'group', 'aria-label': 'Planta' }, ...ciudad.plantas.map((p, i) =>
-        h('button', { type: 'button', 'aria-pressed': String(ciudad.planta === i), onclick: () => { ciudad.verPlanta(i); hito = null; pintarFicha(); } }, p.nombre))));
+        h('button', { type: 'button', 'aria-pressed': String(ciudad.planta === i), onclick: () => { ciudad.verPlanta(i); hito = null; pintarFicha(); if (ciudad.vuelaAlCambiar) volar(ciudad.vista.pos.clone(), ciudad.vista.objetivo.clone(), 900); } }, p.nombre))));
       nodos.push(h('button', { class: 'accion', type: 'button', onclick: salir }, enEdificio ? `← Volver a ${d.nombre}` : '← Volver al mapa'));
       if (!enEdificio) nodos.push(...(master?.ficha(d) ?? []));
       ficha.replaceChildren(...nodos); ficha.hidden = false;

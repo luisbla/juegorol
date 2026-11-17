@@ -56,6 +56,13 @@ export function crearMaster({ h, mundo, alCambiar }) {
       if (R.pnj?.length) p.push(h('article', {}, h('h3', {}, 'Gente de reserva'), h('p', { class: 'lema' }, 'Para cuando haga falta alguien'), ...R.pnj.map(g => h('p', {}, h('b', {}, `${g.nombre}, ${g.papel}. `), g.voz))));
       if (R.giros?.length) p.push(h('article', {}, h('h3', {}, 'Giros de emergencia'), h('p', { class: 'lema' }, 'Cuando la sesión se para'), lista(R.giros)));
       if (R.atasco?.length || R.antes_de_cada_sesion?.length) p.push(h('article', {}, ...si(h('h3', {}, 'Mesa'), R.antes_de_cada_sesion?.length && [h('p', { class: 'lema' }, 'Antes de cada sesión'), lista(R.antes_de_cada_sesion)], R.atasco?.length && [h('p', { class: 'lema' }, 'Si se atasca'), lista(R.atasco)])));
+      // reglas y bestiario: los números de los encuentros, si el archivo los trae
+      const G = datos.reglas;
+      if (G) p.push(h('article', { class: 'ancho' }, ...si(h('h3', {}, 'Reglas y niveles'), dato('Sistema.', G.sistema), dato('Grupo.', G.grupo), G.niveles?.length && lista(G.niveles), dato('Cotejo.', G.cotejo),
+        G.presupuesto && [h('h4', {}, G.presupuesto.titulo), h('table', { class: 'tabla' }, h('thead', {}, h('tr', {}, ...['Nivel', 'Baja', 'Moderada', 'Alta'].map(c => h('th', { scope: 'col' }, c)))), h('tbody', {}, ...G.presupuesto.filas.map(f => h('tr', {}, ...f.map((c, i) => h(i ? 'td' : 'th', i ? {} : { scope: 'row' }, String(c))))))), h('p', { class: 'menor' }, G.presupuesto.nota)],
+        G.px_por_vd && h('p', {}, G.px_por_vd), G.atribucion && h('p', { class: 'menor' }, G.atribucion))));
+      if (datos.bestiario?.length) p.push(h('article', { class: 'ancho' }, h('h3', {}, 'Bestiario'), h('p', { class: 'lema' }, 'Cada criatura usa la ficha de una del SRD 5.2.1, con el nombre en inglés para buscarla'),
+        ...datos.bestiario.map(b => h('div', { class: 'bicho' }, h('h4', {}, `${b.nombre} · ${b.base}`), h('p', { class: 'cifras' }, `VD ${b.vd} (${b.px} PX) · CA ${b.ca} · ${b.pg} puntos de golpe · velocidad ${b.vel}`), h('p', {}, b.ataques), ...si(b.rasgos && b.rasgos !== '—' && h('p', {}, b.rasgos), dato('En esta campaña.', b.mio))))));
       if (datos.meta) p.push(h('article', {}, ...si(h('h3', {}, 'Notas'), dato('Sistema.', datos.meta.sistema), dato('Tono.', datos.meta.tono))));
       return p;
     },
