@@ -9,26 +9,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { azarDe } from './ruido.js';
 import { hornear, materialMultitud, viva } from './figuras.js';
 import { gCarroDeBueyes, gOveja, gVaca } from './utileria.js';
-
-function texturaSuave(nucleo = 0.0, color = '255,255,255') {
-  const c = document.createElement('canvas'); c.width = c.height = 128;
-  const x = c.getContext('2d'), g = x.createRadialGradient(64, 64, 64 * nucleo, 64, 64, 64);
-  g.addColorStop(0, `rgba(${color},1)`); g.addColorStop(0.45, `rgba(${color},0.45)`); g.addColorStop(1, `rgba(${color},0)`);
-  x.fillStyle = g; x.fillRect(0, 0, 128, 128);
-  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
-}
-// Nube: varios borrones solapados, para que no sea un óvalo perfecto.
-function texturaNube(rnd) {
-  const c = document.createElement('canvas'); c.width = 256; c.height = 128;
-  const x = c.getContext('2d');
-  for (let i = 0; i < 16; i++) {
-    const px = 50 + rnd() * 156, py = 50 + rnd() * 34, r = 22 + rnd() * 30;
-    const g = x.createRadialGradient(px, py, 0, px, py, r);
-    g.addColorStop(0, 'rgba(255,255,255,0.55)'); g.addColorStop(1, 'rgba(255,255,255,0)');
-    x.fillStyle = g; x.fillRect(0, 0, 256, 128);
-  }
-  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
-}
+import { suave as texturaSuave, nube as texturaNube } from './texturas.js';
 
 export function crearAmbiente(escena, renderer, mundo, terreno, lugares, { movil = false } = {}) {
   const R = crearRuido(99), { W, H, cx, cz } = terreno;

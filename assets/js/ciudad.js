@@ -7,6 +7,7 @@ import { azarDe } from './ruido.js';
 import { crearEdificios } from './edificios.js';
 import { hornear, materialMultitud, ZANCADA, viva } from './figuras.js';
 import { matUtil, gPuesto, gBarril, gCajon, gGallina, gPerro } from './utileria.js';
+import { blanda as texBlanda } from './texturas.js';
 import { crearBarcoModelo } from './barco.js';
 import { crearMatas } from './campo.js';
 
@@ -491,7 +492,7 @@ export function crearCiudad(l, mundo, { movil = false } = {}) {
   }
   for (const m of [perros, gallinas]) { m.castShadow = true; m.frustumCulled = false; escena.add(m); }
 
-  const blanda = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d'), g = x.createRadialGradient(32, 32, 0, 32, 32, 32); g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(c); })();
+  const blanda = texBlanda(1);
   const bocanadas = [];
   for (const origen of humos) for (let k = 0; k < 5; k++) { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: blanda, transparent: true, depthWrite: false, color: 0xd9d4cc })); s.userData = { origen, fase: k / 5 + rnd() }; bocanadas.push(s); escena.add(s); }
   const antorchas = [];

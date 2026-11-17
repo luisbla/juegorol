@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { azarDe } from './ruido.js';
 import { crearFigura } from './figuras.js';
+import { llama } from './texturas.js';
 import { matUtil, acabado, cajaSala, gBarril, gTonel, gCajon, gBanco, gMesa, gMesaRedonda, gTaburete, gJarra, gCama, gCofre } from './utileria.js';
 
 function lienzo(w, h, pintar, repetir) {
@@ -50,7 +51,7 @@ export function crearInterior(l) {
   caja(piedra, 3.2, AL, 9, hx, 0, hz); caja(piedra, 4.2, 1.0, 10.4, hx + 0.4, 4.6, hz); caja(mat(0x141210), 1.2, 3.6, 5.4, hx + 1.3, 0.3, hz);
   caja(piedra, 4.6, 0.5, 11, hx + 0.6, 0, hz);
   for (const dz of [-1.2, 0.2, 1.4]) { const leño = cil(oscura, 0.42, 3.2, hx + 2.0, 0.6, hz + dz, undefined, 8); leño.rotation.x = Math.PI / 2; leño.rotation.z = (rnd() - 0.5) * 0.5; }
-  const llamas = [], texLlama = lienzo(64, 64, (x) => { const g = x.createRadialGradient(32, 40, 0, 32, 36, 30); g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.35, 'rgba(255,210,110,0.9)'); g.addColorStop(1, 'rgba(255,90,20,0)'); x.fillStyle = g; x.fillRect(0, 0, 64, 64); });
+  const llamas = [], texLlama = llama();
   for (let i = 0; i < 5; i++) { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: texLlama, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, color: 0xffa040 })); s.position.set(hx + 2.3, 1.8, hz - 1.6 + i * 0.8); s.userData.f = rnd() * 6; llamas.push(s); baja.add(s); }
   const lumbre = new THREE.PointLight(0xff9a45, 260, 70, 1.8); lumbre.position.set(hx + 4, 3, hz); baja.add(lumbre);
   const jabali = new THREE.Group(); jabali.position.set(hx + 2.0, 8.0, hz); jabali.rotation.y = Math.PI / 2; baja.add(jabali); jabali.visible = l.trofeo !== false;

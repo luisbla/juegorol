@@ -168,6 +168,22 @@ export function gPerro(color = 0x8a5c34) {
     B(0.04, 0.05, 0.03, 0x1a1410, -0.09, 0.8, 0.565), B(0.04, 0.05, 0.03, 0x1a1410, 0.09, 0.8, 0.565), B(0.09, 0.1, 0.05, gris(color, 0.7), -0.11, 0.9, 0.34, 0, 0, 0.3), B(0.09, 0.1, 0.05, gris(color, 0.7), 0.11, 0.9, 0.34, 0, 0, -0.3),
     ...[[-0.1, 0.25], [0.1, 0.25], [-0.1, -0.26], [0.1, -0.26]].flatMap(([x, z]) => [B(0.1, 0.36, 0.1, c, x, 0.2, z), B(0.11, 0.07, 0.12, claro, x, 0.035, z + 0.01)]), B(0.07, 0.32, 0.07, c, 0, 0.74, -0.42, 0, -0.7), B(0.2, 0.1, 0.4, claro, 0, 0.36, 0.05)]);
 }
+// alimaña de cueva: cuerpo bajo y sin pelo, hocico ancho, un pliegue de piel sobre el hocico, patas abiertas y cola corta
+export function gAlimana(color = 0xe6dfd6) {
+  const c = color, o = oscuro(color, 0.82), rosa = col.setHex(color).lerp(new THREE.Color(0xd9a59a), 0.55).getHex();
+  return une([E(0.3, c, 0, 0.36, -0.05, 0.78, 0.62, 1.45, 1), E(0.2, c, 0, 0.42, 0.42, 0.95, 0.8, 1.1, 1), B(0.2, 0.13, 0.22, rosa, 0, 0.36, 0.66), B(0.045, 0.03, 0.03, 0x4a2a2a, -0.05, 0.39, 0.775), B(0.045, 0.03, 0.03, 0x4a2a2a, 0.05, 0.39, 0.775),
+    B(0.3, 0.05, 0.2, o, 0, 0.535, 0.47), ...[0.2, -0.05, -0.3].map(z => B(0.1, 0.05, 0.12, o, 0, 0.555 - Math.abs(z + 0.05) * 0.12, z)),
+    ...[[-0.2, 0.26], [0.2, 0.26], [-0.2, -0.3], [0.2, -0.3]].flatMap(([x, z]) => [B(0.1, 0.24, 0.12, c, x, 0.13, z, 0, 0, x > 0 ? -0.35 : 0.35), B(0.14, 0.04, 0.18, rosa, x * 1.25, 0.02, z + 0.04)]),
+    T(u(new THREE.ConeGeometry(0.05, 0.4, 5), rosa), 0, 0.34, -0.62, 0, -1.9)]);
+}
+// la misma, vieja y enorme, echada: el vientre vencido a un lado, las patas recogidas y el lomo en joroba
+export function gAlimanaMadre(color = 0xd9cdbf) {
+  const c = color, o = oscuro(color, 0.8), rosa = col.setHex(color).lerp(new THREE.Color(0xd9a59a), 0.55).getHex();
+  return une([E(1.0, c, 0, 0.85, 0, 1.05, 0.82, 1.7, 1), E(0.75, o, 0.4, 0.48, -0.2, 1.0, 0.62, 1.5, 1), E(0.55, c, 0, 0.9, 1.78, 0.98, 0.85, 1.1, 1), B(0.5, 0.32, 0.5, rosa, 0, 0.74, 2.38), B(0.1, 0.07, 0.04, 0x4a2a2a, -0.12, 0.8, 2.64), B(0.1, 0.07, 0.04, 0x4a2a2a, 0.12, 0.8, 2.64),
+    B(0.78, 0.12, 0.46, o, 0, 1.24, 1.92), ...[-1.2, -0.6, 0, 0.6, 1.2].map(z => E(0.16, o, 0, 1.6 - Math.abs(z) * 0.16, z, 1, 0.7, 1.3)),
+    ...[[-0.9, 0.95], [0.9, 0.95], [-0.9, -1.0], [0.9, -1.0]].flatMap(([x, z]) => [B(0.3, 0.3, 0.62, c, x, 0.16, z, x > 0 ? 0.3 : -0.3), B(0.26, 0.08, 0.3, rosa, x * 1.08, 0.04, z + 0.42)]),
+    ...[-0.9, -0.45, 0, 0.45, 0.9].map(z => E(0.09, rosa, 1.05, 0.3, z - 0.2)), T(u(new THREE.ConeGeometry(0.12, 0.9, 5), rosa), 0, 0.6, -1.85, 0, -1.8)]);
+}
 export function gOveja(color = 0xf4efe4) {
   const c = color ?? 0xffffff, cara = color == null ? 0x4d4d4d : 0x3a3028;
   return une([E(0.5, c, 0, 0.72, -0.02, 0.86, 0.78, 1.16, 1), E(0.26, c, 0, 0.98, 0.42, 1, 0.8, 1, 1), B(0.25, 0.27, 0.3, cara, 0, 0.84, 0.66), B(0.14, 0.07, 0.05, cara, -0.2, 0.9, 0.58, 0, 0, 0.4), B(0.14, 0.07, 0.05, cara, 0.2, 0.9, 0.58, 0, 0, -0.4),

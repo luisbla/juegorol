@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Personajes · Tierras de Alden</title>
+  <meta name="description" content="Las doce clases y las nueve especies de las Tierras de Alden, en figura: elige una de cada y mírala por todos lados.">
+  <link rel="stylesheet" href="assets/css/personajes.css">
+  <script type="importmap">
+  { "imports": {
+      "three": "./assets/vendor/three/three.module.min.js",
+      "three/addons/": "./assets/vendor/three/addons/"
+  } }
+  </script>
+</head>
+<body>
+  <canvas id="lienzo" tabindex="0" aria-label="Figura del personaje elegido"></canvas>
+  <div id="rotulos" aria-hidden="true"></div>
+
+  <header class="cabecera">
+    <a class="volver" href="./">← Volver al mapa</a>
+    <h1>Personajes</h1>
+    <p id="quien" aria-live="polite"></p>
+  </header>
+
+  <main class="panel" aria-label="Elegir personaje">
+    <section>
+      <h2 id="t-especie">Especie</h2>
+      <div class="fichas" id="especies" role="group" aria-labelledby="t-especie"></div>
+    </section>
+    <section>
+      <h2 id="t-clase">Clase</h2>
+      <div class="fichas" id="clases" role="group" aria-labelledby="t-clase"></div>
+    </section>
+    <section class="acciones">
+      <button id="otra" type="button">Otra cara</button>
+      <button id="andar" type="button" aria-pressed="false">Andar</button>
+      <button id="todas" type="button" aria-pressed="false">Ver las doce clases</button>
+    </section>
+    <p class="nota">Arrastra para girar y pellizca o usa la rueda para acercar.</p>
+  </main>
+
+  <noscript><p class="aviso">Esta página necesita JavaScript para dibujar las figuras.</p></noscript>
+  <script type="module" src="assets/js/personajes.js"></script>
+</body>
+</html>

@@ -7,6 +7,7 @@ import { crearBarcoModelo } from './barco.js';
 import { crearMatas } from './campo.js';
 import { lluvia } from './clima.js';
 import { crearFigura } from './figuras.js';
+import { blanda as blandaDe } from './texturas.js';
 import { matUtil, cajaB, cantear, gBarril, gCarro, gGallina, gPerro, gOveja, gVaca, gPuesto, gPozo, gCaballo, gPebetero } from './utileria.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
@@ -151,7 +152,7 @@ export function crearEntrada(l) {
   const res = (x, z, ry, color, s = 1) => { const g = nido(x, z, ry); if (s < 0.9) enser(gPerro(color), 0, 0, 0, s / 0.62 * 1.05, 0, g); else if (color === 0xf0ece0) enser(gOveja(), 0, 0, 0, s / 1.2 * 1.1, 0, g); else enser(gVaca(color), 0, 0, 0, s / 2.2 * 1.1, 0, g); const fr = rnd() * 6.28; vivos.push(t => { g.rotation.x = Math.max(0, Math.sin(t * 0.4 + fr)) * 0.1; }); return g; };
   const carro = (x, z, ry, carga = ['sacos', 'pacas', 'barriles', 'cajas'][Math.floor(Math.abs(x * 7 + z * 3)) % 4]) => { const o = enser(gCarro({ carga }), x, z, ry, 1.05); o.userData.fijo = true; return o; };
   let texBlanda = null;
-  const blanda = () => { if (!texBlanda) { const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d'), g = x.createRadialGradient(32, 32, 0, 32, 32, 32); g.addColorStop(0, 'rgba(255,255,255,0.55)'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.fillRect(0, 0, 64, 64); texBlanda = new THREE.CanvasTexture(c); } return texBlanda; };
+  const blanda = () => texBlanda ??= blandaDe(0.55);
   const niebla = (n, y, radio, opacidad = 0.5, color = 0xffffff, ancho = 26) => { for (let i = 0; i < n; i++) { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: blanda(), transparent: true, depthWrite: false, opacity: opacidad, color })), x0 = (rnd() - 0.5) * radio * 2, z = (rnd() - 0.5) * radio * 2; s.scale.set(ancho, ancho * 0.28, 1); s.position.set(x0, y + rnd() * 1.5, z); escena.add(s); vivos.push(t => { s.position.x = x0 + Math.sin(t * 0.05 + i) * 10; }); } };
   const humo = (x, y, z, oscuro) => { for (let k = 0; k < 5; k++) { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: blanda(), transparent: true, depthWrite: false, color: oscuro ? 0x2a2725 : 0xd9d4cc })); escena.add(s); vivos.push(t => { const f = (t * 0.12 + k / 5) % 1; s.position.set(x + f * f * 5, y + f * 9, z); const e = 1.5 + f * 6; s.scale.set(e, e, 1); s.material.opacity = Math.sin(f * Math.PI) * (oscuro ? 0.7 : 0.5); }); } };
   const nevada = (n = 600, ancho = 80) => { const p = new Float32Array(n * 3); for (let i = 0; i < n; i++) { p[i * 3] = (rnd() - 0.5) * ancho; p[i * 3 + 1] = rnd() * 30; p[i * 3 + 2] = (rnd() - 0.5) * ancho; } const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(p, 3)); escena.add(new THREE.Points(g, new THREE.PointsMaterial({ color: 0xffffff, size: 0.22, transparent: true, opacity: 0.85 }))); vivos.push(() => { for (let i = 0; i < n; i++) { p[i * 3 + 1] -= 0.06; p[i * 3] += 0.03; if (p[i * 3 + 1] < 0) { p[i * 3 + 1] = 30; p[i * 3] = Math.sin(i * 12.9) * ancho * 0.5; } } g.attributes.position.needsUpdate = true; }); };

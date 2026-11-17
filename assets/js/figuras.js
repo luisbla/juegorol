@@ -99,6 +99,14 @@ const UTENSILIOS = {
   cesta: () => [u(cil(0.17, 0.12, 0.16, 8), 0xc79a52, 0.25).translate(0, -0.33, 0.03), u(cil(0.175, 0.175, 0.03, 8, true), 0x9a7238).translate(0, -0.255, 0.03), u(cil(0.01, 0.01, 0.17, 5), 0x9a7238).translate(0, -0.17, 0.03)],
   espada: () => { const hoja = new THREE.Shape(); hoja.moveTo(-0.05, 0); hoja.lineTo(-0.058, 0.56); hoja.lineTo(0, 0.78); hoja.lineTo(0.058, 0.56); hoja.lineTo(0.05, 0); hoja.closePath();
     return [u(new THREE.ExtrudeGeometry(hoja, { depth: 0.012, bevelEnabled: true, bevelThickness: 0.012, bevelSize: 0.014, bevelSegments: 1 }).translate(0, 0, -0.006).rotateY(PI / 2).rotateX(PI / 2), ACERO, 0.3).translate(0, PY, 0.12), u(caja(0.05, 0.26, 0.05), ORO).translate(0, PY, 0.1), u(cil(0.022, 0.022, 0.16, 6).rotateX(PI / 2), CUERO2).translate(0, PY, 0), u(octa(0.04), ORO).translate(0, PY, -0.1)]; },
+  maza: () => [mango(0.5).translate(0, PY, 0.18), u(esf(0.085, 6, 5), ACERO2, 0.3).translate(0, PY, 0.46), u(octa(0.11).scale(1, 0.35, 1), ACERO).translate(0, PY, 0.46), u(octa(0.11).scale(0.35, 1, 1), ACERO).translate(0, PY, 0.46)],
+  daga: () => [u(caja(0.014, 0.05, 0.27), ACERO, 0.3).translate(0, PY, 0.2), u(caja(0.035, 0.12, 0.028), ORO).translate(0, PY, 0.055), u(cil(0.02, 0.02, 0.11, 6).rotateX(PI / 2), CUERO2).translate(0, PY, -0.01)],
+  hachon: () => [mango(1.05, 0.026).translate(0, PY, 0.36), u(new THREE.CylinderGeometry(0.27, 0.27, 0.045, 8, 1, false, 0, PI).rotateZ(PI / 2).rotateX(PI), ACERO, 0.3).translate(0, PY - 0.02, 0.78), u(new THREE.CylinderGeometry(0.2, 0.2, 0.045, 8, 1, false, 0, PI).rotateZ(PI / 2), ACERO2, 0.3).translate(0, PY + 0.02, 0.78), u(cono(0.04, 0.16, 5).rotateX(PI / 2), ACERO).translate(0, PY, 0.96)],
+  baston: () => [u(cil(0.022, 0.028, 1.86, 6), 0x5a3f2a, 0.12).translate(0, 0.1, PZ), u(octa(0.085), 0x6fd0ff, 0.35).translate(0, 1.13, PZ), u(cil(0.05, 0.03, 0.08, 6), ORO).translate(0, 1.03, PZ)],
+  rama: () => [u(cil(0.022, 0.03, 1.8, 6), 0x6a4a2e, 0.12).translate(0, 0.08, PZ), u(octa(0.09).scale(1, 0.7, 1), 0x5f8f3a).translate(0.05, 1.02, PZ), u(octa(0.075).scale(1, 0.7, 1), 0x7aa648).translate(-0.06, 0.94, PZ + 0.03), u(octa(0.06).scale(1, 0.7, 1), 0x4a7a32).translate(0.0, 1.12, PZ - 0.03)],
+  arco: () => { const R = 0.62, A = 2.2, zt = R * Math.cos(A / 2) - R, yt = R * Math.sin(A / 2); return [u(new THREE.TorusGeometry(R, 0.016, 4, 12, A).rotateZ(-A / 2).rotateY(-PI / 2), MADERA, 0.1).translate(0, 0.1, PZ - R), u(cil(0.004, 0.004, yt * 2, 4), 0xe8e0d0, 0).translate(0, 0.1, PZ + zt), u(cil(0.026, 0.026, 0.12, 6), CUERO2).translate(0, 0.1, PZ)]; },
+  laud: () => [u(esf(0.13, 7, 5).scale(1, 0.5, 1.25), 0xb9824a, 0.25).translate(0, PY, 0.22), u(cil(0.045, 0.045, 0.012, 8), 0x3a2a20).translate(0, PY + 0.066, 0.22), u(caja(0.036, 0.026, 0.34), CUERO2).translate(0, PY + 0.02, 0.5), u(caja(0.06, 0.03, 0.07), 0xb9824a).translate(0, PY + 0.02, 0.69)],
+  orbe: o => [u(esf(0.085, 8, 6), o.brillo ?? 0x9fd8ff, 0.4).translate(0, PY + 0.02, 0.13), u(esf(0.045, 6, 4), 0xffffff, 0).translate(0.02, PY + 0.045, 0.16)],
   cetro: () => [u(cil(0.017, 0.02, 0.7, 6).rotateX(PI / 2), ORO).translate(0, PY, 0.22), u(cil(0.05, 0.022, 0.07, 6).rotateX(PI / 2), ORO).translate(0, PY, 0.59), u(octa(0.062), 0xc9283c, 0.35).translate(0, PY, 0.67), u(esf(0.03, 6, 4), ORO).translate(0, PY, -0.14)],
 };
 // Lo que no va en la mano: [hueso, piezas], en coordenadas de ese hueso
@@ -110,6 +118,7 @@ const CARGAS = {
     return ['anteI', [g.translate(0.1, -0.09, 0), u(cil(0.29, 0.29, 0.06, 14, true).rotateZ(PI / 2), ACERO2).translate(0.1, -0.09, 0), u(esf(0.07, 8, 5).scale(0.6, 1, 1), ACERO).translate(0.13, -0.09, 0)]]; },
   vaina: () => ['cadera', [u(caja(0.05, 0.56, 0.035).rotateX(-0.3), CUERO2).translate(0.25, -0.14, -0.08), u(caja(0.045, 0.045, 0.2), ORO).translate(0.25, 0.14, 0), u(cil(0.02, 0.02, 0.13, 6).rotateX(-0.3), CUERO).translate(0.25, 0.21, 0.02), u(octa(0.035), ORO).translate(0.25, 0.285, 0.045)]],
   carcaj: () => ['pecho', [u(cil(0.06, 0.05, 0.46, 6).rotateZ(0.35), CUERO).translate(0.06, 0.08, -0.22), u(cil(0.05, 0.05, 0.08, 5).rotateZ(0.35), 0xf4efe6, 0).translate(-0.03, 0.33, -0.22)]],
+  tomo: o => ['cadera', [u(caja(0.07, 0.22, 0.17), o.tomo ?? 0x5a2f4a, 0.2).translate(-0.275, -0.05, 0.02), u(caja(0.06, 0.19, 0.15), 0xf0e8d4, 0).translate(-0.283, -0.05, 0.032), u(caja(0.075, 0.03, 0.03), ORO, 0).translate(-0.275, -0.05, 0.11)]],
   zurron: () => ['cadera', [u(caja(0.08, 0.16, 0.18), 0x9a6a3e).translate(-0.26, -0.02, 0.02), u(caja(0.09, 0.07, 0.19), CUERO).translate(-0.262, 0.04, 0.02), u(caja(0.03, 0.03, 0.03), ORO, 0).translate(-0.31, 0.0, 0.02)]],
 };
 const cuelga = (hueso, geos) => { const m = new THREE.Mesh(mergeGeometries(geos), material); m.castShadow = true; hueso.add(m); return m; };
@@ -136,23 +145,36 @@ function cuerpo(o, rnd, neutro = false) {
     [0, 0.78, 0, 0.222 * kc, 0.175 + b], [0, 0.98, 0.004 + b * 0.5, 0.196 * k, 0.15 + b], [0, 1.18, 0.005, 0.24 * k, 0.172 + b * 0.3], [0, 1.255, 0.003, 0.25 * k, 0.166], [0, 1.31, 0, 0.255 * k, 0.158], [0, 1.375, 0, 0.13, 0.11]], { n: 16, tapas: false }), pinta, tronco, { duro: false, grad: 0.3, cuadros: true, ...ROPA }));
   P.push(pz(en(cil(0.2, 0.2, 0.02, 12).scale(kc * 1.15, 1, 0.9), 0, bajo + 0.01, 0), 0x2a2024, falda, { grad: 0 }));
   if (peto) { for (const s of [-1, 1]) P.push(pz(en(caja(0.035, 0.22, 0.02).rotateZ(s * 0.5).rotateX(-0.35), s * 0.115, 1.3, 0.13), o.delantal, H('pecho'), { grad: 0 })); P.push(pz(en(caja(0.4 * k, 0.24, 0.022), 0, bajo - 0.1, 0.2 + b * 0.6), o.delantal, [[N.cadera, 0.6], [N.musloI, 0.2], [N.musloD, 0.2]], { grad: 0.2 })); }
+  if (o.cola) P.push(pz(en(cono(0.065, 0.66, 5).rotateX(-2.0), 0, 0.6, -0.4), o.cola, H('cadera'), { grad: 0.2 }));
   // --- cuello y cabeza; todo lo de la cabeza se guarda aparte para poder agrandarla
   const cab = H('cabeza');
   P.push(pz(tubo([[0, 1.35, 0, 0.082, 0.078], [0, 1.45, 0, 0.078, 0.074]], { n: 8, e: 1 }), piel, entre('cabeza', 'pecho', 1.44, 1.36), { duro: false, grad: 0, ...PIEL }));
   PC.push(pz(tubo([[0, 1.425, 0.01, 0.09, 0.09], [0, 1.46, 0.01, 0.16, 0.15], [0, 1.53, 0.01, 0.188, 0.172], [0, 1.64, 0.01, 0.196, 0.18], [0, 1.75, 0.01, 0.19, 0.176], [0, 1.825, 0.01, 0.158, 0.148], [0, 1.865, 0.01, 0.09, 0.085]], { n: 12, e: 0.8 }), piel, cab, { duro: false, grad: 0.1, ...PIEL }));
   for (const s of [-1, 1]) {
     PC.push(pz(en(esf(0.045, 6, 5).scale(0.5, 1, 0.8), s * 0.196, 1.6, 0), piel, cab, { duro: false, grad: 0, ...PIEL }));
-    PC.push(pz(en(esf(0.035, 8, 6).scale(1, 1.35, 0.4), s * 0.077, 1.625, 0.182), OJO, cab, { duro: false, grad: 0 }), pz(en(esf(0.011, 5, 4), s * 0.077 + 0.012, 1.647, 0.196), 0xffffff, cab, { duro: false, grad: 0 }));
-    PC.push(pz(en(caja(0.09, o.mujer ? 0.018 : 0.028, 0.03).rotateZ(-s * (o.ceno ?? 0.1)), s * 0.08, 1.708, 0.178), o.pelo, cab, { grad: 0, ...PELO }));
+    if (o.troll) PC.push(pz(en(caja(0.075, 0.05, 0.02), s * 0.085, 1.652, 0.176), 0x15181c, cab, { grad: 0 }), pz(en(caja(0.04, 0.014, 0.012).rotateZ(s * 0.3), s * 0.08, 1.648, 0.188), 0xa8dcff, cab, { grad: 0 }));
+    else PC.push(pz(en(esf(0.035, 8, 6).scale(1, 1.35, 0.4), s * 0.077, 1.625, 0.182), OJO, cab, { duro: false, grad: 0 }), pz(en(esf(0.011, 5, 4), s * 0.077 + 0.012, 1.647, 0.196), 0xffffff, cab, { duro: false, grad: 0 }));
+    if (!o.troll) PC.push(pz(en(caja(0.09, o.mujer ? 0.018 : 0.028, 0.03).rotateZ(-s * (o.ceno ?? 0.1)), s * 0.08, 1.708, 0.178), o.pelo, cab, { grad: 0, ...PELO }));
   }
   PC.push(pz(en(esf(0.03, 6, 4), 0, 1.562, 0.19), piel, cab, { duro: false, grad: 0.5, ...PIEL }));
-  if (!o.barba) PC.push(pz(en(caja(o.mujer ? 0.055 : 0.07, 0.014, 0.012), 0, 1.495, 0.176), o.mujer ? 0xb5483f : 0x9a5040, cab, { grad: 0 }));
+  if (!o.barba && !o.troll && !o.hocico) PC.push(pz(en(caja(o.mujer ? 0.055 : 0.07, 0.014, 0.012), 0, 1.495, 0.176), o.mujer ? 0xb5483f : 0x9a5040, cab, { grad: 0 }));
   // --- troll de escarcha: quijada, colmillos, orejas de punta, ceño de piedra y el collar de hierro con su esquirla azul
   if (o.troll) {
-    PC.push(pz(en(caja(0.26, 0.085, 0.1), 0, 1.5, 0.12), piel, cab, { grad: 0, ...PIEL }), pz(en(caja(0.3, 0.05, 0.07), 0, 1.722, 0.15), piel, cab, { grad: 0, ...PIEL }), pz(en(esf(0.05, 6, 4).scale(1.2, 0.9, 1), 0, 1.575, 0.2), piel, cab, { duro: false, grad: 0.4, ...PIEL }));
-    for (const s of [-1, 1]) PC.push(pz(en(cono(0.024, 0.11, 5), s * 0.085, 1.565, 0.165), 0xf2ead8, cab, { grad: 0 }), pz(en(cono(0.045, 0.2, 4).rotateZ(-s * 1.15), s * 0.28, 1.66, -0.02), piel, cab, { grad: 0, ...PIEL }));
+    PC.push(pz(en(caja(0.31, 0.12, 0.15), 0, 1.485, 0.125), piel, cab, { grad: 0, ...PIEL }), pz(en(esf(0.05, 6, 4).scale(1.3, 0.8, 0.9), 0, 1.585, 0.2), piel, cab, { duro: false, grad: 0.4, ...PIEL }), pz(en(caja(0.17, 0.016, 0.012), 0, 1.528, 0.202), 0x1c1416, cab, { grad: 0 }));
+    for (const s of [-1, 1]) PC.push(pz(en(caja(0.17, 0.075, 0.1).rotateZ(s * 0.38), s * 0.085, 1.7, 0.165), piel, cab, { grad: 0, ...PIEL }), pz(en(caja(0.05, 0.016, 0.012).rotateZ(-s * 0.5), s * 0.105, 1.518, 0.202), 0x1c1416, cab, { grad: 0 }));
+    for (const s of [-1, 1]) PC.push(pz(en(cono(0.03, 0.17, 5), s * 0.115, 1.6, 0.185), 0xf2ead8, cab, { grad: 0 }), pz(en(cono(0.045, 0.2, 4).rotateZ(-s * 1.15), s * 0.28, 1.66, -0.02), piel, cab, { grad: 0, ...PIEL }));
     P.push(pz(tubo([[0, 1.365, 0, 0.105, 0.1], [0, 1.415, 0, 0.105, 0.1]], { n: 8, e: 1 }), 0x3a3d46, entre('cabeza', 'pecho', 1.44, 1.36), { grad: 0 }), pz(en(octa(0.04), 0, 1.39, 0.105), 0x6fd0ff, entre('cabeza', 'pecho', 1.44, 1.36), { grad: 0 }));
   }
+  // --- otras gentes: orejas de punta, colmillos, cuernos, hocico con cresta y marcas en la piel
+  if (o.orejas) for (const s of [-1, 1]) PC.push(pz(en(cono(0.034, o.orejas === 'larga' ? 0.21 : 0.13, 4).rotateZ(-s * 1.0), s * (o.orejas === 'larga' ? 0.27 : 0.235), 1.66, -0.01), piel, cab, { grad: 0, ...PIEL }));
+  if (o.colmillos) for (const s of [-1, 1]) PC.push(pz(en(cono(0.02, 0.08, 5), s * 0.062, 1.535, 0.186), 0xf2ead8, cab, { grad: 0 }));
+  if (o.cuernos) for (const s of [-1, 1]) PC.push(pz(en(cono(0.045, 0.26, 5).rotateX(-0.75).rotateZ(-s * 0.45), s * 0.135, 1.885, -0.05), o.cuernos, cab, { grad: 0.3 }));
+  if (o.hocico) {
+    PC.push(pz(en(caja(0.2, 0.115, 0.17), 0, 1.565, 0.21), piel, cab, { grad: 0.2, ...PIEL }), pz(en(caja(0.17, 0.014, 0.012), 0, 1.535, 0.297), 0x2a1c18, cab, { grad: 0 }));
+    for (const s of [-1, 1]) PC.push(pz(en(caja(0.02, 0.02, 0.012), s * 0.045, 1.6, 0.297), 0x2a1c18, cab, { grad: 0 }));
+    if (!o.tocado) for (let i = 0; i < 4; i++) PC.push(pz(en(cono(0.036, 0.12 - i * 0.012, 4).rotateX(-0.45 - i * 0.38), 0, 1.885 - i * i * 0.022, 0.06 - i * 0.09), o.hocico, cab, { grad: 0.2 }));
+  }
+  if (o.marcas) for (const [mx, my, mz, w] of [[0, 1.845, 0.1, 0.16], [0.13, 1.8, 0.03, 0.07], [-0.13, 1.8, 0.03, 0.07], [0, 1.5, 0.186, 0.05]]) PC.push(pz(en(caja(w, 0.02, 0.03), mx, my, mz), o.marcas, cab, { grad: 0 }));
   // --- pelo y barba, a golpes de faceta
   const tapado = ['capucha', 'toca', 'casco'].includes(o.tocado), pe = o.peinado;
   if (!tapado && pe !== 'calvo') {
@@ -181,6 +203,9 @@ function cuerpo(o, rnd, neutro = false) {
   } else if (o.tocado === 'sombrero') {
     const ala = (o.ala ?? 0.25) * 1.4;
     PC.push(pz(en(cil(ala, ala * 1.04, 0.03, 10), 0, 1.8, 0), tc, cab, { grad: 0.1 }), pz(en(cil(0.17, 0.2, 0.14, 8), 0, 1.875, 0), tc, cab, { grad: 0.2 }), pz(en(cil(0.204, 0.204, 0.035, 8, true), 0, 1.83, 0), CUERO2, cab));
+    if (o.plumaTocado) PC.push(pz(en(cono(0.035, 0.34, 4).rotateX(-0.35).rotateZ(-0.35), 0.17, 2.0, -0.06), o.plumaTocado, cab, { grad: 0.2 }));
+  } else if (o.tocado === 'pico') {
+    PC.push(pz(en(cil(0.37, 0.385, 0.028, 10), 0, 1.8, 0), tc, cab, { grad: 0.1 }), pz(en(cono(0.205, 0.5, 8).rotateX(-0.12), 0, 2.05, -0.03), tc, cab, { grad: 0.25 }), pz(en(cil(0.208, 0.208, 0.045, 8, true), 0, 1.835, 0), ORO, cab));
   } else if (o.tocado === 'gorro') {
     PC.push(pz(en(cil(0.2, 0.218, 0.11, 8), 0, 1.835, -0.005), tc, cab, { grad: 0.2 }), pz(en(esf(0.2, 8, 3, 0, 2 * PI, 0, PI / 2).scale(1, 0.45, 1), 0, 1.89, -0.005), tc, cab, { grad: 0.1 }), pz(en(cil(0.224, 0.224, 0.045, 8, true), 0, 1.795, -0.005), o.manto ?? CUERO2, cab));
   } else if (o.tocado === 'corona') {
@@ -248,6 +273,42 @@ export function vestir(tipo = 'aldeano', rnd = Math.random, color) {
   else if (tipo === 'monje') mas({ largo: 0.84, tocado: 'capucha', barba: 0, cuerda: true });
   else if (tipo === 'troll') { const p = de(rnd, [0x8fa3b5, 0x7f96a8, 0x9aaab4]); mas({ troll: true, piel: p, pelo: 0x56606c, color: color ?? 0x6a5646, ancho: 1.42 + rnd() * 0.1, barriga: 0.09, largo: 0.34, peinado: 'calvo', barba: 0, ceno: 0.32, mangaCorta: true, calzas: p, botas: col.setHex(p).multiplyScalar(0.7).getHex(), botaAlta: false, cabezon: 0.9, tocado: undefined, cuerda: true, cinto: false }); }
   return o;
+}
+
+/* ---------- clases y especies: recetas que se suman a un vestuario base ---------- */
+const CLASE = {
+  'Bárbaro': r => ({ color: 0x6a4a30, largo: 0.3, mangaCorta: true, manto: de(r, [0x8a7458, 0xa39c8e, 0x5a4a3c]), peinado: 'largo', barba: 0.9, ceno: 0.24, ancho: 1.14, punos: CUERO, botaAlta: true, lleva: 'hachon' }),
+  'Bardo': r => ({ color: de(r, [0x8a2f6a, 0x2f6f8a, 0xa8402e]), largo: 0.42, ribete: ORO, tocado: 'sombrero', colorTocado: 0x2f3f6a, ala: 0.2, plumaTocado: 0xd9482e, capa: 0x2f3f6a, punos: ORO, lleva: 'laud', botaAlta: true }),
+  'Brujo': r => ({ color: 0x3a2a4a, largo: 0.84, tocado: 'capucha', ribete: 0x8a5ac8, punos: 0x8a5ac8, cinto: true, lleva: 'orbe', brillo: 0xb58cff, carga: ['tomo'], tomo: 0x2a1c2e }),
+  'Clérigo': r => ({ color: 0xe8e0cc, largo: 0.62, franja: true, ribete: ORO, manga: MALLA, calzas: MALLA, punos: CUERO, emblema: true, lleva: 'maza', carga: ['escudo'] }),
+  'Druida': r => ({ color: 0x4f6a3a, largo: 0.82, manto: 0x6a5a3c, peinado: 'largo', cuerda: true, cinto: false, ribete: 0x8a6a3a, lleva: 'rama', carga: ['zurron'] }),
+  'Explorador': r => ({ color: 0x4a5a34, largo: 0.34, tocado: 'capucha', capa: 0x3a452a, guante: CUERO, punos: CUERO, botaAlta: true, lleva: 'arco', carga: ['carcaj', 'vaina'] }),
+  'Guerrero': r => ({ color: de(r, [0x7a2e2a, 0x2f4f8a, 0x3a6a3a]), largo: 0.34, tocado: 'casco', cresta: 0x9a2a2a, manga: MALLA, calzas: MALLA, hombreras: true, emblema: true, ribete: ORO, punos: CUERO, guante: 0x5a3a26, ancho: 1.08, barriga: 0, lleva: 'espada', carga: ['escudo', 'vaina'] }),
+  'Hechicero': r => ({ color: 0xb23a2e, largo: 0.72, ribete: ORO, franja: true, punos: ORO, peinado: 'largo', capa: 0x5a1c24, lleva: 'orbe', brillo: 0xffb04a }),
+  'Mago': r => ({ color: 0x2f4f8a, largo: 0.86, tocado: 'pico', colorTocado: 0x2f4f8a, ribete: 0xd9c27a, punos: 0xd9c27a, barba: 1.1, pelo: 0xd4cfc6, lleva: 'baston', carga: ['tomo'], tomo: 0x7a2f2a }),
+  'Monje': r => ({ color: 0xc27a2a, largo: 0.5, mangaCorta: true, cuerda: true, cinto: false, peinado: 'calvo', barba: 0, calzas: 0x8a5a2a, botaAlta: false, ribete: 0x8a3a1e }),
+  'Paladín': r => ({ color: 0xe6e0d0, largo: 0.5, franja: true, ribete: ORO, manga: ACERO, calzas: ACERO2, hombreras: true, emblema: true, punos: ORO, guante: ACERO2, capa: de(r, [0x2f4f8a, 0x8a1c2c]), capaLarga: true, ancho: 1.1, barriga: 0, lleva: 'espada', carga: ['escudo'] }),
+  'Pícaro': r => ({ color: 0x33333c, largo: 0.3, tocado: 'capucha', capa: 0x25252c, guante: 0x2a2024, punos: 0x2a2024, botaAlta: true, botas: 0x2a2024, calzas: 0x3a3a44, barriga: 0, lleva: 'daga', llevaI: 'daga', carga: ['zurron'] }),
+};
+const ESPECIE = {
+  'Humano': () => ({}),
+  'Elfo': (r, o) => ({ talla: 0.98, ancho: o.ancho * 0.9, orejas: 'larga', barba: 0, barriga: 0, peinado: o.peinado === 'calvo' ? 'calvo' : 'largo', pelo: de(r, [0xe6dcc0, 0xd4cfc6, 0x2a1f18, 0x9a6a2e]) }),
+  'Enano': (r, o) => ({ talla: 0.74, ancho: o.ancho * 1.26, cabezon: 1.18, barba: o.mujer ? 0 : Math.max(1.3, o.barba), peinado: o.peinado === 'calvo' ? 'calvo' : 'largo', pelo: de(r, [0x8a3a1e, 0x5a3a22, 0xd4cfc6, 0x2a1f18]) }),
+  'Gnomo': (r, o) => ({ talla: 0.6, ancho: o.ancho * 0.96, cabezon: 1.32, orejas: 'punta', barba: o.barba ? 0.5 : 0, pelo: de(r, [0xd4cfc6, 0xe6dcc0, 0x9a6a2e, 0xc86a3a]) }),
+  'Mediano': (r, o) => ({ talla: 0.62, ancho: o.ancho * 1.0, cabezon: 1.2, barba: 0, botas: o.piel, botaAlta: false, peinado: o.peinado === 'calvo' ? 'calvo' : 'corto', pelo: de(r, [0x5a3a22, 0x9a6a2e, 0x8a3a1e]) }),
+  'Goliat': (r, o) => ({ talla: 1.28, ancho: o.ancho * 1.16, cabezon: 0.9, piel: de(r, [0xb9bec4, 0xa9b0b8, 0xc8c4bc]), marcas: 0x4a5560, peinado: 'calvo', barba: 0, ceno: 0.2 }),
+  'Orco': (r, o) => ({ talla: 1.08, ancho: o.ancho * 1.16, piel: de(r, [0x7f9a6a, 0x8a9a7a, 0x6f8a70]), colmillos: true, orejas: 'punta', ceno: 0.26, barba: 0, pelo: 0x1a1a1a }),
+  'Tiefling': (r, o) => { const p = de(r, [0xb8443c, 0x8a5ab0, 0xc86a5a, 0x5a6ab0]); return { piel: p, cuernos: 0x2a2024, cola: p, orejas: 'punta', barba: 0, pelo: de(r, [0x1a1a1a, 0x3a1c2c, 0xd4cfc6]) }; },
+  'Dracónido': (r, o) => { const [p, c] = de(r, [[0xc79a3a, 0x8a6a1e], [0xa8402e, 0x6a1c14], [0x3f7aa8, 0x24486a], [0x4a8a4a, 0x2a5a2a], [0xb8b8c0, 0x7a7a88]]); return { talla: 1.08, ancho: o.ancho * 1.1, piel: p, hocico: c, cola: p, peinado: 'calvo', barba: 0, botas: c, botaAlta: false, manga: o.manga === undefined ? undefined : o.manga }; },
+};
+export const CLASES = Object.keys(CLASE), ESPECIES = Object.keys(ESPECIE);
+// Opciones para crearFigura: un aldeano de base, la ropa y el equipo de la clase encima y, lo último, el cuerpo de la especie.
+export function personaje(clase, especie, rnd = Math.random) {
+  const o = vestir('aldeano', rnd); delete o.tocado; delete o.colorTocado;
+  o.mujer = rnd() < 0.5; if (o.mujer) { o.barba = 0; o.ancho *= 0.93; o.barriga = 0; if (o.peinado === 'calvo') o.peinado = 'largo'; }
+  Object.assign(o, CLASE[clase]?.(rnd) ?? {}); if (o.mujer) o.barba = 0;
+  Object.assign(o, ESPECIE[especie]?.(rnd, o) ?? {});
+  return { rnd, talla: 1, ...o, tocado: o.tocado ?? null, colorTocado: o.colorTocado ?? null, tipo: 'aldeano' };
 }
 
 /* ---------- posturas ---------- */
@@ -320,7 +381,7 @@ function posar(f, t, dt) {
 
 /* ---------- la figura ---------- */
 const opcionesDe = opciones => { const rnd = opciones.rnd ?? Math.random; return { ...vestir(opciones.tipo, rnd, opciones.color), ...Object.fromEntries(Object.entries(opciones).filter(([, v]) => v !== undefined)) }; };
-const POSTURA_DE = { lanza: 'guardia', cayado: 'guardia' };
+const POSTURA_DE = { lanza: 'guardia', cayado: 'guardia', baston: 'guardia', rama: 'guardia', arco: 'guardia' };
 export function crearFigura(opciones = {}) {
   const rnd = opciones.rnd ?? Math.random, o = opcionesDe(opciones), talla = opciones.talla ?? 1, huesos = esqueleto();
   const malla = new THREE.SkinnedMesh(cuerpo(o, rnd), material);

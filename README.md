@@ -38,8 +38,10 @@ assets/
   js/render.js         posproceso: oclusión ambiental, resplandor, etalonaje y viñeta; modo maqueta para las fotos
   js/codice.js         el códice: regiones, facciones, gente, rumores y crónica, leídos de mundo.json
   js/figuras.js        la gente: figuras con esqueleto (una malla continua con huesos), oficios, posturas y lo que llevan en la mano
+  js/texturas.js       borrones blandos (humo, nubes, brillos, llamas) calculados píxel a píxel; no usar degradados de canvas con transparencia: en Safari dejan motas de color
   js/utileria.js       enseres y animales del mismo estilo que la gente: barriles, cajones, carros, puestos, pozo, muebles, gallinas, perros, ovejas, vacas, caballos
   js/mazmorra.js       levanta el interior de una ruina a partir de una planta que solo viene en el archivo del máster
+  js/personajes.js     la página «Personajes»: clases y especies combinables, en figura
   js/master.js         lector de la vista de máster; los datos van en un archivo aparte que no está en el repositorio
   js/modelos.js        carga opcional de modelos glTF de artista
   js/ambiente.js       cielo, sombras, nubes, nieve, niebla, humo, barcos, pájaros, faro, luces de noche
@@ -131,10 +133,20 @@ El archivo puede traer además `reglas` (sistema, niveles y tabla de presupuesto
 - **Niveles:** en vez de `salas` y `pasos` sueltos, la planta puede llevar `"niveles": [{ "nombre": "…", "tono": {…}, "salas": […], "pasos": […] }, …]`. La ficha saca entonces un botón por nivel, como en la taberna, y el visor vuela al encuadre de cada uno. El `tono` de un nivel pisa el general.
 - **Salas:** rectángulos centrados en `x, z` (+z hacia quien mira). `y` es la altura del suelo: si dos salas unidas están a distinta altura, el paso baja en escalones. `forma: "ochava"` mata las esquinas; `arcos` pone vigas de piedra de muro a muro. Al señalar una sala, la ficha enseña `voz` («En voz alta») y, en el bloque de máster, `secreto`, `peligro` y `encuentro` (los números de juego).
 - **Pasos:** salen rectos si las dos salas se solapan en un eje y hacen un codo si no; el hueco, el marco y los escalones se ponen solos. `puerta`: `losa`, `cera`, `reja`, `derrumbe` u `oculta` (se tapia y se marca en lila por arriba, solo para quien dirige).
-- **Estilo** (`tono.estilo`): `cripta`, `hielo`, `arenisca` o `ahogada`. Decide el aderezo que se reparte solo: verdín, carámbanos y escarcha, raíces y arena, o charcos y limo. `antorcha` es el color de las llamas de pared (`false` para dejarla a oscuras).
-- **Rasgos** (medidos desde el centro de su sala): `columna`, `yacente`, `sarcofago`, `estatua`, `pozo`, `eje`, `mesa`, `altar`, `rueda`, `aro`, `raices`, `agua`, `hielo`, `bloques`, `escombro`, `escalera`, `losa`, `cofre`, `banco`, `barril`, `brasero`, `urna`, `huesos`, `astillero`, `trampa`, `marca`, `canal`, `puente`, `reja`, `tobera`, `estante`, `puesto`, `monedas`, `helado`, `valvula`, `arador`, `riada`, `figura`, `bestia`, `nido`, `escarcha` y `nota` (un rótulo con su `secreto`).
+- **Estilo** (`tono.estilo`): `cripta`, `hielo`, `arenisca`, `ahogada` o `mina`. Decide el aderezo que se reparte solo: verdín, carámbanos y escarcha, raíces y arena, charcos y limo, o mena suelta. En `mina`, pilastras, fajas y marcos son de madera de entibar. Cada nivel puede llevar su propio `tono` y, con él, su estilo. `antorcha` es el color de las llamas de pared (`false` para dejarla a oscuras).
+- **Rasgos** (medidos desde el centro de su sala): `columna`, `yacente`, `sarcofago`, `estatua`, `pozo`, `eje`, `mesa`, `altar`, `rueda`, `aro`, `raices`, `agua`, `hielo`, `bloques`, `escombro`, `escalera`, `losa`, `cofre`, `banco`, `barril`, `brasero`, `urna`, `huesos`, `astillero`, `trampa`, `marca`, `canal`, `puente`, `reja`, `tobera`, `estante`, `puesto`, `monedas`, `helado`, `valvula`, `arador`, `riada`, `figura`, `bestia`, `madre`, `nido`, `escarcha`, `poyo`, `entibado`, `vagoneta`, `mena`, `picos`, `tapia` y `nota` (un rótulo con su `secreto`).
 
-Los pasos largos llevan solos sus fajas de piedra y antorchas. Toda la piedra fija de un nivel se junta en una malla por material, así que una planta grande no pesa más que una pequeña.
+Los pasos largos llevan solos sus fajas y antorchas; los llanos, además, una calle de losas por el centro y algo caído junto a los muros según el estilo. Toda la piedra fija de un nivel se junta en una malla por material, así que una planta grande no pesa más que una pequeña.
+
+## Personajes
+
+`personajes.html` es una página aparte, enlazada desde la cabecera del mapa. Enseña las doce clases y las nueve especies del SRD 5.2.1 como figuras del mismo molde que la gente del mapa: se elige una de cada y se combinan, así que salen las 108 parejas sin dibujar ninguna a mano.
+
+- **Clases y especies** son recetas en `js/figuras.js` (`CLASE` y `ESPECIE`): la clase pone ropa, tocado y lo que lleva en las manos; la especie cambia talla, proporciones, piel y rasgos (orejas, colmillos, cuernos, cola, hocico). `personaje(clase, especie, rnd)` devuelve las opciones para `crearFigura`.
+- **«Otra cara»** cambia la semilla: misma clase y especie, otra persona. **«Andar»** pone el ciclo de marcha. **«Ver las doce clases»** las alinea con su rótulo.
+- La página no carga el mapa ni sus datos: solo `three`, `figuras.js` y `ruido.js`. En pantallas de pie o estrechas el panel baja al pie y el encuadre se ajusta a lo que queda libre.
+- Se puede abrir ya elegida: `personajes.html?c=Mago&e=Elfo`.
+- Los nombres de clases y especies son los del System Reference Document 5.2.1 de Wizards of the Coast LLC (https://www.dndbeyond.com/srd), con licencia CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/legalcode). Las figuras son propias.
 
 ## Probar en local
 

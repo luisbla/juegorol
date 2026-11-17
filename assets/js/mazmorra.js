@@ -2,7 +2,7 @@
 // Aquí solo está el constructor. Las plantas no van en esta web: vienen en el archivo del máster (master.js) y sin él no hay nada que ver.
 //
 // planta = { tono, salas: [...], pasos: [...] }   o, con varios niveles,   { tono, niveles: [{ nombre, tono, salas, pasos }, ...] }
-//   tono:  { suelo, muro, luz, fondo, cielo, verdin, estilo: 'cripta' | 'hielo' | 'arenisca' | 'ahogada', antorcha: color | false }
+//   tono:  { suelo, muro, luz, fondo, cielo, verdin, estilo: 'cripta' | 'hielo' | 'arenisca' | 'ahogada' | 'mina', antorcha: color | false }
 //   sala:  { id, n, nombre, x, z, w, d, y, forma: 'ochava', arcos, antorchas, luz, voz, secreto, peligro, encuentro, texto, rasgos: [...] }
 //   paso:  { de, a, ancho, puerta: 'losa' | 'reja' | 'oculta' | 'derrumbe' | 'cera', nota }
 // Las salas son rectángulos centrados en (x, z); +z es hacia quien mira, y por ahí suele estar la entrada. «y» es la altura del suelo:
@@ -12,7 +12,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { azarDe } from './ruido.js';
 import { crearFigura } from './figuras.js';
-import { matUtil, cantear, gCofre, gBanco, gPerro, gBarril, gPebetero, gBrasero, gPuesto } from './utileria.js';
+import { matUtil, cantear, gCofre, gBanco, gAlimana, gAlimanaMadre, gBarril, gPebetero, gBrasero, gPuesto } from './utileria.js';
 
 const ALTO = 3.8, GRUESO = 0.8, PI = Math.PI;
 
@@ -27,6 +27,8 @@ function levantar(planta, id, escena) {
   const cSuelo = tono.suelo ?? 0x6a6a64, cMuro = tono.muro ?? 0x55554f;
   const suelo = canto(cSuelo), losas = canto(tinte(cSuelo, 1.22), 1.3, 1.3), muro = canto(cMuro), remate = canto(tinte(cMuro, 1.28), 0.6, 1.2);
   const hierro = suelto(0x2c2e34, { metalness: 0.5, roughness: 0.6 }), hueso = suelto(0xd8d2c0), negro = suelto(0x040506);
+  // en una mina, lo que en las ruinas es piedra labrada (pilastras, fajas, marcos) es madera de entibar
+  const madera = suelto(0x6e4e30), viga = estilo === 'mina' ? madera : remate, menaM = suelto(0x3a3632), oxido = suelto(0x6e4630), tapiaM = suelto(tinte(cMuro, 1.45));
   const fuegoColor = tono.antorcha === undefined ? 0xffa040 : tono.antorcha, fuego = fuegoColor === false ? null : brillo(fuegoColor, 2.6);
 
   // Lo fijo se junta por material al final: una malla por piedra en vez de cientos. «piedra» trocea en sillares; «fijo» va tal cual.
@@ -115,7 +117,21 @@ function levantar(planta, id, escena) {
       c[0].rotation.x = PI; c[2].rotation.x = c[3].rotation.x = PI / 2; for (const o of c) o.castShadow = false; for (const s of [-1, 1]) pieza(new THREE.SphereGeometry(0.5, 7, 5), m, s * 1.5, 2.7, 0.4, g).scale.set(1, 1.6, 1); luz(x, 3, z, 0x58b8ff, 20, 12);
       vivos.push(t => { g.rotation.y = t * 0.9; c[2].position.y = 2.2 + Math.sin(t * 2) * 0.25; c[3].position.y = 4.0 + Math.sin(t * 2.6 + 1) * 0.2; g.position.y = Math.sin(t * 1.3) * 0.12; }); },
     figura,
-    bestia: (r, x, z) => { const o = pieza(gPerro(r.color ?? 0xe6dfd6), matUtil, x, 0, z); o.rotation.y = r.mira ?? rnd() * 6; o.scale.setScalar(r.k ?? 1.5); const f = rnd() * 6; vivos.push(t => { o.rotation.x = Math.sin(t * 1.3 + f) * 0.05; o.rotation.y += Math.sin(t * 0.4 + f) * 0.0015; }); },
+    // asiento de piedra, con su respaldo: para lo que lleva sentado más de lo que dura una silla
+    poyo: (r, x, z) => { const ry = r.mira ?? 0, w = r.w ?? 1.6, h = r.h ?? 0.9, d = r.d ?? 1.3, s = Math.sin(ry), c = Math.cos(ry); bloque(remate, w + 0.4, 0.2, d + 0.4, x, b, z, ry); bloque(muro, w, h - 0.2, d, x, b + 0.2, z, ry); if (r.respaldo !== false) bloque(remate, w, (r.alto ?? 1.7), 0.34, x - s * (d / 2 + 0.17), b + 0.2, z - c * (d / 2 + 0.17), ry); },
+    // cuadros de entibar: dos pies derechos y un cabezal; «n» cuadros, uno detrás de otro
+    entibado: (r, x, z) => { const ry = r.mira ?? 0, w = r.w ?? 6, n = r.n ?? 1, paso = r.paso ?? 2.6, c = Math.cos(ry), s = Math.sin(ry); for (let i = 0; i < n; i++) { const o = (i - (n - 1) / 2) * paso, ex = x + s * o, ez = z + c * o; for (const k of [-1, 1]) bloque(madera, 0.34, ALTO - b - 0.3, 0.34, ex + c * k * w / 2, b, ez - s * k * w / 2, ry); bloque(madera, w + 0.9, 0.34, 0.4, ex, ALTO - 0.34, ez, ry); } },
+    // vagoneta: caja de tablas sobre cuatro ruedas, cargada o «vacia»
+    vagoneta: (r, x, z) => { const ry = r.mira ?? 0, c = Math.cos(ry), s = Math.sin(ry); bloque(madera, 1.3, 0.8, 2.0, x, b + 0.34, z, ry); bloque(hierro, 1.36, 0.08, 2.06, x, b + 0.3, z, ry); for (const [lx, lz] of [[-0.74, -0.62], [0.74, -0.62], [-0.74, 0.62], [0.74, 0.62]]) echar(hierro, new THREE.CylinderGeometry(0.3, 0.3, 0.12, 10), x + c * lx + s * lz, b + 0.3, z - s * lx + c * lz, ry, 0, PI / 2); if (!r.vacia) for (let i = 0; i < 6; i++) echar(i % 3 ? menaM : oxido, new THREE.DodecahedronGeometry(0.26 + rnd() * 0.12, 0), x + (rnd() - 0.5) * 0.7, b + 1.2 + rnd() * 0.12, z + (rnd() - 0.5) * 1.2, rnd() * 3, rnd() * 3); },
+    // montón de mena
+    mena: (r, x, z) => { for (let i = 0; i < (r.n ?? 8); i++) { const a = rnd() * 6.283, d = rnd() * (r.r ?? 1.1), k = 0.22 + rnd() * 0.24; echar(i % 3 ? menaM : oxido, new THREE.DodecahedronGeometry(k, 0), x + Math.cos(a) * d, b + k * 0.6 + Math.max(0, 0.8 - d) * 0.55, z + Math.sin(a) * d, rnd() * 3, rnd() * 3); } },
+    // picos dejados en fila en el suelo
+    picos: (r, x, z) => { const n = r.n ?? 3, ry = r.mira ?? 0, c = Math.cos(ry), s = Math.sin(ry); for (let i = 0; i < n; i++) { const o = (i - (n - 1) / 2) * (r.paso ?? 0.6), px = x + c * o, pz = z - s * o; echar(madera, new THREE.CylinderGeometry(0.04, 0.04, 1.15, 5), px, b + 0.07, pz, 0, PI / 2, -ry); echar(hierro, new THREE.BoxGeometry(0.4, 0.08, 0.09), px + s * 0.52, b + 0.08, pz + c * 0.52, ry); } },
+    // tapia: un muro nuevo, de bloques desiguales, cerrando un hueco; con «escarcha», las juntas blancas
+    tapia: (r, x, z) => { const ry = r.mira ?? 0, w = r.w ?? 4, c = Math.cos(ry), s = Math.sin(ry), filas = Math.floor((ALTO - b) / 0.5); for (let f = 0; f < filas; f++) { let o = -w / 2 - (f % 2) * 0.3; while (o < w / 2 - 0.1) { const l = Math.min(0.6 + rnd() * 0.5, w / 2 - o), m = o + l / 2; if (m > -w / 2) echar(tapiaM, new THREE.BoxGeometry(l - 0.05, 0.46, 0.5 + rnd() * 0.14), x + c * m, b + 0.25 + f * 0.5, z - s * m, ry); o += l; } }
+      if (r.escarcha) for (let i = 0; i < 10; i++) { const o = (rnd() - 0.5) * w; echar(escarchaM, new THREE.SphereGeometry(0.3 + rnd() * 0.35, 6, 4), x + c * o + s * 0.3, b + 0.3 + rnd() * (ALTO - b - 0.6), z - s * o + c * 0.3, ry, 0, 0, 1, 1, 0.22); } },
+    madre: (r, x, z) => { const k = r.k ?? 1, o = pieza(gAlimanaMadre(r.color), matUtil, x, 0, z); o.rotation.y = r.mira ?? 0; o.scale.setScalar(k); vivos.push(t => { o.scale.y = k * (1 + Math.sin(t * 0.7) * 0.025); }); },
+    bestia: (r, x, z) => { const o = pieza(gAlimana(r.color ?? 0xe6dfd6), matUtil, x, 0, z); o.rotation.y = r.mira ?? rnd() * 6; o.scale.setScalar(r.k ?? 1.5); const f = rnd() * 6; vivos.push(t => { o.rotation.x = Math.sin(t * 1.3 + f) * 0.05; o.rotation.y += Math.sin(t * 0.4 + f) * 0.0015; }); },
     nido: (r, x, z) => { for (let i = 0; i < (r.n ?? 6); i++) echar(hueso, new THREE.SphereGeometry(0.3 + rnd() * 0.15, 7, 5), x + (rnd() - 0.5) * 2.2, b + 0.3, z + (rnd() - 0.5) * 2.2, 0, 0, 0, 1, 1.25, 1); echar(raiz, new THREE.TorusGeometry(1.6, 0.3, 5, 12), x, b + 0.2, z, 0, PI / 2); },
     // escarcha: un puñado de esquirlas que se mecen y una luz azul
     escarcha: (r, x, z) => { const g = grupo(x, z), m = liso(0xdff0fa, { roughness: 0.15, emissive: 0x58b8ff, emissiveIntensity: 0.8, transparent: true, opacity: 0.85 }), k = r.k ?? 1; g.scale.setScalar(k); for (let i = 0; i < 7; i++) { const a = i / 7 * 6.283, h = 1.2 + rnd() * 1.6; pieza(new THREE.ConeGeometry(0.2 + rnd() * 0.15, h, 4), m, Math.cos(a) * 0.45, 0.4 + h / 2, Math.sin(a) * 0.45, g).rotation.set(Math.sin(a) * 0.4, 0, -Math.cos(a) * 0.4); } pieza(new THREE.OctahedronGeometry(0.5), m, 0, 1.3, 0, g); const l = luz(x, 2, z, 0x8fd0ff, 30, 14); vivos.push(t => { g.rotation.y = t * 0.3 + x; g.position.y = 0.15 + Math.sin(t * 1.1 + z) * 0.12; l.intensity = 26 + 8 * Math.sin(t * 2 + x); }); },
@@ -131,17 +147,24 @@ function levantar(planta, id, escena) {
     const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, ymin = Math.min(y0, y1), n = Math.abs(y1 - y0) < 0.05 ? 1 : Math.max(2, Math.ceil(Math.abs(y1 - y0) / 0.3));
     for (let i = 0; i < n; i++) { const t = (i + 0.5) / n, y = n === 1 ? y0 : y0 + (y1 - y0) * (i + (y1 < y0 ? 0 : 1)) / n; bloque(n === 1 ? suelo : losas, hor ? L / n : an, y - ymin + 0.5, hor ? an : L / n, x0 + (x1 - x0) * t, ymin - 0.5, z0 + (z1 - z0) * t); }
     for (const s of [-1, 1]) muroCon(hor ? L : GRUESO, hor ? GRUESO : L, cx + (hor ? 0 : s * (an + GRUESO) / 2), ymin, cz + (hor ? s * (an + GRUESO) / 2 : 0));
+    // en llano, una calle de losas por el centro y, junto a los muros, lo que el sitio deja caer
+    if (n === 1 && L > 4) { bloque(losas, hor ? L : an * 0.46, 0.05, hor ? an * 0.46 : L, cx, y0, cz);
+      for (let i = 0; i < L / 2.4; i++) { const t = 0.06 + rnd() * 0.88, o = (rnd() < 0.5 ? -1 : 1) * (an / 2 - 0.28 - rnd() * 0.22), px = hor ? x0 + (x1 - x0) * t : cx + o, pz = hor ? cz + o : z0 + (z1 - z0) * t, k = 0.14 + rnd() * 0.2;
+        if (estilo === 'hielo') { const h = 0.4 + rnd() * 0.8; echar(hieloM, new THREE.ConeGeometry(0.1 + rnd() * 0.1, h, 4), px, y0 + h / 2, pz); }
+        else if (estilo === 'arenisca') { const h = 1 + rnd() * 1.6; echar(raiz, new THREE.ConeGeometry(0.05, h, 4), px, ALTO - h / 2 + 0.2, pz, 0, PI); }
+        else if (estilo === 'ahogada') echar(charco, new THREE.CircleGeometry(0.25 + rnd() * 0.3, 8), px, y0 + 0.07, pz, 0, -PI / 2, rnd() * 3, 1 + rnd() * 0.5, 1, 1);
+        else echar(estilo === 'mina' ? (i % 3 ? menaM : oxido) : muro, new THREE.DodecahedronGeometry(k, 0), px, y0 + k * 0.5, pz, rnd() * 3, rnd() * 3, 0, 1, 0.7, 1); } }
     // los pasillos largos llevan fajas de piedra de lado a lado y, a media altura, antorchas alternas
     const nf = Math.floor(L / 4.5); for (let i = 1; i <= nf; i++) { const t = i / (nf + 1), fx = x0 + (x1 - x0) * t, fz = z0 + (z1 - z0) * t, lado = i % 2 ? 1 : -1;
-      bloque(remate, hor ? 0.5 : an + GRUESO * 2, 0.36, hor ? an + GRUESO * 2 : 0.5, fx, ALTO - 0.12, fz);
-      for (const k of [-1, 1]) bloque(remate, hor ? 0.5 : 0.26, ALTO - Math.max(y0, y1), hor ? 0.26 : 0.5, fx + (hor ? 0 : k * (an / 2 - 0.13)), Math.max(y0, y1), fz + (hor ? k * (an / 2 - 0.13) : 0));
+      bloque(viga, hor ? 0.5 : an + GRUESO * 2, 0.36, hor ? an + GRUESO * 2 : 0.5, fx, ALTO - 0.12, fz);
+      for (const k of [-1, 1]) bloque(viga, hor ? 0.5 : 0.26, ALTO - Math.max(y0, y1), hor ? 0.26 : 0.5, fx + (hor ? 0 : k * (an / 2 - 0.13)), Math.max(y0, y1), fz + (hor ? k * (an / 2 - 0.13) : 0));
       if (fuego) { const tx = fx + (hor ? 0.5 : lado * (an / 2 - 0.36)), tz = fz + (hor ? lado * (an / 2 - 0.36) : 0.5), yy = y0 + (y1 - y0) * t; echar(hierro, new THREE.CylinderGeometry(0.05, 0.03, 0.7, 5), tx, yy + 2.3, tz); destino = escena; llama(tx, yy + 2.86, tz); } }
   }
   // marco de puerta en el muro de una sala: dos jambas, dintel hasta lo alto del muro y dos ménsulas
   function marco(x, z, y, an, hor) {
     const ry = hor ? PI / 2 : 0, c = Math.cos(ry), s = Math.sin(ry), prof = GRUESO + 0.36;
-    for (const k of [-1, 1]) { bloque(remate, 0.42, 3.0, prof, x + c * k * (an / 2 - 0.21), y, z - s * k * (an / 2 - 0.21), ry); bloque(remate, 0.5, 0.45, prof, x + c * k * (an / 2 - 0.62), y + 2.55, z - s * k * (an / 2 - 0.62), ry); }
-    bloque(remate, an + 0.7, Math.max(0.3, ALTO - y - 3.0), prof, x, y + 3.0, z, ry);
+    for (const k of [-1, 1]) { bloque(viga, 0.42, 3.0, prof, x + c * k * (an / 2 - 0.21), y, z - s * k * (an / 2 - 0.21), ry); bloque(viga, 0.5, 0.45, prof, x + c * k * (an / 2 - 0.62), y + 2.55, z - s * k * (an / 2 - 0.62), ry); }
+    bloque(viga, an + 0.7, Math.max(0.3, ALTO - y - 3.0), prof, x, y + 3.0, z, ry);
   }
   function puerta(p, x, z, y, an, hor) {
     const ry = hor ? PI / 2 : 0, w = an - 0.84; destino = escena;   // «escena» aquí es el grupo del nivel
@@ -190,10 +213,10 @@ function levantar(planta, id, escena) {
     const lados = [['n', x0, x1, v => [v, z0 + 0.16], 0], ['s', x0, x1, v => [v, z1 - 0.16], PI], ['o', z0, z1, v => [x0 + 0.16, v], PI / 2], ['e', z0, z1, v => [x1 - 0.16, v], -PI / 2]];
     let nPil = 0;
     for (const [lado, a, c, donde, ry] of lados) { const L = c - a - ch * 2, n = Math.round(L / 5.5); for (let i = 0; i <= n; i++) { const v = a + ch + (n ? L * i / n : L / 2); if (!n && L < 4) continue; if (!libre(v, H[lado])) continue; if ((i === 0 || i === n) && n && !ch) continue;
-        const [px, pz] = donde(v); bloque(remate, 0.7, ALTO - y, 0.32, px, y, pz, ry); bloque(remate, 0.95, 0.3, 0.5, px, ALTO - 0.3, pz, ry);
+        const [px, pz] = donde(v); bloque(viga, 0.7, ALTO - y, 0.32, px, y, pz, ry); bloque(viga, 0.95, 0.3, 0.5, px, ALTO - 0.3, pz, ry);
         if (fuego && s.antorchas !== false && nPil++ % 2 === 0 && lado !== 's') { const tx = px + Math.sin(ry) * 0.36, tz = pz + Math.cos(ry) * 0.36; echar(hierro, new THREE.CylinderGeometry(0.05, 0.03, 0.7, 5), tx, y + 2.3, tz, 0, Math.cos(ry) * 0.35, -Math.sin(ry) * 0.35); llama(tx + Math.sin(ry) * 0.12, 2.86, tz + Math.cos(ry) * 0.12); } } }
     // arcos fajones: vigas de piedra de muro a muro, a lo corto de la sala
-    for (let i = 0; i < (s.arcos ?? 0); i++) { const t = (i + 1) / (s.arcos + 1); if (s.w <= s.d) bloque(remate, s.w, 0.4, 0.55, s.x, ALTO - 0.16, z0 + s.d * t); else bloque(remate, 0.55, 0.4, s.d, x0 + s.w * t, ALTO - 0.16, s.z); }
+    for (let i = 0; i < (s.arcos ?? 0); i++) { const t = (i + 1) / (s.arcos + 1); if (s.w <= s.d) bloque(viga, s.w, 0.4, 0.55, s.x, ALTO - 0.16, z0 + s.d * t); else bloque(viga, 0.55, 0.4, s.d, x0 + s.w * t, ALTO - 0.16, s.z); }
     const fl = s.luz === false ? null : luz(s.x, ALTO - y + 2.2, s.z, s.luz ?? tono.luz ?? 0xffd9a0, 22 + Math.max(s.w, s.d) * 3.4, Math.max(s.w, s.d) * 2.2);
     if (fl && fuego && s.antorchas !== false) { const f0 = fl.intensity, fase = rnd() * 9; vivos.push(t => { fl.intensity = f0 * (0.9 + 0.1 * Math.sin(t * 7 + fase) * Math.sin(t * 3.1 + fase)); }); }
     etiquetas.push({ nombre: (s.n ? s.n + '. ' : '') + s.nombre, texto: s.texto, voz: s.voz, secreto: s.secreto, peligro: s.peligro, encuentro: s.encuentro, pos: new THREE.Vector3(s.x, ALTO + 3, s.z), clase: 'hito' });
@@ -209,6 +232,7 @@ function levantar(planta, id, escena) {
     for (let i = 0; i < area / 70; i++) { const [x, z] = en(); echar(negro, new THREE.BoxGeometry(0.04, 0.02, 0.5 + rnd() * 0.8), x, y + 0.075, z, rnd() * 3); }   // grietas
     if (estilo === 'hielo') { for (let i = 0; i < area / 9; i++) { const [x, z] = pared(), h = 0.5 + rnd() * 1.5; echar(hieloM, new THREE.ConeGeometry(0.09 + rnd() * 0.08, h, 4), x, ALTO - h / 2, z, 0, PI); } for (let i = 0; i < area / 45; i++) { const [x, z] = pared(); disco(escarchaM, 0.4 + rnd() * 0.6, x, z, 1 + rnd() * 0.6); } for (const [ex, ez] of [[x0, z0], [x1, z0]]) echar(escarchaM, new THREE.SphereGeometry(1.1, 8, 5), ex + (ex < s.x ? 0.7 : -0.7), y, ez + 0.7, 0, 0, 0, 1, 0.3, 1); }
     else if (estilo === 'arenisca') { for (let i = 0; i < area / 14; i++) { const [x, z] = pared(), h = 1.2 + rnd() * 2.2; echar(raiz, new THREE.ConeGeometry(0.05, h, 4), x, ALTO - h / 2 + 0.2, z, 0, PI + (rnd() - 0.5) * 0.2); } for (let i = 0; i < area / 60; i++) { const [x, z] = pared(); echar(arena, new THREE.SphereGeometry(0.9 + rnd() * 0.8, 8, 5), x, y, z, 0, 0, 0, 1, 0.22, 1); } }
+    else if (estilo === 'mina') { for (let i = 0; i < area / 12; i++) { const [x, z] = pared(), k = 0.16 + rnd() * 0.26; echar(i % 3 ? menaM : oxido, new THREE.DodecahedronGeometry(k, 0), x, y + k * 0.5, z, rnd() * 3, rnd() * 3, 0, 1, 0.75, 1); } }
     else if (estilo === 'ahogada') { for (let i = 0; i < area / 40; i++) { const [x, z] = rnd() < 0.7 ? pared() : en(); disco(charco, 0.35 + rnd() * 0.55, x, z, 1 + rnd() * 0.6); } lienzo(x0, x1, s.huecos.n, (a, c) => echar(verde, new THREE.BoxGeometry(c - a, 0.8, 0.06), (a + c) / 2, y + 0.4, z0 + 0.04)); lienzo(z0, z1, s.huecos.o, (a, c) => echar(verde, new THREE.BoxGeometry(0.06, 0.8, c - a), x0 + 0.04, y + 0.4, (a + c) / 2)); lienzo(z0, z1, s.huecos.e, (a, c) => echar(verde, new THREE.BoxGeometry(0.06, 0.8, c - a), x1 - 0.04, y + 0.4, (a + c) / 2)); }
     else { for (let i = 0; i < area / 28; i++) { const [x, z] = rnd() < 0.6 ? pared() : en(); disco(verde, 0.4 + rnd() * 0.8, x, z, 1 + rnd()); } }
   }

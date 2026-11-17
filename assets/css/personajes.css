@@ -1,0 +1,43 @@
+/* Personajes: una figura en el centro y un panel para elegir especie y clase. Mismos tonos que el mapa. */
+:root {
+  --tinta: #12141a;
+  --panel: rgba(18, 20, 26, 0.88);
+  --borde: rgba(239, 230, 210, 0.16);
+  --crema: #efe6d2;
+  --tenue: #b7ad98;
+  --oro: #e0b85e;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  --ui: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--tinta); color: var(--crema); font-family: var(--ui); overflow: hidden; }
+#lienzo { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; outline: none; }
+#lienzo:focus-visible { box-shadow: inset 0 0 0 2px var(--oro); }
+:focus-visible { outline: 2px solid var(--oro); outline-offset: 2px; }
+
+.cabecera { position: fixed; top: 14px; left: 16px; max-width: 60vw; text-shadow: 0 1px 8px rgba(0, 0, 0, 0.7); }
+.cabecera h1 { margin: 10px 0 0; font: 700 1.6rem/1.1 var(--serif); letter-spacing: 0.02em; }
+.cabecera p { margin: 4px 0 0; font-size: 0.9rem; color: var(--crema); min-height: 1.2em; }
+.volver { display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; background: var(--panel); border: 1px solid var(--borde); border-radius: 10px; color: var(--crema); text-decoration: none; font-size: 0.85rem; text-shadow: none; }
+.volver:hover { border-color: var(--oro); color: var(--oro); }
+
+.panel { position: fixed; right: 12px; top: 12px; bottom: 12px; width: 300px; overflow-y: auto; padding: 14px; background: var(--panel); border: 1px solid var(--borde); border-radius: 12px; backdrop-filter: blur(8px); display: flex; flex-direction: column; gap: 14px; }
+.panel h2 { margin: 0 0 8px; font: 700 0.78rem/1 var(--ui); letter-spacing: 0.14em; text-transform: uppercase; color: var(--tenue); }
+.fichas { display: flex; flex-wrap: wrap; gap: 6px; }
+button { font: inherit; color: var(--crema); background: rgba(239, 230, 210, 0.06); border: 1px solid var(--borde); border-radius: 999px; min-height: 44px; padding: 0 14px; font-size: 0.88rem; cursor: pointer; }
+button:hover { border-color: var(--oro); }
+button[aria-pressed="true"] { background: var(--oro); border-color: var(--oro); color: #1a1408; font-weight: 600; }
+.acciones { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 12px; border-top: 1px solid var(--borde); }
+.acciones button { border-radius: 10px; }
+.nota { margin: 0; font-size: 0.8rem; color: var(--tenue); }
+.aviso { position: fixed; inset: auto 12px 12px 12px; padding: 12px; background: var(--panel); border: 1px solid var(--borde); border-radius: 10px; }
+
+#rotulos { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
+#rotulos span { position: absolute; transform: translate(-50%, -100%); padding: 2px 9px 3px; background: rgba(14, 16, 21, 0.72); border-radius: 999px; font: 500 0.8rem/1.25 var(--serif); color: var(--crema); white-space: nowrap; }
+
+/* En pantallas estrechas, apaisadas bajas o de pie, el panel baja al pie */
+@media (max-width: 720px), (max-height: 520px), (orientation: portrait) {
+  .panel { top: auto; left: 8px; right: 8px; bottom: 8px; width: auto; max-height: min(46vh, 400px); gap: 10px; padding: 10px; }
+  .cabecera h1 { font-size: 1.25rem; }
+  .nota { display: none; }
+}

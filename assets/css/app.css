@@ -137,6 +137,8 @@ button.etq:hover, button.etq.activa { border-color: var(--oro); background: rgba
 
 /* ---------- códice ---------- */
 .suelto.texto { padding: 0 14px; font-size: 0.85rem; }
+a.suelto { display: inline-flex; align-items: center; color: var(--crema); text-decoration: none; }
+a.suelto:hover { border-color: var(--oro); color: var(--oro); }
 #codice { width: min(760px, calc(100vw - 24px)); max-height: min(86vh, 900px); padding: 0; background: #14161c; color: var(--crema); border: 1px solid var(--borde); border-radius: 14px; box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6); }
 #codice[open] { display: flex; flex-direction: column; }
 #codice::backdrop { background: rgba(8, 9, 12, 0.6); backdrop-filter: blur(3px); }
