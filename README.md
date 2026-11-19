@@ -34,7 +34,7 @@ assets/
   js/ruinas.js         parajes: la vista de cerca de ruinas (solo el exterior y la entrada), pueblos, postas, faro, torre...
   js/sonido.js         ambiente sonoro sin archivos: viento, mar, gentío, fuego, grillos y pájaros
   js/campo.js          trigo y hierba: matas instanciadas que se mecen con el viento
-  js/clima.js          chubascos sobre Valcoria y Astravan, los mismos en el mapa y en los parajes
+  js/clima.js          chubascos sobre Valcoria y Astravan, los mismos en el mapa, en las ciudades y en los parajes
   js/render.js         posproceso: oclusión ambiental, resplandor, etalonaje y viñeta; modo maqueta para las fotos
   js/codice.js         el códice: regiones, facciones, gente, rumores y crónica, leídos de mundo.json
   js/figuras.js        la gente: figuras con esqueleto (una malla continua con huesos), oficios, posturas y lo que llevan en la mano
@@ -45,8 +45,9 @@ assets/
   js/master.js         lector de la vista de máster; los datos van en un archivo aparte que no está en el repositorio
   js/modelos.js        carga opcional de modelos glTF de artista
   js/ambiente.js       cielo, sombras, nubes, nieve, niebla, humo, barcos, pájaros, faro, luces de noche
-  js/viaje.js          rutas y viajero
-  js/partida.js        día, grupo, diario, niebla de guerra y encuentros
+  js/viaje.js          rutas y la comitiva que las recorre
+  js/comitiva.js       las figuras del grupo a escala de mapa (plantadas junto al lugar o andando en fila)
+  js/partida.js        día, grupo y sus miembros, lugares visitados, diario, niebla de guerra y encuentros
   js/musica.js         pistas por zona
   js/anim.js, ruido.js utilidades
   css/app.css
@@ -62,6 +63,8 @@ Todo se edita en `assets/data/mundo.json`. Las coordenadas van en una rejilla de
 - **`tamano`**: escala del modelo (1 por defecto). Así Valcoria es la ciudad más grande.
 - **`suelo`**: `agua` (medio sumergido en un lago), `marisma` (a ras de charca) o `islote` (levanta un peñón en el mar). Sin este campo, tierra firme.
 - **`oculto: true`**: el lugar se ve pero no lleva nombre ni sale en la lista de destinos; solo aparece su ficha si se pulsa encima.
+- **El grupo en el mapa**: donde está el grupo se plantan sus figuras junto al pendón, y al trazar un viaje recorren el camino en fila con una señal encima (se ve aunque las tape un monte). Quiénes son se elige en el panel Partida con el modo edición: hasta seis miembros, cada uno con su clase y su especie (`heroes` en `partida.json`, pares `[clase, especie]`).
+- **Lugares visitados**: colocar al grupo o viajar apunta el día en `visitados`. El rótulo del lugar lleva una marca, la ficha dice el día y el panel lleva la cuenta; en modo edición la ficha tiene un botón para marcar o quitar la visita a mano.
 - **Notas y marcas**: en el panel Partida, con el modo edición puesto, cada ficha tiene un cuadro de notas y se pueden clavar marcas en el centro de la vista. Se guardan en `partida.json` con lo demás: si lo subes, las lee cualquiera.
 - **Partida por enlace**: «Copiar partida como enlace» mete la partida entera en la dirección (`…/#partida=…`). Quien lo abra la ve tal cual, sin subir nada al repositorio.
 - **Enlace a un lugar**: `…/#lugar=id` abre el mapa centrado en él; la ficha tiene un botón que lo copia.
@@ -142,7 +145,8 @@ Los pasos largos llevan solos sus fajas y antorchas; los llanos, además, una ca
 
 `personajes.html` es una página aparte, enlazada desde la cabecera del mapa. Enseña las doce clases y las nueve especies del SRD 5.2.1 como figuras del mismo molde que la gente del mapa: se elige una de cada y se combinan, así que salen las 108 parejas sin dibujar ninguna a mano.
 
-- **Clases y especies** son recetas en `js/figuras.js` (`CLASE` y `ESPECIE`): la clase pone ropa, tocado y lo que lleva en las manos; la especie cambia talla, proporciones, piel y rasgos (orejas, colmillos, cuernos, cola, hocico). `personaje(clase, especie, rnd)` devuelve las opciones para `crearFigura`.
+- **Clases y especies** son recetas en `js/figuras.js` (`CLASE` y `ESPECIE`): la clase pone ropa, tocado y lo que lleva en las manos; la especie cambia talla, proporciones, piel y rasgos (orejas, colmillos, cuernos, cola, hocico) y trae su cara (`cara`: ojos rasgados o redondos, cejas, nariz, mandíbula, color de ojo) sobre la variación que ya tiene cada figura. `personaje(clase, especie, rnd)` devuelve las opciones para `crearFigura`.
+- **Cómo cogen las cosas.** Lanzas, cayados, bastones y ramas van plantados en el suelo con el codo doblado (posturas `guardia` y `baston`) y al andar se apoyan a cada zancada; el arco va en la zurda con la cuerda hacia quien lo lleva (`arco`); el bardo toca el laúd (`toca`). La postura `guardia` es la de todos los guardias del mapa.
 - **«Otra cara»** cambia la semilla: misma clase y especie, otra persona. **«Andar»** pone el ciclo de marcha. **«Ver las doce clases»** las alinea con su rótulo.
 - La página no carga el mapa ni sus datos: solo `three`, `figuras.js` y `ruido.js`. En pantallas de pie o estrechas el panel baja al pie y el encuadre se ajusta a lo que queda libre.
 - Se puede abrir ya elegida: `personajes.html?c=Mago&e=Elfo`.

@@ -6,10 +6,11 @@ import { kit } from './lugares.js';
 import { azarDe } from './ruido.js';
 import { crearEdificios } from './edificios.js';
 import { hornear, materialMultitud, ZANCADA, viva } from './figuras.js';
-import { matUtil, gPuesto, gBarril, gCajon, gGallina, gPerro } from './utileria.js';
+import { matUtil, gPuesto, gBarril, gCajon, gGallina, gPerro, gRisco } from './utileria.js';
 import { blanda as texBlanda } from './texturas.js';
 import { crearBarcoModelo } from './barco.js';
 import { crearMatas } from './campo.js';
+import { lluvia } from './clima.js';
 
 const { matPared, matPiedra, matTejado, matLiso, gCaja, gCil, gCono, gRoca, gDosAguas, gCasco, ESTILOS } = kit;
 
@@ -210,7 +211,18 @@ export function crearCiudad(l, mundo, { movil = false } = {}) {
   }
 
   /* ---------- plaza del mercado ---------- */
-  cil(piedraClara, 3.4, 0.9, 0, 0, 0); cil(piedraClara, 0.9, 2.8, 0, 0.9, 0); cil(matLiso(0x3f7f93, { roughness: 0.2, metalness: 0.2 }), 3.0, 0.12, 0, 0.85, 0);
+  {
+    const helada = l.id === 'griselda', aguaF = matLiso(helada ? 0xcfe2ee : 0x3f7f93, { roughness: helada ? 0.35 : 0.15, metalness: 0.2 }), bronce = matLiso(0x5f8a72, { roughness: 0.5, metalness: 0.5 }), dorado = matLiso(0xd9b24e, { roughness: 0.4, metalness: 0.6 });
+    cil(piedraClara, 3.7, 0.22, 0, 0, 0); cil(piedraClara, 3.4, 0.9, 0, 0, 0); cil(aguaF, 2.95, 0.1, 0, 0.84, 0);
+    for (let i = 0; i < 12; i++) { const a = i / 12 * 6.283; caja(piedraClara, 1.86, 0.2, 0.52, Math.cos(a) * 3.3, 0.9, Math.sin(a) * 3.3, -a + Math.PI / 2); }   // albardilla del brocal
+    cil(piedraClara, 0.95, 0.5, 0, 0.9, 0); cil(piedraClara, 0.5, 1.5, 0, 1.4, 0);
+    if (helada) { cil(piedraClara, 0.8, 0.3, 0, 2.9, 0); cono(piedra, 0.62, 3.4, 0, 3.2, 0); }   // en el norte no corre el agua: un obelisco
+    else {
+      cil(piedraClara, 1.75, 0.16, 0, 2.9, 0); cil(piedraClara, 1.5, 0.34, 0, 3.02, 0); cil(aguaF, 1.3, 0.06, 0, 3.33, 0); cil(piedraClara, 0.3, 1.0, 0, 3.36, 0);
+      if (l.id === 'solterra') cono(dorado, 0.42, 0.9, 0, 4.36, 0); else poner(gEsfera, l.id === 'valcoria' ? dorado : bronce, 0, 4.66, 0, 0.36, 0.36, 0.36);
+      const cano = matLiso(0xbfe0ea, { roughness: 0.1, transparent: true, opacity: 0.55 }); for (let i = 0; i < 4; i++) { const a = i * 1.5708 + 0.5; cil(cano, 0.07, 2.2, Math.cos(a) * 1.52, 0.9, Math.sin(a) * 1.52); }
+    }
+  }
   const TOLDOS = [0xc9283c, 0x2f6fb5, 0xe8a23a, 0x3f9a54, 0x9a4a9e];
   // enseres de utileria.js: se calculan una vez y se reparten
   const enseres = new Map(), enserDe = (clave, fn) => { if (!enseres.has(clave)) enseres.set(clave, fn()); return enseres.get(clave); };
@@ -289,7 +301,7 @@ export function crearCiudad(l, mundo, { movil = false } = {}) {
       const a = i / 34 * Math.PI * 2 + rnd() * 0.15, r = R + 62 + rnd() * 60;
       if (cercaAvenida(a, r, 16)) continue;
       const alto = 34 + rnd() * 60, ancho = 16 + rnd() * 16, x = Math.cos(a) * r, z = Math.sin(a) * r;
-      cono(roca, ancho, alto, x, -2, z); cono(nieve, ancho * 0.52, alto * 0.5, x, alto * 0.5 - 1.6, z);
+      poner(gRisco(i % 5), matUtil, x, alto / 2 - 2, z, ancho * 1.15, alto, ancho * 1.15, rnd() * 6.28);
     }
   }
   if (lago?.mar) {
@@ -394,7 +406,7 @@ export function crearCiudad(l, mundo, { movil = false } = {}) {
       x.strokeStyle = 'rgba(70,50,20,0.35)'; x.lineWidth = 1; for (let s = -24; s < 26; s += 4) { x.beginPath(); x.moveTo(-40 * k, s * k); x.lineTo(40 * k, s * k); x.stroke(); }
       x.restore();
     }
-    for (let i = 0; i < 5000; i++) { x.fillStyle = rnd() > 0.5 ? `rgba(255,255,255,${rnd() * 0.07})` : `rgba(0,0,0,${rnd() * 0.09})`; const s = 2 + rnd() * 14; x.fillRect(rnd() * T, rnd() * T, s, s); }
+    for (let i = 0; i < 5000; i++) { x.fillStyle = rnd() > 0.5 ? `rgba(255,255,255,${rnd() * 0.07})` : `rgba(0,0,0,${rnd() * 0.09})`; const s = (2 + rnd() * 14) * T / 2048; x.beginPath(); x.arc(rnd() * T, rnd() * T, s * 0.62, 0, 6.283); x.fill(); }
     if (lago) { x.fillStyle = '#b9a67c'; x.beginPath(); x.arc(px(lago.x), px(lago.z), (lago.r + 7) * k, 0, 6.283); x.fill(); x.fillStyle = '#2a5d78'; x.beginPath(); x.arc(px(lago.x), px(lago.z), lago.r * k, 0, 6.283); x.fill(); }
     x.lineCap = 'round';
     for (const p of puertas) {   // caminos de fuera
@@ -496,7 +508,7 @@ export function crearCiudad(l, mundo, { movil = false } = {}) {
   const bocanadas = [];
   for (const origen of humos) for (let k = 0; k < 5; k++) { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: blanda, transparent: true, depthWrite: false, color: 0xd9d4cc })); s.userData = { origen, fase: k / 5 + rnd() }; bocanadas.push(s); escena.add(s); }
   const antorchas = [];
-  const fuego = (x, y, z, t, color = 0xffb45e) => { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: blanda, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, color, opacity: 0, fog: false })); s.position.set(x, y, z); s.scale.set(t, t, 1); s.userData.f = rnd() * 6; antorchas.push(s); escena.add(s); };
+  const fuego = (x, y, z, t, color = 0xffb45e) => { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: blanda, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, color, opacity: 0, fog: false })); s.position.set(x, y, z); s.scale.set(t, t, 1); s.userData.f = rnd() * 6; s.userData.t = t; antorchas.push(s); escena.add(s); };
   for (const p of puertas) fuego(Math.cos(p.ang) * (R - 4), 6, Math.sin(p.ang) * (R - 4), 26);
   for (let i = 0; i < 6; i++) fuego(Math.cos(i * 1.05) * 15, 4, Math.sin(i * 1.05) * 15, 22);
   fuego(sede.x, 8, sede.z, 46);
@@ -507,15 +519,28 @@ export function crearCiudad(l, mundo, { movil = false } = {}) {
   sol.castShadow = true; sol.shadow.mapSize.setScalar(movil ? 1024 : 2048);
   Object.assign(sol.shadow.camera, { left: -R - 60, right: R + 60, top: R + 60, bottom: -R - 60, near: 20, far: 1600 });
   sol.shadow.bias = -0.0004; sol.shadow.normalBias = 0.5;
-  escena.add(sol, luna, cielo);
+  escena.add(sol, luna, cielo); const rebote = new THREE.Color(perfil.calle).multiplyScalar(0.72);
   escena.background = new THREE.Color(0x9cc4e8); escena.fog = new THREE.FogExp2(0x9cc4e8, 0.0015);
 
   const eulerTmp = new THREE.Euler();
   const mat = new THREE.Matrix4(), q = new THREE.Quaternion(), ejeY = new THREE.Vector3(0, 1, 0), pos = new THREE.Vector3(), esc = new THREE.Vector3(1, 1, 1), nada = new THREE.Vector3(0, 0, 0);
-  function actualizar(t, luz, noche) {
+  // lluvia: el mismo chubasco que se ve en el mapa sobre la región. Las gotas viven en un cubo unidad delante de la cámara que se estira con lo lejos que se mira.
+  const NGo = movil ? 700 : 1800, pgo = new Float32Array(NGo * 6), semGo = new Float32Array(NGo * 3), frenteGo = new THREE.Vector3(), grisLluvia = new THREE.Color(0x8e9aa6);
+  for (let i = 0; i < NGo; i++) semGo.set([Math.random() - 0.5, Math.random(), Math.random() - 0.5], i * 3);
+  const gotas = new THREE.LineSegments(new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(pgo, 3)), new THREE.LineBasicMaterial({ color: 0xc8d6e4, transparent: true, opacity: 0, depthWrite: false, fog: false }));
+  gotas.frustumCulled = false; gotas.visible = false; escena.add(gotas);
+  function actualizar(t, luz, noche, cam) {
     sol.position.copy(luz.dirSol).multiplyScalar(700); sol.intensity = luz.sol.intensity; sol.color.copy(luz.sol.color); sol.castShadow = luz.sol.castShadow;
-    luna.position.copy(luz.dirLuna).multiplyScalar(700); luna.intensity = luz.luna.intensity * 1.2; cielo.intensity = luz.luzCielo.intensity;
+    luna.position.copy(luz.dirLuna).multiplyScalar(700); luna.intensity = luz.luna.intensity * 1.2; cielo.intensity = luz.luzCielo.intensity; cielo.groundColor.setHex(0x4a4030).lerp(rebote, 1 - noche);
     escena.background.copy(luz.horizonte).lerp(luz.arriba, 0.3); escena.fog.color.copy(luz.horizonte);
+    const mojado = cam ? lluvia(t, l.region) : 0; gotas.visible = mojado > 0.02; escena.fog.density = 0.0015 * (1 + mojado * 0.25);   // poco: la ciudad se mira desde lejos y con más se queda en blanco
+    if (gotas.visible) {
+      const frente = cam.getWorldDirection(frenteGo), lejos = Math.min(Math.max(frente.y < -0.05 ? cam.position.y / -frente.y : 140, 30), 420), ahora = performance.now() / 1000, claro = 1 - noche * 0.8;
+      gotas.position.copy(cam.position).addScaledVector(frente, lejos * 0.55); gotas.scale.set(lejos * 1.9, lejos * 1.3, lejos * 1.9); gotas.material.opacity = mojado * 0.45 * (0.5 + 0.5 * claro);
+      for (let i = 0; i < NGo; i++) { const x = semGo[i * 3], z = semGo[i * 3 + 2], y = ((semGo[i * 3 + 1] - ahora * (0.75 + (i % 7) * 0.05)) % 1 + 1) % 1 - 0.5; pgo[i * 6] = x; pgo[i * 6 + 1] = y; pgo[i * 6 + 2] = z; pgo[i * 6 + 3] = x + 0.006; pgo[i * 6 + 4] = y - 0.03; pgo[i * 6 + 5] = z; }
+      gotas.geometry.attributes.position.needsUpdate = true;
+      sol.intensity *= 1 - mojado * 0.55; grisLluvia.setHex(0x8e9aa6).multiplyScalar(0.25 + 0.75 * claro); escena.background.lerp(grisLluvia, mojado * 0.7); escena.fog.color.lerp(grisLluvia, mojado * 0.7);
+    }
     // de noche la mayoría se recoge
     for (const fila of mallasGente) for (const m of fila) m.count = 0;
     andares.forEach((a, i) => {
@@ -546,8 +571,9 @@ export function crearCiudad(l, mundo, { movil = false } = {}) {
     });
     gallinas.instanceMatrix.needsUpdate = true;
     const dia = 1 - noche * 0.8;
-    for (const s of bocanadas) { const u = s.userData, k = (t * 0.12 + u.fase) % 1; s.position.set(u.origen.x + k * k * 14, u.origen.y + k * 20, u.origen.z + Math.sin(u.fase * 9) * k * 3); const tam = 2.5 + k * 11; s.scale.set(tam, tam, 1); s.material.opacity = Math.sin(k * Math.PI) * 0.4 * (0.35 + 0.65 * dia); }
-    for (const s of antorchas) s.material.opacity = noche * (0.5 + 0.12 * Math.sin(t * 9 + s.userData.f) + 0.06 * Math.sin(t * 23 + s.userData.f));
+    for (const s of bocanadas) { const u = s.userData, k = (t * 0.12 + u.fase) % 1; s.position.set(u.origen.x + k * k * 14, u.origen.y + k * 20, u.origen.z + Math.sin(u.fase * 9) * k * 3); const tam = 2.5 + k * 11; s.scale.set(tam, tam, 1); s.material.opacity = Math.sin(k * Math.PI) * 0.4 * (0.35 + 0.65 * dia); s.material.color.setHex(0xd9d4cc).multiplyScalar(0.3 + 0.7 * dia); }
+    for (const s of antorchas) { const T = s.userData.t, d = cam ? s.position.distanceTo(cam.position) : 1e3, cerca = THREE.MathUtils.smoothstep(d, T * 0.8, T * 3.2), lado = Math.min(T, Math.max(2.4, d * 0.3));
+      s.scale.set(lado, lado, 1); s.material.opacity = noche * (0.5 + 0.12 * Math.sin(t * 9 + s.userData.f) + 0.06 * Math.sin(t * 23 + s.userData.f)) * (0.3 + 0.7 * cerca); }
     for (const b of banderas) { const p = b.geometry.attributes.position; for (let i = 0; i < p.count; i++) { const x = p.getX(i); p.setZ(i, Math.sin(x * 1.4 - t * 6) * 0.16 * x); } p.needsUpdate = true; }
     for (const a of aspas) a.rotation.z = t * 0.7;
     trigo?.actualizar(t);
@@ -558,7 +584,7 @@ export function crearCiudad(l, mundo, { movil = false } = {}) {
 
   return {
     escena, etiquetas, R, actualizar, sonido: { calle: true, gentio: 0.7, pajaros: 0.3, mar: lago?.mar ? 0.6 : lago ? 0.25 : 0 },
-    vista: { pos: new THREE.Vector3(0, R * 1.35, R * (lago?.mar ? 3.1 : 2.15)), objetivo: new THREE.Vector3(0, 0, R * (lago?.mar ? 0.45 : 0.1)) },
+    vista: { pos: new THREE.Vector3(0, R * (lago?.mar ? 1.2 : 1.35), R * (lago?.mar ? 2.55 : 2.15)), objetivo: new THREE.Vector3(0, 0, R * (lago?.mar ? 0.4 : 0.1)) },
     limite: R + 70,
   };
 }

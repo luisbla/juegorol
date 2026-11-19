@@ -35,7 +35,7 @@ export function acabado(geo, m) {
 // En cajas y torres cada cara de la malla es un sillar; en columnas, cada tambor; en arcos, cada dovela. [alto, largo, verdín] solo
 // lo usa quien trocea la geometría; aquí cuenta el verdín: la parte de sillares que salen verdosos.
 let nCanto = 0;
-export function cantear(geo0, [, , verdin = 0] = []) {
+export function cantear(geo0, [, , verdin = 0, contraste = 1] = []) {
   const g = geo0.index ? geo0.toNonIndexed() : geo0.clone(), q = geo0.parameters || {}, tipo = geo0.type; g.computeBoundingBox();
   const bb = g.boundingBox, p = g.attributes.position, n = g.attributes.normal, C = new Float32Array(p.count * 3), alto = Math.max(1e-3, bb.max.y - bb.min.y), unico = ++nCanto;
   const azar = (a, b, c = 0) => { const s = Math.sin(a * 127.1 + b * 311.7 + c * 74.7 + 1.3) * 43758.5453; return s - Math.floor(s); };
@@ -47,7 +47,7 @@ export function cantear(geo0, [, , verdin = 0] = []) {
     if (tipo === 'BoxGeometry') { const ix = paso(cx, bb.min.x, bb.max.x, q.widthSegments), iy = paso(cy, bb.min.y, bb.max.y, q.heightSegments), iz = paso(cz, bb.min.z, bb.max.z, q.depthSegments); if (ny > nx && ny > nz) { a = ix; b = iz; c = 7; } else if (nx > nz) { a = iy; b = iz; c = 3; } else { a = iy; b = ix; c = 5; } c += unico; }
     else if (tipo === 'CylinderGeometry') { if (ny > nx + nz) { a = unico; b = 9; } else { a = paso(cy, bb.min.y, bb.max.y, q.heightSegments); b = Math.max(q.radiusTop, q.radiusBottom) < 1.7 ? 0 : Math.floor((Math.atan2(cx, cz) + PI) / (PI * 2 / q.radialSegments) + 1e-4); c = unico; } }
     else if (tipo === 'TorusGeometry') { let u = Math.atan2(cy, cx); if (u < -0.01) u += PI * 2; a = Math.floor(u / (q.arc / q.tubularSegments) + 1e-4); c = unico; }
-    const r = azar(a, b, c), f = (0.78 + r * 0.3) * (alto > 3 ? 0.84 + 0.2 * (cy - bb.min.y) / alto : 1), verde = azar(b, a, c + 2) < verdin;
+    const r = azar(a, b, c), f = (0.93 + (r - 0.5) * 0.3 * contraste) * (alto > 3 ? 0.84 + 0.2 * (cy - bb.min.y) / alto : 1), verde = azar(b, a, c + 2) < verdin;
     for (let k = 0; k < 3; k++) { C[(i + k) * 3] = f * (verde ? 0.74 : 1); C[(i + k) * 3 + 1] = f * (verde ? 0.98 : 1); C[(i + k) * 3 + 2] = f * (verde ? 0.66 : 1); }
   }
   g.setAttribute('color', new THREE.BufferAttribute(C, 3)); g.deleteAttribute('uv'); return g;
@@ -286,3 +286,22 @@ export const gFarol = (k = 1) => une([B(0.4 * k, 0.06 * k, 0.4 * k, HIERRO, 0, 0
 
 // carro de bueyes en marcha, con su boyero sentado: para los caminos del mapa
 export const gCarroDeBueyes = (boyero = []) => une([gCarro({ carga: 'sacos', puntal: false }).scale(0.72, 0.72, 0.72).translate(0, 0, -1.2), gVaca(0x8a6a48, { yugo: true, manchas: false }).scale(0.72, 0.72, 0.72).translate(0, 0, 1.1), ...boyero]);
+
+// Risco: cono deformado en aristas y hombros, facetado, con roca de dos tonos y nieve en lo alto y en lo tendido. Base de radio 1, alto 1, centrado en el origen.
+const riscos = new Map();
+export function gRisco(k = 0, nevado = true) {
+  const clave = k + (nevado ? 'n' : 'r'); if (riscos.has(clave)) return riscos.get(clave);
+  const h = n => { const v = Math.sin((k + 1) * 78.233 + n * 12.9898) * 43758.5453; return v - Math.floor(v); }, f = [h(1) * 6.28, h(2) * 6.28, h(3) * 6.28], dx = (h(4) - 0.5) * 0.5, dz = (h(5) - 0.5) * 0.5;
+  let g = new THREE.CylinderGeometry(0.001, 1, 1, 20, 9, true);   /* no ConeGeometry: en esta versión de three un cono con varias filas pierde un triángulo de cada paño */ const p = g.attributes.position;
+  for (let i = 0; i < p.count; i++) { const x = p.getX(i), y = p.getY(i), z = p.getZ(i), t = y + 0.5, a = Math.atan2(z, x), perfil = Math.pow(Math.max(0, 1 - t), 0.72);
+    const r = perfil * (1 + 0.24 * Math.sin(a * 2 + f[0] + t * 1.6) + 0.16 * Math.sin(a * 3 + f[1] - t * 2.2) + 0.07 * Math.sin(a * 5 + f[2] + t * 3));
+    p.setXYZ(i, Math.cos(a) * r + dx * t * t, y - 0.04 * Math.sin(a * 3 + f[1]) * (1 - t) * t * 4, Math.sin(a) * r + dz * t * t); }
+  g = g.toNonIndexed(); g.computeVertexNormals(); const q = g.attributes.position, nr = g.attributes.normal, c = new Float32Array(q.count * 3), col = new THREE.Color();
+  for (let i = 0; i < q.count; i += 3) { const t = (q.getY(i) + q.getY(i + 1) + q.getY(i + 2)) / 3 + 0.5, ny = nr.getY(i);
+    // la nieve se decide por paño (los dos triángulos de un mismo paño comparten fila y columna), no cara a cara: sin ajedrezado
+    const fila = Math.max(q.getY(i), q.getY(i + 1), q.getY(i + 2)) + 0.5, ac = Math.atan2(q.getZ(i) + q.getZ(i + 1) + q.getZ(i + 2), q.getX(i) + q.getX(i + 1) + q.getX(i + 2)) + Math.PI, a = (Math.floor(ac / 6.2832 * 20) + 0.5) / 20 * 6.2832;
+    const blanca = nevado && fila > 0.5 + 0.15 * Math.sin(a * 3 + f[1]) + 0.06 * Math.sin(a * 5 + f[2]); const v = h(200 + Math.round(fila * 9) * 23 + Math.floor(ac / 6.2832 * 20)) * 0.75 + (ny > 0.3 ? 0.25 : 0);
+    if (blanca) col.setRGB(0.9 + v * 0.06, 0.93 + v * 0.05, 0.97); else col.setHex(v > 0.55 ? 0x767a84 : v > 0.2 ? 0x676b74 : 0x585b64).multiplyScalar(0.8 + t * 0.35);
+    for (let j = 0; j < 3; j++) c.set([col.r, col.g, col.b], (i + j) * 3); }
+  g.setAttribute('color', new THREE.BufferAttribute(c, 3)); g.deleteAttribute('uv'); riscos.set(clave, g); return g;
+}

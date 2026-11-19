@@ -1,6 +1,7 @@
 // viaje.js — rutas por la red de caminos (Dijkstra) y un viajero que las recorre.
 import * as THREE from 'three';
 import { animar, ease } from './anim.js';
+import { crearComitiva, HEROES_BASE } from './comitiva.js';
 
 export function crearViajes(escena, mundo, terreno) {
   const vecinos = new Map();
@@ -31,14 +32,20 @@ export function crearViajes(escena, mundo, terreno) {
 
   const grupo = new THREE.Group(); escena.add(grupo);
   const matLinea = new THREE.MeshBasicMaterial({ color: 0xffd35c, transparent: true, opacity: 0.95, depthTest: false, side: THREE.DoubleSide });
-  const viajero = new THREE.Mesh(new THREE.SphereGeometry(2.6, 14, 10), new THREE.MeshBasicMaterial({ color: 0xfff3c4, depthTest: false }));
+  // la señal que se ve aunque la tape un monte, y debajo la comitiva
+  const viajero = new THREE.Mesh(new THREE.OctahedronGeometry(1.5), new THREE.MeshBasicMaterial({ color: 0xfff3c4, depthTest: false }));
   viajero.renderOrder = 6; viajero.visible = false; grupo.add(viajero);
+  let comitiva = crearComitiva(HEROES_BASE), clave = JSON.stringify(HEROES_BASE); comitiva.grupo.visible = false; grupo.add(comitiva.grupo);
+  function ponerViajeros(heroes) {
+    const k = JSON.stringify(heroes ?? HEROES_BASE); if (k === clave) return; clave = k;
+    grupo.remove(comitiva.grupo); comitiva.soltar(); comitiva = crearComitiva(heroes ?? HEROES_BASE); comitiva.grupo.visible = false; grupo.add(comitiva.grupo);
+  }
   let linea = null, turno = 0;
 
   function limpiar() {
     turno++;
     if (linea) { grupo.remove(linea); linea.geometry.dispose(); linea = null; }
-    viajero.visible = false;
+    viajero.visible = false; comitiva.grupo.visible = false; comitiva.andar(false);
   }
 
   function mostrar(r) {
@@ -55,12 +62,22 @@ export function crearViajes(escena, mundo, terreno) {
     g.setAttribute('position', new THREE.Float32BufferAttribute(p, 3)); g.setIndex(ix);
     linea = new THREE.Mesh(g, matLinea); linea.renderOrder = 5; grupo.add(linea);
     g.setDrawRange(0, 0);
-    viajero.visible = true; viajero.position.copy(pts[0]);
-    const dur = Math.min(9000, 2200 + r.km * 9);
+    viajero.visible = true; viajero.position.copy(pts[0]); viajero.position.y += 13;
+    // la fila: cada figura va unos pasos por detrás de la anterior, medidos sobre el camino
+    const largo = [0]; for (let i = 1; i < pts.length; i++) largo.push(largo[i - 1] + pts[i].distanceTo(pts[i - 1]));
+    const total = largo[largo.length - 1] || 1, hueco = 4.4;
+    const enCamino = (d, fig) => { d = Math.min(total, Math.max(0, d)); let i = 1; while (i < largo.length - 1 && largo[i] < d) i++; const a = pts[i - 1], b = pts[i], k = (d - largo[i - 1]) / ((largo[i] - largo[i - 1]) || 1);
+      fig.position.lerpVectors(a, b, k); fig.position.y -= 1.5; if (b.x !== a.x || b.z !== a.z) fig.rotation.y = Math.atan2(b.x - a.x, b.z - a.z); };
+    comitiva.grupo.visible = true; comitiva.andar(true);
+    const dur = Math.min(15000, 3600 + r.km * 13);
     return animar(dur, t => {
       if (mio !== turno) return;
-      const f = t * (pts.length - 1), i = Math.min(pts.length - 2, Math.floor(f));
-      viajero.position.lerpVectors(pts[i], pts[i + 1], f - i);
+      const f = t * (pts.length - 1), i = Math.min(pts.length - 2, Math.floor(f)), d = t * total;
+      comitiva.figuras.forEach((fig, n) => enCamino(d - n * hueco, fig.grupo));
+      if (t >= 1) { comitiva.andar(false); comitiva.grupo.visible = false; }   // al llegar entran en el lugar: la partida los planta fuera si el viaje era de verdad
+      comitiva.actualizar(performance.now() / 1000);
+      const guia = comitiva.figuras[0]?.grupo.position; if (guia) viajero.position.set(guia.x, guia.y + 12.5, guia.z); else viajero.position.lerpVectors(pts[i], pts[i + 1], f - i);
+      viajero.rotation.y = t * 9;
       g.setDrawRange(0, Math.max(0, i) * 6);
     }, ease.lineal);
   }
@@ -71,5 +88,5 @@ export function crearViajes(escena, mundo, terreno) {
     return b;
   }
 
-  return { ruta, mostrar, limpiar, caja, alcanzable: id => vecinos.has(id) };
+  return { ruta, mostrar, limpiar, caja, ponerViajeros, alcanzable: id => vecinos.has(id) };
 }

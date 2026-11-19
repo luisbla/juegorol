@@ -25,6 +25,7 @@ export function crearAmbiente(escena, renderer, mundo, terreno, lugares, { movil
   sol.shadow.camera.near = 50; sol.shadow.camera.far = 3600;
   const luna = new THREE.DirectionalLight(0x8fa8ff, 0);
   const luzCielo = new THREE.HemisphereLight(0xbfd8ff, 0x4a4030, 0.8);
+  const rellenoNoche = new THREE.HemisphereLight(0x93a8dc, 0x2c3344, 0); escena.add(rellenoNoche);   // solo en el mapa: de noche hay que seguir leyendo el terreno
   escena.add(sol, sol.target, luna, luna.target, luzCielo);
   escena.fog = new THREE.FogExp2(0x9cc4e8, 0.00016);
 
@@ -76,7 +77,7 @@ export function crearAmbiente(escena, renderer, mundo, terreno, lugares, { movil
     sol.color.copy(SOL_BAJO).lerp(SOL_ALTO, suave(0.0, 0.5, alto));
     sol.castShadow = dia > 0.04;
     luna.intensity = 0.9 * estado.noche;
-    luzCielo.intensity = 0.3 + 0.55 * dia;
+    luzCielo.intensity = 0.3 + 0.55 * dia; rellenoNoche.intensity = estado.noche * 0.55;
     uCielo.uArriba.value.copy(CENIT_NOCHE).lerp(CENIT_DIA, dia);
     uCielo.uHorizonte.value.copy(HORIZ_NOCHE).lerp(HORIZ_DIA, dia).lerp(HORIZ_TARDE, ocaso * 0.75);
     uCielo.uSol.value.copy(dirSol); uCielo.uLuna.value.copy(dirLuna); uCielo.uColorSol.value.copy(sol.color); uCielo.uNoche.value = estado.noche;
@@ -85,16 +86,16 @@ export function crearAmbiente(escena, renderer, mundo, terreno, lugares, { movil
     const u = terreno.uAgua;
     u.uSol.value.copy(estado.noche > 0.6 ? dirLuna : dirSol);
     u.uColorSol.value.copy(sol.color).multiplyScalar(dia).lerp(LUZ_LUNA, estado.noche);
-    terreno.uniformes.uLuz.value = 0.16 + 0.84 * dia;
+    terreno.uniformes.uLuz.value = 0.27 + 0.73 * dia;
     u.uCielo.value.copy(uCielo.uHorizonte.value).lerp(uCielo.uArriba.value, 0.35);
     for (const m of lugares.ventanas) m.emissiveIntensity = estado.noche * 1.5;
   }
 
   /* ---------- nubes ---------- */
-  const clima = new THREE.Group(); escena.add(clima);
+  const clima = new THREE.Group(), segN = new THREE.Line3(), pN = new THREE.Vector3(); escena.add(clima);
   const nubes = [], matsNube = [0, 1, 2].map(() => new THREE.SpriteMaterial({ map: texturaNube(R.rnd), transparent: true, opacity: 0.36, depthWrite: false, fog: false }));
   for (let i = 0; i < 13; i++) {
-    const s = new THREE.Sprite(matsNube[i % 3]);
+    const s = new THREE.Sprite(matsNube[i % 3].clone());
     const t = 190 + R.rnd() * 170;
     s.scale.set(t, t * 0.5, 1);
     s.position.set((R.rnd() - 0.5) * (W + 400), 150 + R.rnd() * 60, (R.rnd() - 0.5) * H);
@@ -302,10 +303,13 @@ export function crearAmbiente(escena, renderer, mundo, terreno, lugares, { movil
     luna.position.copy(objetivo).addScaledVector(dirLuna, 1700);
     escena.fog.density = terreno.uAgua.uBruma.value = 0.00013 + estado.noche * 0.00005;
 
-    for (const m of matsNube) m.color.setScalar(0.25 + 0.75 * luzDia);
+    for (const n of nubes) n.material.color.setScalar(0.25 + 0.75 * luzDia);
     for (const f of terreno.fronteras.children) f.material.color.copy(f.userData.color).multiplyScalar(0.3 + 0.7 * luzDia);
     if (estado.clima) {
-      for (const n of nubes) { n.position.x += n.userData.v * dt; if (n.position.x > W / 2 + 320) n.position.x = -W / 2 - 320; }
+      const lejosN = camara.position.distanceTo(objetivo), deCerca = 1 - THREE.MathUtils.smoothstep(lejosN, 450, 1100); segN.set(camara.position, objetivo);
+      for (const n of nubes) { n.position.x += n.userData.v * dt; if (n.position.x > W / 2 + 320) n.position.x = -W / 2 - 320;
+        const tam = n.scale.x, dCam = n.position.distanceTo(camara.position), dRayo = segN.closestPointToPoint(n.position, true, pN).distanceTo(n.position);
+        n.material.opacity = 0.29 * THREE.MathUtils.smoothstep(dCam, tam * 0.4, tam * 1.2) * (1 - deCerca * (1 - THREE.MathUtils.smoothstep(dRayo, tam * 0.3, tam * 0.85))); }
       if (nieve) {
         const p = nieve.geometry.attributes.position, { v, caja } = nieve.userData;
         for (let i = 0; i < v.length; i++) {

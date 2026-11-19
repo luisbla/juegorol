@@ -16,6 +16,7 @@ function lienzo(w, h, pintar, repetir) {
 export function crearInterior(l) {
   const rnd = azarDe('interior-' + l.id), escena = new THREE.Scene(), etiquetas = [];
   const AN = 46, FO = 30, AL = 12;   // ancho (x), fondo (z), alto de la sala
+  const TONO = { suelo: '#6a4d33', pared: '#c9b48c', alfombra: 0x6a2f2a, ...l.tono };
   const mat = (color, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.85, ...extra });
   const madera = mat(0x6b4f35), oscura = mat(0x3d2c1e), clara = mat(0x9a7a55), piedra = mat(0x7d766c, { roughness: 1 }), hierro = mat(0x2b2b2e, { roughness: 0.6, metalness: 0.4 });
   // dos plantas: se ve una u otra. Todo lo que se construye va a la planta que marque "destino".
@@ -29,12 +30,12 @@ export function crearInterior(l) {
 
   /* ---------- caja de la sala ---------- */
   const tablas = lienzo(256, 256, (x, w, h) => {
-    x.fillStyle = '#6a4d33'; x.fillRect(0, 0, w, h);
+    x.fillStyle = TONO.suelo; x.fillRect(0, 0, w, h);
     for (let i = 0; i < 8; i++) { x.fillStyle = `rgba(${rnd() > 0.5 ? '255,220,170' : '0,0,0'},${0.05 + rnd() * 0.12})`; x.fillRect(0, i * 32, w, 31); x.fillStyle = 'rgba(0,0,0,0.45)'; x.fillRect(0, i * 32 + 31, w, 1.5); x.fillRect(rnd() * w, i * 32, 1.5, 32); }
     for (let i = 0; i < 500; i++) { x.fillStyle = `rgba(0,0,0,${rnd() * 0.12})`; x.fillRect(rnd() * w, rnd() * h, 6 + rnd() * 14, 1); }
   }, [5, 4]);
   const suelo = pieza(new THREE.BoxGeometry(AN, 1, FO), new THREE.MeshStandardMaterial({ map: tablas, roughness: 0.9 }), 0, -0.5, 0);
-  const enlucido = lienzo(128, 128, (x, w, h) => { x.fillStyle = '#c9b48c'; x.fillRect(0, 0, w, h); for (let i = 0; i < 900; i++) { x.fillStyle = rnd() > 0.5 ? `rgba(255,255,255,${rnd() * 0.08})` : `rgba(60,40,10,${rnd() * 0.12})`; x.fillRect(rnd() * w, rnd() * h, 2 + rnd() * 5, 2 + rnd() * 5); } const g = x.createLinearGradient(0, 0, 0, h); g.addColorStop(0, 'rgba(40,25,10,0.35)'); g.addColorStop(0.4, 'rgba(0,0,0,0)'); x.fillStyle = g; x.fillRect(0, 0, w, h); }, [4, 1]);
+  const enlucido = lienzo(128, 128, (x, w, h) => { x.fillStyle = TONO.pared; x.fillRect(0, 0, w, h); for (let i = 0; i < 900; i++) { x.fillStyle = rnd() > 0.5 ? `rgba(255,255,255,${rnd() * 0.08})` : `rgba(60,40,10,${rnd() * 0.12})`; x.fillRect(rnd() * w, rnd() * h, 2 + rnd() * 5, 2 + rnd() * 5); } const g = x.createLinearGradient(0, 0, 0, h); g.addColorStop(0, 'rgba(40,25,10,0.35)'); g.addColorStop(0.4, 'rgba(0,0,0,0)'); x.fillStyle = g; x.fillRect(0, 0, w, h); }, [4, 1]);
   const pared = new THREE.MeshStandardMaterial({ map: enlucido, roughness: 1 });
   caja(pared, AN, AL, 1, 0, 0, -FO / 2 - 0.5); caja(pared, 1, AL, FO, -AN / 2 - 0.5, 0, 0); caja(pared, 1, AL, FO, AN / 2 + 0.5, 0, 0);
   // entramado visto: pies derechos, zócalo y vigas del techo
@@ -121,13 +122,13 @@ export function crearInterior(l) {
   for (let i = 0; i < 8; i++) { const a = i / 8 * 6.283; cil(mat(0xe8dcc0), 0.1, 0.55, Math.cos(a) * 3, -3.65, Math.sin(a) * 3, lampara, 6); pieza(new THREE.SphereGeometry(0.13, 6, 6), new THREE.MeshBasicMaterial({ color: 0xffd98a }), Math.cos(a) * 3, -2.95, Math.sin(a) * 3, lampara); }
   const velas = new THREE.PointLight(0xffc878, 170, 60, 1.7); velas.position.set(0, -3.2, 0); lampara.add(velas);
   const candil = new THREE.PointLight(0xffc878, 110, 45, 1.8); candil.position.set(bx, 8.5, bz + 3); baja.add(candil);
-  pieza(new THREE.BoxGeometry(11, 0.08, 6.5), mat(0x6a2f2a, { roughness: 1 }), -2.5, 0.05, 3.2);
+  pieza(new THREE.BoxGeometry(11, 0.08, 6.5), mat(TONO.alfombra, { roughness: 1 }), -2.5, 0.05, 3.2); pieza(new THREE.BoxGeometry(10.2, 0.09, 5.7), mat(new THREE.Color(TONO.alfombra).multiplyScalar(1.35).getHex(), { roughness: 1 }), -2.5, 0.05, 3.2); pieza(new THREE.BoxGeometry(9.6, 0.1, 5.1), mat(TONO.alfombra, { roughness: 1 }), -2.5, 0.05, 3.2);
   for (let i = 0; i < 5; i++) pieza(gBarril(0.95, 1.9), matUtil, -AN / 2 + 3 + (i % 3) * 2.2, i > 2 ? 1.9 : 0, FO / 2 - 3 - (i > 2 ? 0.5 : 0)).rotation.y = i;
   for (let i = 0; i < 3; i++) pieza(gCajon(1.8), matUtil, AN / 2 - 9 + i * 0.4, i * 1.53, FO / 2 - 2.6).rotation.y = rnd();
 
   /* ---------- planta alta: pasillo, cuatro habitaciones, dormitorio común y aseo ---------- */
   destino = alta;
-  const AT = 6.5, tabique = mat(0xbfa983, { roughness: 1 }), COLCHAS = [0x7a3b2e, 0x2f4f6f, 0x5a6b3a, 0x6a2f5a, 0x8a6a2e];
+  const AT = 6.5, tabique = mat(0x9c8a6a, { roughness: 1 }), COLCHAS = [0x7a3b2e, 0x2f4f6f, 0x5a6b3a, 0x6a2f5a, 0x8a6a2e];
   pieza(new THREE.BoxGeometry(AN, 1, FO), new THREE.MeshStandardMaterial({ map: tablas, roughness: 0.9 }), 0, -0.5, 0);
   caja(pared, AN, AT, 1, 0, 0, -FO / 2 - 0.5); caja(pared, 1, AT, FO, -AN / 2 - 0.5, 0, 0); caja(pared, 1, AT, FO, AN / 2 + 0.5, 0, 0);
   // tabique con hueco de puerta: dos paños y un dintel

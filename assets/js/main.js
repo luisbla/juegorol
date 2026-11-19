@@ -156,12 +156,14 @@ async function iniciar() {
         else if (e.clase === 'region') op = w < 720 ? 0 : suave(umbral * 0.8, umbral, lejos);
         else if (e.clase === 'geo') op = suave(170, 320, lejos);
         else if (e.clase === 'lugar' && e.lugar !== elegido) op = suave(umbral, umbral * 0.8, lejos);
+        if (e.lugar && e.visto !== !!e.lugar.visitado) { e.visto = !!e.lugar.visitado; e.el.classList.toggle('visitado', e.visto); }
         if (e.lugar?.tapado || (e.clase === 'geo' && partida.estado.niebla)) op = 0;   // bajo la niebla de guerra
       }
+      const x = (v3.x * 0.5 + 0.5) * w, y = (-v3.y * 0.5 + 0.5) * a;
+      if (op) op *= suave(64, 104, y);   // bajo la cabecera no
       e.el.style.opacity = op;
       e.el.style.visibility = op < 0.02 ? 'hidden' : 'visible';
       if (op >= 0.02) {
-        const x = (v3.x * 0.5 + 0.5) * w, y = (-v3.y * 0.5 + 0.5) * a;
         e.el.style.transform = `translate(-50%, ${e.clase === 'region' || e.clase === 'geo' ? '-50%' : '-100%'}) translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
       }
     }
@@ -241,7 +243,7 @@ async function iniciar() {
   // Entrar en un edificio de la ciudad (de momento, la posada).
   async function entrarEdificio(e) {
     const clave = `${dentro.datos.id}-${e.interior}`;
-    if (!ciudades.has(clave)) ciudades.set(clave, e.interior === 'posada' ? crearInterior({ id: clave, trofeo: false }) : crearSala(e.interior, clave, { norte: dentro.datos.region === 'thraengarde', color: new THREE.Color(mundo.regiones.find(r => r.id === dentro.datos.region)?.color ?? '#7a2e2a').getHex() }));
+    if (!ciudades.has(clave)) ciudades.set(clave, e.interior === 'posada' ? crearInterior({ id: clave, trofeo: false, tono: { solterra: { suelo: '#7a5a34', pared: '#d6bd86', alfombra: 0x8a6a22 }, astravan: { suelo: '#5a4a3c', pared: '#b9bcb4', alfombra: 0x2f4a6a }, liria: { suelo: '#6e5a44', pared: '#d8d4c4', alfombra: 0x2f5a4a } }[dentro.datos.id] }) : crearSala(e.interior, clave, { norte: dentro.datos.region === 'thraengarde', color: new THREE.Color(mundo.regiones.find(r => r.id === dentro.datos.region)?.color ?? '#7a2e2a').getHex() }));
     await abrir(ciudades.get(clave), `${e.nombre} · ${dentro.datos.nombre}`, e.interior === 'posada' ? 'taberna' : 'ciudad');
   }
   // El interior de una ruina: solo existe si el máster ha cargado su archivo, que es donde viene la planta.
@@ -324,6 +326,7 @@ async function iniciar() {
       return;
     }
     if (partida.estado.grupo === d.id) nodos.push(h('p', { class: 'aqui' }, `El grupo está aquí · día ${partida.estado.dia}`));
+    else if (partida.estado.visitados?.[d.id] != null) nodos.push(h('p', { class: 'aqui visto' }, `Visitado · día ${partida.estado.visitados[d.id]}`));
     // notas del grupo sobre este lugar: se leen siempre y se escriben en modo edición
     const nota = partida.estado.notas?.[d.id];
     if (partida.edicion) {
@@ -334,6 +337,7 @@ async function iniciar() {
     if (INTERIOR[d.tipo]) nodos.push(h('button', { class: 'accion', type: 'button', onclick: () => entrar(l) }, INTERIOR[d.tipo]));
     nodos.push(...lore(d), ...(master?.ficha(d) ?? []));
     if (partida.edicion && partida.estado.grupo !== d.id && !d.oculto) nodos.push(h('button', { class: 'accion', type: 'button', onclick: () => partida.ponerGrupo(d.id) }, 'Poner aquí al grupo'));
+    if (partida.edicion && partida.estado.grupo !== d.id && !d.oculto) { const ya = partida.estado.visitados?.[d.id] != null; nodos.push(h('button', { class: 'accion', type: 'button', onclick: () => partida.visitar(d.id, !ya) }, ya ? 'Quitar la visita' : 'Marcar como visitado')); }
     if (!d.oculto) {
       const copiar = h('button', { class: 'enlace', type: 'button', onclick: async () => {
         const url = `${location.origin}${location.pathname}#lugar=${d.id}`;
@@ -521,7 +525,7 @@ async function iniciar() {
     if (camara.position.y < (ciudad ? 3 : 6)) camara.position.y = ciudad ? 3 : 6;
     aguja.style.transform = `rotate(${control.getAzimuthalAngle()}rad)`;
     if (ciudad) {
-      ciudad.actualizar(t, ambiente.luz, ambiente.estado.noche);
+      ciudad.actualizar(t, ambiente.luz, ambiente.estado.noche, camara);
       render.dibujar(ciudad.escena, camara, { noche: ambiente.estado.noche, lejos: camara.position.distanceTo(control.target), interior: !ciudad.escena.fog && ciudad.R <= 30 });
     } else {
       ambiente.actualizar(t, dt, camara, control.target);

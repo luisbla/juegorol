@@ -249,3 +249,9 @@ body.tactil .hora input[type="range"] { height: 34px; }
 @media (prefers-reduced-motion: reduce) {
   .etq, .cabecera p, #carga, #velo { transition: none; }
 }
+
+/* lugares visitados y miembros del grupo */
+button.etq.visitado::after { content: ' ✓'; color: #a9d68f; font-style: normal; }
+#ficha .aqui.visto { color: #a9d68f; }
+#partidaCuerpo .heroes { display: grid; gap: 6px; }
+#partidaCuerpo .heroes select { min-width: 0; flex: 1; padding: 6px 4px; }

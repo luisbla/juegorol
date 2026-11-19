@@ -18,6 +18,14 @@ const camara = new THREE.PerspectiveCamera(32, 1, 0.1, 120);
 const sol = new THREE.DirectionalLight(0xfff0dd, 2.6); sol.position.set(5, 11, 8); sol.castShadow = true; sol.shadow.mapSize.setScalar(2048); Object.assign(sol.shadow.camera, { left: -12, right: 12, top: 9, bottom: -9 }); sol.shadow.bias = -0.0005;
 escena.add(sol, new THREE.HemisphereLight(0xbfd8ff, 0x4a4234, 1.05));
 const suelo = new THREE.Mesh(new THREE.CylinderGeometry(13, 13.6, 0.4, 48), new THREE.MeshStandardMaterial({ color: 0x77725e, roughness: 1 })); suelo.position.y = -0.2; suelo.receiveShadow = true; escena.add(suelo);
+{ // enlosado del estrado: anillos de losas pintados píxel a píxel (sin degradados de canvas)
+  const N = 512, c = document.createElement('canvas'); c.width = c.height = N; const x = c.getContext('2d'), im = x.createImageData(N, N), h = (a, b) => { const v = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return v - Math.floor(v); };
+  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) { const u = (i + 0.5) / N * 2 - 1, v = (j + 0.5) / N * 2 - 1, r = Math.hypot(u, v) * 13, an = Math.atan2(v, u) + Math.PI, aro = Math.floor(r / 1.7), n = aro === 0 ? 1 : aro * 6, q = (an / 6.2832 * n + aro * 0.37) % n, losa = Math.floor(q), fr = r / 1.7 - aro, fq = q - losa;
+    const junta = aro > 0 && (fr < 0.045 || fq * (6.2832 * r / n) < 0.07) || (aro === 0 && fr > 0.955), t = h(aro, losa), g = junta ? 0.5 : 0.84 + t * 0.22 + (h(i, j) - 0.5) * 0.05, o = (j * N + i) * 4;
+    im.data[o] = 136 * g; im.data[o + 1] = 130 * g; im.data[o + 2] = 112 * g; im.data[o + 3] = 255; }
+  x.putImageData(im, 0, 0); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8;
+  const losas = new THREE.Mesh(new THREE.CircleGeometry(13, 64), new THREE.MeshStandardMaterial({ map: t, roughness: 1 })); losas.rotation.x = -Math.PI / 2; losas.position.y = 0.004; losas.receiveShadow = true; escena.add(losas);
+  const borde = new THREE.Mesh(new THREE.CylinderGeometry(14.6, 15.2, 0.3, 48), new THREE.MeshStandardMaterial({ color: 0x5f5a4b, roughness: 1 })); borde.position.y = -0.45; borde.receiveShadow = true; escena.add(borde); }
 const aro = new THREE.Mesh(new THREE.RingGeometry(1.25, 1.33, 40).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xe0b85e, transparent: true, opacity: 0.7 })); aro.position.y = 0.012; escena.add(aro);
 const control = new OrbitControls(camara, lienzo);
 Object.assign(control, { enablePan: false, enableDamping: true, dampingFactor: 0.08, minPolarAngle: 0.5, maxPolarAngle: 1.52, minDistance: 3.2, maxDistance: 90 });

@@ -25,6 +25,13 @@ export function crearSala(tipo, id, { color = 0x7a2e2a, norte = false } = {}) { 
     const pared = mat(colPared, { roughness: 1 });
     caja(pared, AN, AL, 1, 0, 0, -FO / 2 - 0.5); caja(pared, 1, AL, FO, -AN / 2 - 0.5, 0, 0); caja(pared, 1, AL, FO, AN / 2 + 0.5, 0, 0);
     for (let z = -FO / 2 + 3; z < -1; z += 6) caja(oscura, AN + 1, 0.8, 0.9, 0, AL - 0.5, z);   // vigas, solo al fondo
+    const cp = new THREE.Color(colPared);
+    if ((cp.r + cp.g + cp.b) / 3 > 0.2) {   // las paredes claras se visten
+      const zocalo = mat(cp.clone().multiplyScalar(0.5).lerp(new THREE.Color(0x6b4f35), 0.55).getHex(), { roughness: 0.9 }), friso = mat(cp.clone().multiplyScalar(0.78).getHex(), { roughness: 1 }), pila = mat(cp.clone().multiplyScalar(0.88).getHex(), { roughness: 1 });
+      caja(zocalo, AN, 2.3, 0.22, 0, 0, -FO / 2 + 0.11); caja(oscura, AN, 0.2, 0.34, 0, 2.3, -FO / 2 + 0.17); caja(friso, AN, 1.0, 0.16, 0, AL - 2.1, -FO / 2 + 0.08);
+      for (const s of [-1, 1]) { caja(zocalo, 0.22, 2.3, FO, s * (AN / 2 - 0.11), 0, 0); caja(oscura, 0.34, 0.2, FO, s * (AN / 2 - 0.17), 2.3, 0); caja(friso, 0.16, 1.0, FO, s * (AN / 2 - 0.08), AL - 2.1, 0); for (const z of [-7, 0, 7]) caja(pila, 0.3, AL - 2.5, 0.9, s * (AN / 2 - 0.15), 2.5, z); }
+      for (const x of [-19.5, -5, 5, 19.5]) if (ventanas.every(v => Math.abs(v - x) > 3.3)) caja(pila, 0.9, AL - 2.5, 0.3, x, 2.5, -FO / 2 + 0.15);
+    }
     for (const x of ventanas) { caja(oscura, 4.2, 4.2, 0.3, x, 5.2, -FO / 2 + 0.25); caja(cristal, 3.5, 3.5, 0.2, x, 5.55, -FO / 2 + 0.42); }
   }
   const cristal = new THREE.MeshStandardMaterial({ color: 0x1a2028, emissive: 0xbcd6ff, emissiveIntensity: 0.8 });

@@ -21,11 +21,11 @@ function levantar(planta, id, escena) {
   const rnd = azarDe('mazmorra-' + id), etiquetas = [], vivos = [], tono = planta.tono || {}, estilo = tono.estilo || 'cripta';
   const tinte = (hex, k) => new THREE.Color(hex).multiplyScalar(k).getHex();
   const lotes = [], conLote = m => { m.userData.lote = []; lotes.push(m); return m; };
-  const canto = (color, alto = 1, largo = 1.6) => { const m = conLote(new THREE.MeshStandardMaterial({ color, roughness: 1, vertexColors: true })); m.userData.sillar = [alto, largo, tono.verdin ?? 0]; return m; };
+  const canto = (color, alto = 1, largo = 1.6, contraste = 1) => { const m = conLote(new THREE.MeshStandardMaterial({ color, roughness: 1, vertexColors: true })); m.userData.sillar = [alto, largo, tono.verdin ?? 0, contraste]; return m; };
   const liso = (color, extra) => new THREE.MeshStandardMaterial({ color, roughness: 0.9, ...extra }), suelto = (color, extra) => conLote(liso(color, extra));
   const brillo = (color, fuerza = 1.6) => new THREE.MeshStandardMaterial({ color: 0x0c1014, emissive: color, emissiveIntensity: fuerza });
   const cSuelo = tono.suelo ?? 0x6a6a64, cMuro = tono.muro ?? 0x55554f;
-  const suelo = canto(cSuelo), losas = canto(tinte(cSuelo, 1.22), 1.3, 1.3), muro = canto(cMuro), remate = canto(tinte(cMuro, 1.28), 0.6, 1.2);
+  const enMina = (tono.estilo ?? 'cripta') === 'mina', suelo = canto(cSuelo, 1, 1.6, 0.38), losas = canto(tinte(cSuelo, 1.22), 1.3, 1.3, 0.5), muro = enMina ? canto(cMuro, 2.6, 3.4, 0.5) : canto(cMuro), remate = canto(tinte(cMuro, 1.28), 0.6, 1.2);   // en la mina la pared es roca en lajas grandes, no sillería
   const hierro = suelto(0x2c2e34, { metalness: 0.5, roughness: 0.6 }), hueso = suelto(0xd8d2c0), negro = suelto(0x040506);
   // en una mina, lo que en las ruinas es piedra labrada (pilastras, fajas, marcos) es madera de entibar
   const madera = suelto(0x6e4e30), viga = estilo === 'mina' ? madera : remate, menaM = suelto(0x3a3632), oxido = suelto(0x6e4630), tapiaM = suelto(tinte(cMuro, 1.45));
@@ -111,11 +111,21 @@ function levantar(planta, id, escena) {
       for (let i = 0; i < 6; i++) pieza(new THREE.ConeGeometry(0.34 - Math.abs(i - 2.5) * 0.04, 0.9 - Math.abs(i - 2.5) * 0.12, 4), liso(0xa89c8c), 0, 1.25 - Math.abs(i - 2.5) * 0.16, -2.2 + i * 0.9, g).rotation.x = -0.3;
       pieza(new THREE.SphereGeometry(0.8, 8, 6, 0, PI * 2, 0, PI / 2), m, 0, 0, 3.3, g).scale.set(1, 0.7, 1.3); for (const s of [-1, 1]) pieza(new THREE.ConeGeometry(0.1, 0.5, 5), liso(0xf2ead8), s * 0.45, 0.2, 4.1, g).rotation.x = PI / 2;
       for (let i = 0; i < 9; i++) { const a = i / 9 * 6.283; echar(losas, new THREE.BoxGeometry(1.3, 0.22, 0.9), x + Math.cos(a) * 2.6 * k, s0() + 0.2, z + Math.sin(a) * 3.6 * k, a, 0.35, 0); }
-      vivos.push(t => { lomo.scale.y = 0.72 + Math.sin(t * 0.8) * 0.03; }); },
+      const placa = liso(new THREE.Color(r.color ?? 0xd9cdbf).multiplyScalar(0.86).getHex(), { flatShading: true }), placas = [];
+      for (let i = 0; i < 5; i++) { const q = pieza(new THREE.SphereGeometry(1.82 - Math.abs(i - 2) * 0.2, 9, 5, 0, PI * 2, 0, PI / 2), i % 2 ? placa : m, 0, 0.02, -2.5 + i * 1.25, g); q.scale.set(1.04, 0.8 - Math.abs(i - 2) * 0.05, 0.5); q.rotation.x = -0.16; placas.push(q); }
+      for (const s of [-1, 1]) { for (let i = 0; i < 3; i++) { const pata = pieza(new THREE.ConeGeometry(0.17, 1.7, 5), liso(0x8f8375), s * 2.05, 0.42, -1.6 + i * 1.5, g); pata.rotation.z = s * -2.05; pata.rotation.y = (i - 1) * 0.35; }
+        pieza(new THREE.ConeGeometry(0.15, 0.95, 5), liso(0xf2ead8), s * 0.62, 0.28, 4.25, g).rotation.set(PI / 2, 0, s * -0.5); pieza(new THREE.SphereGeometry(0.11, 6, 5), brillo(0xffb060, 1.4), s * 0.36, 0.5, 3.95, g).castShadow = false; }
+      vivos.push(t => { lomo.scale.y = 0.72 + Math.sin(t * 0.8) * 0.03; placas.forEach((q, i) => { q.position.y = 0.02 + Math.sin(t * 0.8 - i * 0.5) * 0.035; }); }); },
     // agua con forma: una columna que gira sobre sí misma
     riada: (r, x, z) => { const g = grupo(x, z), m = liso(0x3f8fb8, { transparent: true, opacity: 0.6, roughness: 0.08, metalness: 0.2, emissive: 0x1a4a6a, emissiveIntensity: 0.5 }); const c = [pieza(new THREE.ConeGeometry(1.5, 2.2, 9, 1, true), m, 0, 1.5, 0, g), pieza(new THREE.SphereGeometry(1.15, 9, 7), m, 0, 3.1, 0, g), pieza(new THREE.TorusGeometry(1.5, 0.22, 5, 14), m, 0, 2.2, 0, g), pieza(new THREE.TorusGeometry(0.9, 0.16, 5, 12), m, 0, 4.0, 0, g)];
       c[0].rotation.x = PI; c[2].rotation.x = c[3].rotation.x = PI / 2; for (const o of c) o.castShadow = false; for (const s of [-1, 1]) pieza(new THREE.SphereGeometry(0.5, 7, 5), m, s * 1.5, 2.7, 0.4, g).scale.set(1, 1.6, 1); luz(x, 3, z, 0x58b8ff, 20, 12);
-      vivos.push(t => { g.rotation.y = t * 0.9; c[2].position.y = 2.2 + Math.sin(t * 2) * 0.25; c[3].position.y = 4.0 + Math.sin(t * 2.6 + 1) * 0.2; g.position.y = Math.sin(t * 1.3) * 0.12; }); },
+      const espuma = liso(0xdff2fb, { transparent: true, opacity: 0.55, roughness: 0.3 }), aros = [], gotas = [];
+      for (let i = 0; i < 5; i++) { const a = pieza(new THREE.TorusGeometry(1.45 - i * 0.2, 0.13 + (i % 2) * 0.05, 5, 16), i === 0 ? espuma : m, 0, 0.5 + i * 0.75, 0, g); a.rotation.set(PI / 2 + (i % 2 ? 0.22 : -0.18), 0, i); a.castShadow = false; aros.push(a); }
+      for (let i = 0; i < 6; i++) { const cr = pieza(new THREE.ConeGeometry(0.22, 0.9, 5), i % 2 ? espuma : m, Math.cos(i * 1.05) * 1.25, 3.6 + (i % 3) * 0.35, Math.sin(i * 1.05) * 1.25, g); cr.rotation.set(Math.sin(i * 1.05) * 0.7, 0, -Math.cos(i * 1.05) * 0.7); cr.castShadow = false; }
+      for (let i = 0; i < 7; i++) { const d = pieza(new THREE.SphereGeometry(0.11 + (i % 3) * 0.04, 6, 5), espuma, 0, 0, 0, g); d.castShadow = false; gotas.push(d); }
+      for (const s of [-1, 1]) pieza(new THREE.SphereGeometry(0.14, 6, 5), brillo(0xd8f4ff, 2.2), s * 0.42, 3.3, 1.02, g).castShadow = false;
+      vivos.push(t => { g.rotation.y = t * 0.9; c[2].position.y = 2.2 + Math.sin(t * 2) * 0.25; c[3].position.y = 4.0 + Math.sin(t * 2.6 + 1) * 0.2; g.position.y = Math.sin(t * 1.3) * 0.12;
+        aros.forEach((a, i) => { a.rotation.z = t * (i % 2 ? -1.6 : 1.2) + i; a.position.y = 0.5 + i * 0.75 + Math.sin(t * 1.7 + i) * 0.08; }); gotas.forEach((d, i) => { const a = t * 1.9 + i * 0.9, y = (t * 0.7 + i / 7) % 1; d.position.set(Math.cos(a) * (1.9 - y * 0.7), 0.3 + y * 4.2, Math.sin(a) * (1.9 - y * 0.7)); }); }); },
     figura,
     // asiento de piedra, con su respaldo: para lo que lleva sentado más de lo que dura una silla
     poyo: (r, x, z) => { const ry = r.mira ?? 0, w = r.w ?? 1.6, h = r.h ?? 0.9, d = r.d ?? 1.3, s = Math.sin(ry), c = Math.cos(ry); bloque(remate, w + 0.4, 0.2, d + 0.4, x, b, z, ry); bloque(muro, w, h - 0.2, d, x, b + 0.2, z, ry); if (r.respaldo !== false) bloque(remate, w, (r.alto ?? 1.7), 0.34, x - s * (d / 2 + 0.17), b + 0.2, z - c * (d / 2 + 0.17), ry); },
@@ -243,7 +253,7 @@ function levantar(planta, id, escena) {
   for (const s of salas.values()) { x0 = Math.min(x0, s.x - s.w / 2); x1 = Math.max(x1, s.x + s.w / 2); z0 = Math.min(z0, s.z - s.d / 2); z1 = Math.max(z1, s.z + s.d / 2); }
   if (!salas.size) x0 = x1 = z0 = z1 = 0;
   const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, R = Math.max(18, Math.hypot(x1 - x0, z1 - z0) / 2), fondo = tono.fondo ?? 0x07080a;
-  escena.add(new THREE.HemisphereLight(tono.cielo ?? 0x8a94a8, 0x14100c, 0.55)); const alta = new THREE.DirectionalLight(0xbcd0ff, 0.55); alta.position.set(cx - 12, 30, cz + 16); escena.add(alta);
+  escena.add(new THREE.HemisphereLight(tono.cielo ?? 0x8a94a8, 0x1c1814, 0.85)); const alta = new THREE.DirectionalLight(0xbcd0ff, 0.8); alta.position.set(cx - 12, 30, cz + 16); escena.add(alta);
   // motas en el aire: nieve fina en el hielo, polvo en lo demás
   const N = 220, pos = new Float32Array(N * 3), cae = estilo === 'hielo'; const dentro = [...salas.values()]; for (let i = 0; i < N; i++) { const q = dentro[Math.floor(rnd() * dentro.length)] ?? { x: 0, z: 0, w: 1, d: 1 }; pos[i * 3] = q.x + (rnd() - 0.5) * q.w; pos[i * 3 + 1] = -1 + rnd() * 6; pos[i * 3 + 2] = q.z + (rnd() - 0.5) * q.d; }   // solo dentro de las salas
   const gm = new THREE.BufferGeometry(); gm.setAttribute('position', new THREE.BufferAttribute(pos, 3));
@@ -252,7 +262,7 @@ function levantar(planta, id, escena) {
   const actualizar = t => { const dt = Math.min(0.1, Math.max(0, t - antes)); antes = t; for (const f of vivos) f(t);
     for (let i = 0; i < N; i++) { let y = pos[i * 3 + 1] + (cae ? -0.5 : 0.07) * dt; if (y < -1) y = 5; else if (y > 5) y = -1; pos[i * 3 + 1] = y; pos[i * 3] += Math.sin(t * 0.3 + i) * 0.004; } gm.attributes.position.needsUpdate = true;
     if (fuego) fuego.emissiveIntensity = 2.3 + 0.5 * Math.sin(t * 11) * Math.sin(t * 4.7); };
-  return { etiquetas, actualizar, R, fondo, centro: [cx, cz], sonido: planta.sonido };
+  return { etiquetas, actualizar, R, fondo, centro: [cx, cz], medio: [(x1 - x0) / 2, (z1 - z0) / 2], sonido: planta.sonido };
 }
 
 export function crearMazmorra(planta, id = 'x') {
@@ -263,8 +273,13 @@ export function crearMazmorra(planta, id = 'x') {
   const etiquetas = niveles.flatMap(n => n.etiquetas), R = Math.max(...niveles.map(n => n.R));
   let actual = 0;
   // cada nivel tiene su encuadre: el visor vuela a «vista» al cambiar de planta
-  const encuadre = r => ({ pos: new THREE.Vector3(r * 0.1, r * 1.66, r * 1.56), objetivo: new THREE.Vector3(0, 0, r * 0.14) });
-  function verPlanta(i) { actual = i; niveles.forEach((n, k) => { n.raiz.visible = k === i; }); for (const e of etiquetas) e.oculta = e.planta !== i; escena.background = new THREE.Color(niveles[i].fondo); escena.fog = new THREE.Fog(niveles[i].fondo, R * 2.2, R * 6.5); api.vista = encuadre(niveles[i].R); }
+  // la cámara se aleja lo justo para que las cuatro esquinas de la planta quepan con margen (campo de 38°, pantalla apaisada)
+  const encuadre = ([hw, hd]) => { const T = Math.tan(19 * Math.PI / 180), pos = new THREE.Vector3(), obj = new THREE.Vector3(), ojo = new THREE.Vector3(), lado = new THREE.Vector3(), arriba = new THREE.Vector3(), v = new THREE.Vector3();
+    for (let r = 8; r < 400; r *= 1.05) { pos.set(r * 0.08, r * 1.5, r * 1.3); obj.set(0, 0, r * 0.06); ojo.subVectors(obj, pos).normalize(); lado.crossVectors(ojo, new THREE.Vector3(0, 1, 0)).normalize(); arriba.crossVectors(lado, ojo);
+      let cabe = true; for (const sx of [-1, 1]) for (const sz of [-1, 1]) for (const y of [0, 5]) { v.set(sx * hw, y, sz * hd).sub(pos); const f = v.dot(ojo); if (f <= 0 || Math.abs(v.dot(arriba)) > f * T * (v.dot(arriba) > 0 ? 0.84 : 0.95) || Math.abs(v.dot(lado)) > f * T * 1.45 * 0.95) cabe = false; }
+      if (cabe) break; }
+    return { pos: pos.clone(), objetivo: obj.clone() }; };
+  function verPlanta(i) { actual = i; niveles.forEach((n, k) => { n.raiz.visible = k === i; }); for (const e of etiquetas) e.oculta = e.planta !== i; escena.background = new THREE.Color(niveles[i].fondo); escena.fog = new THREE.Fog(niveles[i].fondo, R * 2.2, R * 6.5); api.vista = encuadre(niveles[i].medio); }
   const api = { escena, etiquetas, R, minDist: 6, actualizar: t => niveles[actual].actualizar(t), sonido: planta.sonido ?? niveles[0].sonido ?? { viento: 0.25 }, limite: R * 1.1,
     vista: null, vuelaAlCambiar: true, get planta() { return actual; } };
   verPlanta(0);

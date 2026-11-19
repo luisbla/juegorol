@@ -3,8 +3,9 @@
 // navegador como borrador; para compartirlos hay que descargar el archivo y subirlo al repositorio.
 import * as THREE from 'three';
 
+import { crearComitiva, HEROES_BASE, MAX_HEROES, CLASES, ESPECIES } from './comitiva.js';
 const CLAVE = 'alden-partida';
-const VACIA = { niebla: false, dia: 1, grupo: null, descubiertos: [], diario: [], notas: {}, marcas: [] };
+const VACIA = { niebla: false, dia: 1, grupo: null, descubiertos: [], diario: [], notas: {}, marcas: [], visitados: {}, heroes: HEROES_BASE };
 
 export async function crearPartida({ mundo, terreno, lugares, escena, viajes, h, cuerpo, alCambiar, pedirPunto }) {
   const { W, H, cx, cz } = terreno;
@@ -22,6 +23,10 @@ export async function crearPartida({ mundo, terreno, lugares, escena, viajes, h,
   let deEnlace = false;
   try { const t = new URLSearchParams(location.hash.slice(1)).get('partida'); if (t) { estado = { ...VACIA, ...deTexto(t) }; borrador = true; deEnlace = true; } } catch { /* enlace roto: se ignora */ }
   const porId = Object.fromEntries(lugares.lista.map(l => [l.datos.id, l]));
+  // partidas guardadas antes de que existieran las visitas o los héroes: se completan con lo que ya dice el diario
+  const completar = () => { estado.visitados = { ...(estado.visitados || {}) }; for (const e of estado.diario) { estado.visitados[e.de] ??= e.dia; estado.visitados[e.a] ??= e.dia + (e.dias || 0); } if (estado.grupo) estado.visitados[estado.grupo] ??= estado.dia;
+    if (!Array.isArray(estado.heroes) || !estado.heroes.length) estado.heroes = structuredClone(HEROES_BASE); };
+  completar();
   const nombre = id => porId[id]?.datos.nombre ?? id;
 
   /* ---------- niebla de guerra: un mar de nubes con claros sobre lo descubierto ---------- */
@@ -71,6 +76,8 @@ export async function crearPartida({ mundo, terreno, lugares, escena, viajes, h,
   const pendon = new THREE.Mesh(gPendon, oro); pendon.position.y = 17;
   const aro = new THREE.Mesh(new THREE.RingGeometry(3.4, 4.4, 32), oro); aro.rotation.x = -Math.PI / 2; aro.position.y = 0.6;
   grupo.add(asta, pendon, aro); grupo.visible = false; escena.add(grupo);
+  let comitiva = null, claveHeroes = '';
+  const ponerComitiva = () => { const k = JSON.stringify(estado.heroes); if (k === claveHeroes) return; claveHeroes = k; if (comitiva) { grupo.remove(comitiva.grupo); comitiva.soltar(); } comitiva = crearComitiva(estado.heroes); comitiva.enCorro(5); grupo.add(comitiva.grupo); viajes.ponerViajeros?.(estado.heroes); };
   const rastro = new THREE.Group(); escena.add(rastro);
   const matRastro = new THREE.MeshBasicMaterial({ color: 0xb8402f, transparent: true, opacity: 0.85, depthTest: false, side: THREE.DoubleSide });
 
@@ -107,6 +114,7 @@ export async function crearPartida({ mundo, terreno, lugares, escena, viajes, h,
       g.add(palo, tela, r); g.position.set(m.x - cx, y, m.y - cz); marcas.add(g);
     }
   }
+  const visitar = (id, si) => { if (si) estado.visitados[id] = estado.visitados[id] ?? estado.dia; else delete estado.visitados[id]; cambiar(); };
   const anotar = (id, texto) => { if (texto.trim()) estado.notas[id] = texto.trim(); else delete estado.notas[id]; cambiar(); };
   const marcar = async texto => { const p = await pedirPunto(); if (!p) return; estado.marcas.push({ x: Math.round(p[0]), y: Math.round(p[1]), texto: texto.trim().slice(0, 60) }); cambiar(); };
 
@@ -117,6 +125,7 @@ export async function crearPartida({ mundo, terreno, lugares, escena, viajes, h,
       l.grupo.visible = !l.tapado;
     }
     const l = porId[estado.grupo];
+    completar(); ponerComitiva(); for (const o of lugares.lista) o.visitado = estado.visitados[o.datos.id] ?? null;
     grupo.visible = !!l;
     if (l) grupo.position.set(l.base.x + l.radio * 0.8 + 4, Math.max(l.base.y, 0), l.base.z + l.radio * 0.5);
     marcas.visible = true; pintarMarcas();
@@ -133,6 +142,7 @@ export async function crearPartida({ mundo, terreno, lugares, escena, viajes, h,
   function ponerGrupo(id) {
     estado.grupo = id || null;
     if (id && !estado.descubiertos.includes(id)) estado.descubiertos.push(id);
+    if (id) estado.visitados[id] ??= estado.dia;
     cambiar();
   }
   // El grupo recorre una ruta: pasan los días, se descubre lo que queda junto al camino y se tira por encuentros.
@@ -147,7 +157,7 @@ export async function crearPartida({ mundo, terreno, lugares, escena, viajes, h,
     const vistos = lugares.lista.filter(l => !l.datos.oculto && r.trazo.some(p => Math.hypot(p[0] - l.datos.x, p[1] - l.datos.y) < 34)).map(l => l.datos.id);
     estado.descubiertos = [...new Set([...estado.descubiertos, de, a, ...vistos])];
     estado.diario.push({ dia: estado.dia, de, a, km: Math.round(r.km), dias, encuentros: encuentros.map(e => ({ dia: e.dia, zona: e.zona, que: e.que })) });
-    estado.dia += dias; estado.grupo = a;
+    estado.visitados[de] ??= estado.dia; estado.dia += dias; estado.grupo = a; estado.visitados[a] ??= estado.dia;
     cambiar();
     return { dias, encuentros };
   }
@@ -175,6 +185,14 @@ export async function crearPartida({ mundo, terreno, lugares, escena, viajes, h,
       h('p', { class: 'rotulo' }, 'El grupo está en'), sel,
       marca('Niebla de guerra', estado.niebla, v => { estado.niebla = v; cambiar(); }),
       marca('Modo edición (viajar y colocar desde las fichas)', edicion, v => { edicion = v; pintarPanel(); alCambiar?.(); }),
+      h('p', { class: 'rotulo' }, `El grupo (${estado.heroes.length})`),
+      edicion ? h('div', { class: 'heroes' }, ...estado.heroes.map(([clase, especie], i) => h('div', { class: 'fila' },
+          h('select', { 'aria-label': `Clase del miembro ${i + 1}`, onchange: ev => { estado.heroes[i] = [ev.target.value, estado.heroes[i][1]]; cambiar(); } }, ...CLASES.map(c => h('option', { value: c, selected: c === clase ? '' : null }, c))),
+          h('select', { 'aria-label': `Especie del miembro ${i + 1}`, onchange: ev => { estado.heroes[i] = [estado.heroes[i][0], ev.target.value]; cambiar(); } }, ...ESPECIES.map(e => h('option', { value: e, selected: e === especie ? '' : null }, e))),
+          estado.heroes.length > 1 ? h('button', { type: 'button', 'aria-label': `Quitar al miembro ${i + 1}`, onclick: () => { estado.heroes.splice(i, 1); cambiar(); } }, '×') : null)),
+        estado.heroes.length < MAX_HEROES ? h('button', { type: 'button', class: 'ancho', onclick: () => { estado.heroes.push(['Guerrero', 'Humano']); cambiar(); } }, 'Añadir un miembro') : null)
+        : h('p', { class: 'nota' }, estado.heroes.map(([c, e]) => `${c} ${e.toLowerCase()}`).join(' · ')),
+      (() => { const n = Object.keys(estado.visitados).filter(id => porId[id] && !porId[id].datos.oculto).length, de = lugares.lista.filter(l => !l.datos.oculto).length; return h('p', { class: 'rotulo' }, `Lugares visitados: ${n} de ${de}`); })(),
       diario.length ? h('p', { class: 'rotulo' }, 'Diario') : null, diario.length ? h('ul', {}, ...diario) : null,
       estado.marcas.length || edicion ? h('p', { class: 'rotulo' }, edicion ? 'Marcas en el mapa (escribe, pulsa Marcar y luego el sitio)' : 'Marcas en el mapa') : null,
       estado.marcas.length ? h('ul', { class: 'marcas' }, ...estado.marcas.map((m, i) => h('li', {}, m.texto, edicion ? h('button', { type: 'button', 'aria-label': `Quitar la marca «${m.texto}»`, onclick: () => { estado.marcas.splice(i, 1); cambiar(); } }, '×') : null))) : null,
@@ -195,5 +213,5 @@ export async function crearPartida({ mundo, terreno, lugares, escena, viajes, h,
   }
 
   aplicar();
-  return { get estado() { return estado; }, get edicion() { return edicion; }, ponerGrupo, viajar, actualizar, anotar };
+  return { get estado() { return estado; }, get edicion() { return edicion; }, ponerGrupo, viajar, actualizar, anotar, visitar };
 }

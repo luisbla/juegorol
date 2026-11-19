@@ -306,8 +306,8 @@ export function crearTerreno(mundo, { movil = false } = {}) {
       const prado = suave(0.56, 0.7, fbm(x * 0.012 + 50, y * 0.012 + 30, 3));   // manchas de pasto entre los cultivos
       const mr = mezcla(c[0] * linde * surco, 96 + n * 30, prado), mv = mezcla(c[1] * linde * surco, 124 + n * 26, prado), mb = mezcla(c[2] * linde * surco, 58 + n * 14, prado);
       // roca y nieve de Thraengarde
-      const nieve = suave(4, 12, h + n * 7) * (1 - suave(0.7, 1.45, p) * 0.85);
-      const roca = 88 + n * 40 + g2 * 18;
+      const nieve = suave(4, 11, h + n * 3.2) * (1 - suave(0.85, 1.5, p) * 0.9);
+      const ladera = suave(0.5, 1.3, p), roca = 92 + n * 34 + g2 * 18 * (1 - ladera) + Math.sin(h * 1.15 + n * 9) * 9 * ladera;
       const tr = mezcla(roca, 240, nieve), tv = mezcla(roca + 2, 244, nieve), tb = mezcla(roca + 10, 250, nieve);
       // claros de hierba dentro del bosque
       const claro = suave(0.42, 0.62, fbm(x * 0.017 + 11, y * 0.017 + 70, 3));
@@ -319,7 +319,8 @@ export function crearTerreno(mundo, { movil = false } = {}) {
       r = mezcla(r, 158 + n * 20, tundra); v = mezcla(v, 152 + n * 16, tundra); b = mezcla(b, 118 + n * 10, tundra);
       // roca en pendientes y en los peñones
       const rk = Math.max(suave(0.45, 1.1, p) * (1 - wT), pesoIslote(x, y) * suave(0.2, 1.2, h));
-      r = mezcla(r, 126 + g2 * 22, rk); v = mezcla(v, 118 + g2 * 20, rk); b = mezcla(b, 106 + g2 * 18, rk);
+      const est = Math.sin(h * 1.15 + n * 9) * 8 * suave(0.5, 1.3, p), gr = g2 * (1 - 0.8 * suave(0.5, 1.3, p));
+      r = mezcla(r, 126 + gr * 22 + est, rk); v = mezcla(v, 118 + gr * 20 + est, rk); b = mezcla(b, 106 + gr * 18 + est, rk);
       // marisma
       const wMa = pesoMarisma(x, y);
       r = mezcla(r, 54 + n * 26, wMa); v = mezcla(v, 68 + n * 24, wMa); b = mezcla(b, 42 + n * 10, wMa);
@@ -334,7 +335,7 @@ export function crearTerreno(mundo, { movil = false } = {}) {
       const pisado = suave(8, -4, distLugar(x, y)) * 0.6 * (1 - nieve * wT);
       r = mezcla(r, 150, pisado); v = mezcla(v, 132, pisado); b = mezcla(b, 98, pisado);
     }
-    const k = 0.9 + g * 0.14 + g2 * 0.08, o = (j * TW + i) * 4;
+    const llano = 1 - 0.85 * suave(0.5, 1.3, p), k = 0.9 + 0.11 * (1 - llano) + (g * 0.14 + g2 * 0.08) * llano, o = (j * TW + i) * 4;
     px[o] = Math.min(255, r * k); px[o + 1] = Math.min(255, v * k); px[o + 2] = Math.min(255, b * k); px[o + 3] = 255;
   }
   ctx.putImageData(img, 0, 0);
@@ -375,14 +376,16 @@ export function crearTerreno(mundo, { movil = false } = {}) {
   material.onBeforeCompile = sh => {
     sh.uniforms.uTiempo = uniformes.uTiempo; sh.uniforms.uNubes = uniformes.uNubes;
     sh.vertexShader = sh.vertexShader
-      .replace('#include <common>', '#include <common>\nvarying vec2 vSuelo;')
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvSuelo = position.xz;');
+      .replace('#include <common>', '#include <common>\nvarying vec2 vSuelo; varying float vAlto; varying float vLadera;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvSuelo = position.xz; vAlto = position.y; vLadera = 1.0 - normal.y;');
     sh.fragmentShader = sh.fragmentShader
-      .replace('#include <common>', `#include <common>\nvarying vec2 vSuelo; uniform float uTiempo; uniform float uNubes;${RUIDO_GLSL}`)
+      .replace('#include <common>', `#include <common>\nvarying vec2 vSuelo; varying float vAlto; varying float vLadera; uniform float uTiempo; uniform float uNubes;${RUIDO_GLSL}`)
       .replace('#include <map_fragment>', `#include <map_fragment>
         float sombraNube = smoothstep(0.52, 0.72, fN(vSuelo * 0.0042 + vec2(uTiempo * 0.012, uTiempo * 0.004)));
         diffuseColor.rgb *= 1.0 - 0.34 * uNubes * sombraNube;
-        diffuseColor.rgb *= 0.84 + 0.2 * fN(vSuelo * 0.85) + 0.12 * rN(vSuelo * 3.7);`);
+        float pared = smoothstep(0.22, 0.6, vLadera); vec2 gp = vec2(vSuelo.x + vSuelo.y, vAlto * 1.6);   // en una pared el grano se toma con la altura: no se estira en rayas
+        diffuseColor.rgb *= 0.84 + 0.2 * mix(fN(vSuelo * 0.85), fN(gp * 0.85), pared) + 0.12 * mix(rN(vSuelo * 3.7), rN(gp * 3.7), pared);
+        diffuseColor.rgb *= 1.0 - pared * 0.13 * (rN(vec2(vAlto * 0.8 + rN(vSuelo * 0.07) * 5.0, vSuelo.x * 0.03 + vSuelo.y * 0.02)) * 0.7 + rN(vec2(vAlto * 2.3 + rN(vSuelo * 0.2) * 3.0, vSuelo.y * 0.04)) * 0.3 - 0.45);`);
   };
   const malla = new THREE.Mesh(geo, material);
   malla.castShadow = true; malla.receiveShadow = true;
