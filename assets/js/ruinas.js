@@ -182,7 +182,7 @@ export function crearEntrada(l) {
   const carro = (x, z, ry, carga = ['sacos', 'pacas', 'barriles', 'cajas'][Math.floor(Math.abs(x * 7 + z * 3)) % 4]) => { const o = enser(gCarro({ carga }), x, z, ry, 1.05); o.userData.fijo = true; return o; };
   let texBlanda = null;
   const blanda = () => texBlanda ??= blandaDe(0.55);
-  const niebla = (n, y, radio, opacidad = 0.5, color = 0xffffff, ancho = 26) => { for (let i = 0; i < n; i++) { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: blanda(), transparent: true, depthWrite: false, opacity: opacidad, color })), x0 = (rnd() - 0.5) * radio * 2, z = (rnd() - 0.5) * radio * 2; s.scale.set(ancho, ancho * 0.28, 1); s.position.set(x0, y + rnd() * 1.5, z); escena.add(s); vivos.push((t, cam) => { s.position.x = x0 + Math.sin(t * 0.05 + i) * 10; if (cam) { const d = s.position.distanceTo(cam.position); s.material.opacity = opacidad * THREE.MathUtils.smoothstep(d, ancho * 0.45, ancho * 1.5); } }); } };
+  const niebla = (n, y, radio, opacidad = 0.5, color = 0xffffff, ancho = 26) => { for (let i = 0; i < n; i++) { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: blanda(), transparent: true, depthWrite: false, opacity: opacidad, color })), x0 = (rnd() - 0.5) * radio * 2, z = (rnd() - 0.5) * radio * 2; s.scale.set(ancho, ancho * 0.28, 1); s.position.set(x0, y + rnd() * 1.5, z); escena.add(s); vivos.push((t, cam) => { s.position.x = x0 + Math.sin(t * 0.05 + i) * 10; if (cam) { const d = s.position.distanceTo(cam.position); s.material.opacity = opacidad * THREE.MathUtils.smoothstep(d, ancho * 0.45, ancho * 1.5); } s.material.color.setHex(color).multiplyScalar(1 - nocheAhora * 0.8); }); } };
   const humo = (x, y, z, oscuro) => { for (let k = 0; k < 5; k++) { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: blanda(), transparent: true, depthWrite: false, color: oscuro ? 0x2a2725 : 0xd9d4cc })); escena.add(s); vivos.push(t => { const f = (t * 0.12 + k / 5) % 1; s.position.set(x + f * f * 5, y + f * 9, z); const e = 1.5 + f * 6; s.scale.set(e, e, 1); s.material.opacity = Math.sin(f * Math.PI) * (oscuro ? 0.7 : 0.5) * (1 - nocheAhora * 0.45); if (!oscuro) s.material.color.setHex(0xd9d4cc).multiplyScalar(1 - nocheAhora * 0.6); }); } };
   const nevada = (n = 600, ancho = 80) => { const p = new Float32Array(n * 3); for (let i = 0; i < n; i++) { p[i * 3] = (rnd() - 0.5) * ancho; p[i * 3 + 1] = rnd() * 30; p[i * 3 + 2] = (rnd() - 0.5) * ancho; } const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(p, 3)); escena.add(new THREE.Points(g, new THREE.PointsMaterial({ color: 0xffffff, size: 0.22, transparent: true, opacity: 0.85 }))); vivos.push(() => { for (let i = 0; i < n; i++) { p[i * 3 + 1] -= 0.06; p[i * 3] += 0.03; if (p[i * 3 + 1] < 0) { p[i * 3 + 1] = 30; p[i * 3] = Math.sin(i * 12.9) * ancho * 0.5; } } g.attributes.position.needsUpdate = true; }); };
   let texRizo = null;
@@ -237,7 +237,7 @@ export function crearEntrada(l) {
       cuervos([[-4, 19.4, -4.2], [1.5, 19.4, -4.2], [6, 19.4, -4.2], [-12, 2.9, 3]]);
       niebla(26, 0.8, 46, 0.42, 0xdfe8dc, 30);
       rotulo('La puerta', 0, 17, -3); rotulo('Estacas de aviso', 0, 6, 24);
-      return { pos: [14, 9, 52], objetivo: [0, 8.5, 0], cielo: 0x4a5a4a, R: 46, limite: 44, luz: 0.55 };
+      return { pos: [14, 9, 52], objetivo: [0, 8.5, 0], cielo: 0x4a5a4a, R: 46, limite: 44, luz: 0.55, arco: 1.1 };   // arco: la cámara no gira hasta meterse en el bosque de detrás
     },
     // La Cuna de los Demonios: una grieta en la roca, en un circo de nieve. Los clanes la guardan como suelo sagrado.
     cuna() {
@@ -257,7 +257,7 @@ export function crearEntrada(l) {
       for (let i = 0; i < 7; i++) pino(-26 + rnd() * 8 + (i % 2) * 44, 14 + rnd() * 20, 1.1 + rnd() * 0.5, 0x3a5046);
       nevada();
       rotulo('La grieta', 0, 12.5, -8.6); rotulo('Ofrendas de los clanes', 0, 4, 2.6); rotulo('Postes de oración', 12, 6.5, 9);
-      return { pos: [12, 12, 36], objetivo: [0, 4.5, -2], cielo: 0x9aa8b8 };
+      return { pos: [12, 12, 36], objetivo: [0, 4.5, -2], cielo: 0x9aa8b8, arco: 1.15 };   // arco: la cámara no pasa detrás de la peña
     },
     // El Sagrario del Surco: un cenobio hundido en el trigal. Solo asoma la mitad de arriba; lo demás lo tapa la tierra de labor.
     sagrario() {
@@ -461,7 +461,7 @@ export function crearEntrada(l) {
       cil(mat(0xd8d0c0), 2.2, 2.2, 9, 20, 0, -8, undefined, 14); pieza(new THREE.ConeGeometry(2.5, 2.4, 14), mat(0xb5652a), 20, 10.2, -8);
       cerca(-20, 4, -6, 4); cerca(-20, 4, -20, 16); cerca(-20, 16, -6, 16); cerca(-6, 16, -6, 9); for (let i = 0; i < 5; i++) res(-17 + (i % 3) * 4, 7 + Math.floor(i / 3) * 5 + rnd(), rnd() * 6, [0x7a4a2e, 0x3a2a22, 0xd8c8b0][i % 3], 2.2);
       cerca(2, 6, 14, 6); cerca(14, 6, 14, 14); cerca(14, 14, 2, 14); cerca(2, 14, 2, 6); for (let i = 0; i < 7; i++) res(4 + (i % 4) * 2.6, 8 + Math.floor(i / 4) * 3.4, rnd() * 6, 0xf0ece0, 1.2);
-      for (let i = 0; i < 8; i++) caja(mat(0xd2aa4e), 2, 1.1, 1.3, -2 + (i % 4) * 2.2, i > 3 ? 1.1 : 0, -1.4, (i % 2) * 0.1);
+      for (let i = 0; i < 8; i++) caja(mat(0xd2aa4e), 2, 1.1, 1.3, 15.5, i > 3 ? 1.1 : 0, -10.6 + (i % 4) * 2.2, Math.PI / 2 + (i % 2) * 0.1);   // las pacas, apiladas contra el granero: delante de la casa tapaban el pozo
       const esp = nido(-14, -2, 0.3); caja(mat(0x5a4633), 0.14, 3.4, 0.14, 0, 0, 0, 0, esp); caja(mat(0x5a4633), 2.6, 0.14, 0.14, 0, 2.5, 0, 0, esp); caja(mat(0x7a3b2e), 1.4, 1.6, 0.3, 0, 1.4, 0, 0, esp); pieza(new THREE.SphereGeometry(0.4, 8, 6), mat(0xb89a62), 0, 3.5, 0, esp); pieza(new THREE.ConeGeometry(0.7, 0.5, 8), mat(0xd2aa4e), 0, 3.95, 0, esp);
       enser(gPozo(), 2, -3, 0.4, 1.15).userData.fijo = true; carro(-2, 6, 0.4); faena(figura(-1, 2.6, 2.6, 0x8a6a48, escena, 0, 1, { tipo: 'aldeana', llevaI: 'cesta' }), 'remueve'); for (let i = 0; i < 6; i++) gallina(-3.4 + rnd() * 3, 3.4 + rnd() * 2.6, [0xe8e0d0, 0x8a5a36, 0xc9a06a][i % 3]); anda(figura(0, 0, 0, 0x6a5a2f, escena, 0, 1, { tipo: 'aldeano', lleva: 'cubo', tocado: 'sombrero', colorTocado: 0xd8bf7a }), [[-21.5, 2.6], [-4.6, 2.6], [-4.6, 17.4], [-21.5, 17.4]], 1.0); faena(figura(16, 3, 4, 0x5a6b3a), 'habla', 0.6); faena(figura(17.2, 1.6, 0.9, 0x7a3b2e), 'jarras'); farol(-0.4, -3.8, 0.4);
       for (let i = 0; i < 15; i++) { arbol(26 + (i % 5) * 4.4, 4 + Math.floor(i / 5) * 5, 0.8, 0x6a8a3a); }
@@ -471,20 +471,25 @@ export function crearEntrada(l) {
     // Faro de Astravan
     faro() {
       suelo(0x163f55, 200, { plano: true }).position.y = -3; lamina(0x1f5a78, 200, 0.02); const pena = mat(0x77736c);
-      for (let i = 0; i < 26; i++) { const a = rnd() * 6.28, d = rnd() * 13; roca(pena, 4 + rnd() * 4, Math.cos(a) * d, 1.5 + (13 - d) * 0.25, Math.sin(a) * d * 0.8, 0.9); }
+      // el peñón: las rocas no pasan de la cota de lo que sostienen (el zócalo del faro, el rellano de la casa, el embarcadero); sin ese tope se tragaban la casa y las tablas
+      const topePena = (x, z) => { let t = 4.6 - Math.max(0, Math.hypot(x, z / 0.8) - 6) * 0.45; if (Math.hypot(x - 9.4, z - 4) < 9.5) t = Math.min(t, 3.0); if (x < -4 && Math.abs(z - 6) < 6.5) t = Math.min(t, 0.9); return t; };
+      for (let i = 0; i < 26; i++) { const a = rnd() * 6.28, d = rnd() * 13, r = (4 + rnd() * 4) * 0.8, x = Math.cos(a) * d, z = Math.sin(a) * d * 0.8; roca(pena, r, x, Math.min(1.5 + (13 - d) * 0.25, topePena(x, z) - r * 0.82), z, 0.9); }
+      const sillarF = canto(0x8d897f, 0.9, 1.6, 0.12); cil(sillarF, 6, 6.5, 4.4, 0, 0, 0, undefined, 16);   // cimiento del faro hasta el agua
+      caja(sillarF, 9.4, 3.7, 7.4, 9.2, 0, 3.9, -0.4);   // rellano de sillares para la casa
+      for (let i = 0; i < 5; i++) caja(sillarF, 0.7, 0.74 * (i + 1), 1.2, 6.08 - 0.39 * (3.3 - i * 0.7), 3.7, 2.57 + 0.92 * (3.3 - i * 0.7), -1.97);   // cinco peldaños del rellano al zócalo
       cil(mat(0x8d897f), 5.4, 6, 3, 0, 4.4, 0, undefined, 16);
       for (let i = 0; i < 6; i++) cil(mat(i % 2 ? 0xb23a2e : 0xece8df), 3.6 - i * 0.22, 3.82 - i * 0.22, 4.4, 0, 7.4 + i * 4.4, 0, undefined, 16);
       cil(mat(0x2b2b2e), 3.4, 3.4, 0.4, 0, 33.8, 0, undefined, 16); for (let i = 0; i < 12; i++) { const a = i / 12 * 6.28; caja(mat(0x2b2b2e), 0.12, 1.3, 0.12, Math.cos(a) * 3.2, 34.2, Math.sin(a) * 3.2); }
       const fanal = cil(mat(0xfff0c0, { emissive: 0xffd070, emissiveIntensity: 1.6, transparent: true, opacity: 0.9 }), 1.9, 1.9, 3, 0, 34.2, 0, undefined, 12); pieza(new THREE.ConeGeometry(2.6, 2.4, 12), mat(0xb23a2e), 0, 38.4, 0);
       const haz = nido(0, 0, 0, 35.7); for (const s of [-1, 1]) { const c = pieza(new THREE.ConeGeometry(5, 60, 12, 1, true), new THREE.MeshBasicMaterial({ color: 0xfff0c0, transparent: true, opacity: 0.12, side: THREE.DoubleSide, depthWrite: false }), 0, 0, s * 30, haz); c.rotation.x = s * Math.PI / 2; c.castShadow = false; }
       vivos.haz = haz; caja(mat(0x3a2a1c), 1.4, 2.6, 0.2, 0, 7.4, 3.75); for (const y of [14, 22, 29]) caja(mat(0x14161a), 0.7, 1.4, 0.2, 0, y, 3.75 - (y - 7.4) * 0.05);
-      casa(7, 3, 6, 5, 3.4, -0.4, { pared: 0xd8d0c0, teja: 0xb23a2e, chim: true, y: 3.6 }); humo(8.6, 9.6, 3, false);
+      casa(9.4, 4, 6, 5, 3.4, -0.4, { pared: 0xd8d0c0, teja: 0xb23a2e, chim: true, y: 3.7 }); humo(11, 9.7, 4, false);
       for (let i = 0; i < 8; i++) caja(mat(0x6b5440), 1.8, 0.16, 1.2, -9 - i * 1.2, 1.2 - i * 0.02, 6); for (let i = 0; i < 4; i++) cil(mat(0x4a3a2a), 0.14, 0.14, 3.4, -10 - i * 2.6, -1.5, 6.7, undefined, 5);
       const b = crearBarcoModelo({ eslora: 5, palos: 1, velas: 'recogidas' }), gb = nido(-16, 9, 0.4, 0.05); gb.add(b); vivos.push(t => { gb.position.y = 0.05 + Math.sin(t) * 0.1; });
       const lejos = crearBarcoModelo({ eslora: 16, palos: 3, velas: 'dadas' }), gl = nido(60, -70, 2.2, 0.1); gl.add(lejos); vivos.push(t => { gl.position.x = 60 - ((t * 1.2) % 160); gl.position.y = 0.1 + Math.sin(t * 0.8) * 0.2; });
-      const f = figura(0, 0, 0, 0x2f4f6f, escena, 0, 1, { tipo: 'marino', lleva: 'farol' }); f.position.y = 34.2; anda(f, Array.from({ length: 14 }, (_, i) => [Math.cos(i / 14 * 6.28) * 2.75, Math.sin(i / 14 * 6.28) * 2.75]), 0.7, true); farol(4.6, 6.4, 2.4, 3, 3.6);
-      rotulo('El fanal', 0, 42, 0); rotulo('Casa del farero', 7, 10.5, 3); rotulo('Embarcadero', -13, 4, 6);
-      return { pos: [30, 20, 52], objetivo: [0, 17, 0], cielo: 0x8ab0d0, R: 56, limite: 44 };
+      const f = figura(0, 0, 0, 0x2f4f6f, escena, 0, 1, { tipo: 'marino', lleva: 'farol' }); f.position.y = 34.2; anda(f, Array.from({ length: 14 }, (_, i) => [Math.cos(i / 14 * 6.28) * 2.75, Math.sin(i / 14 * 6.28) * 2.75]), 0.7, true); farol(7.4, 8.2, 2.4, 3, 3.7);
+      rotulo('El fanal', 0, 42, 0); rotulo('Casa del farero', 9.4, 10.6, 4); rotulo('Embarcadero', -13, 4, 6);
+      return { pos: [36, 22, 66], objetivo: [0, 20, 0], cielo: 0x8ab0d0, R: 56, limite: 44 };   // de lejos: el fanal entra en el encuadre
     },
     // Hierrohondo: la mina del Dominio. Bocamina entibada en la roca, vagonetas, barracón, escorial y empalizada.
     mina() {
@@ -520,7 +525,7 @@ export function crearEntrada(l) {
       for (let i = 0; i < 9; i++) pino(-34 + rnd() * 10 + (i % 2) * 58, 6 + rnd() * 30, 1.1 + rnd() * 0.6, 0x3a5046);
       nevada(500);
       rotulo('La bocamina', 0, 9.5, -15.4); rotulo('Barracón', -15, 8, -5); rotulo('Lavadero de mena', -10, 7.5, 6); rotulo('Escorial', 13, 5, 12); rotulo('Cuerpo de guardia', 13, 8, -4);
-      return { pos: [22, 17, 40], objetivo: [0, 3, 0], cielo: 0x97a5b6, R: 44, limite: 34 };
+      return { pos: [22, 17, 40], objetivo: [0, 3, 0], cielo: 0x97a5b6, R: 44, limite: 34, arco: 1.7 };
     },
     // El Mercado de las Barcas: barcazas amarradas borda con borda en mitad del lago
     mercado() {
@@ -567,12 +572,12 @@ export function crearEntrada(l) {
       suelo(0x4a6a38); disco(0x5a7a44, 20, 0.03); bruma = 0.0068; pradera(3000, (x, z) => Math.hypot(x, z) < 6.5 || (x > 7.5 && x < 18.5 && z > 3.5 && z < 14.5) || (Math.abs(x) < 2.4 && z > 5 && z < 16), [0x3a6a36, 0x5a8a48, 0x86b060], 0, 70); const piedra = canto(0x7a7480, 1.0, 1.7, 0.1), piedra2 = canto(0x8a8590, 1.25, 2.1, 0.06), teja = mat(0x3d3a52);
       cil(piedra, 5.2, 5.8, 3, 0, 0, 0, undefined, 14); for (let i = 0; i < 6; i++) { cil(i % 2 ? piedra : piedra2, 4.2 - i * 0.16, 4.4 - i * 0.16, 5, 0, 3 + i * 5, 0, undefined, 14); cil(mat(0x9a96a2), 4.52 - i * 0.16, 4.52 - i * 0.16, 0.36, 0, 2.82 + i * 5, 0, undefined, 14); }
       for (let i = 0; i < 5; i++) { const a = i / 5 * 6.28 + 0.9, b = caja(piedra, 1.5, 9, 2.4, Math.sin(a) * 5.3, 0, Math.cos(a) * 5.3, a); b.rotation.x = -0.1; }   // contrafuertes
-      cil(piedra, 4.6, 3.6, 2, 0, 33, 0, undefined, 14); cil(piedra, 4.4, 4.4, 5, 0, 35, 0, undefined, 14); const ch = pieza(new THREE.ConeGeometry(5.2, 10, 14), teja, 0.6, 45, 0); ch.rotation.z = -0.08;
-      cil(mat(0x2b2b2e), 0.08, 0.08, 2.4, 1.0, 50, 0, undefined, 4); caja(mat(0xd9b24e), 1.4, 0.4, 0.06, 1.3, 51, 0);
+      cil(piedra, 4.6, 3.6, 2, 0, 33, 0, undefined, 14); cil(piedra, 4.4, 4.4, 5, 0, 35, 0, undefined, 14); cil(mat(0x9a96a2), 4.75, 4.75, 0.4, 0, 39.8, 0, undefined, 14); pieza(new THREE.ConeGeometry(5.3, 10, 14), teja, 0, 45.1, 0);   // cornisa y chapitel, a plomo sobre el tambor
+      cil(mat(0x2b2b2e), 0.08, 0.08, 2.4, 0, 49.9, 0, undefined, 4); caja(mat(0xd9b24e), 1.4, 0.4, 0.06, 0.75, 51.2, 0);
       caja(mat(0x2a1f18), 2.2, 4, 0.4, 0, 0, 5.5); caja(piedra, 3.2, 0.6, 0.8, 0, 4, 5.4); for (const s of [0.35, 0.75]) caja(mat(0x2b2b2e), 2.2, 0.2, 0.46, 0, 4 * s, 5.52); for (let i = 0; i < 3; i++) caja(piedra, 4 + i * 0.8, 0.3, 1, 0, 0.6 - i * 0.3, 6.4 + i * 0.9).position.y = 0.45 - i * 0.15;
       for (const [a, y, luz] of [[0.3, 12, 0], [2.2, 18, 0], [-1.2, 24, 0], [0.1, 36.5, 1], [2.4, 36.5, 1]]) caja(mat(0x14161a, luz ? { emissive: 0xffc878, emissiveIntensity: 1.4 } : undefined), 1.0, 1.8, 0.3, Math.sin(a) * (y > 30 ? 4.4 : 4.3 - (y - 3) * 0.032), y, Math.cos(a) * (y > 30 ? 4.4 : 4.3 - (y - 3) * 0.032), a);
       const bal = nido(0, 0, 2.2, 35); caja(mat(0x5a4633), 3, 0.2, 2, 0, 0, 5.2, 0, bal); for (let i = 0; i < 5; i++) caja(mat(0x3a2a1c), 0.1, 1, 0.1, -1.4 + i * 0.7, 0.2, 6.1, 0, bal); const cat = cil(mat(0xd9b24e), 0.14, 0.2, 2.2, 0, 1.4, 5.6, bal, 8); cat.rotation.x = 1.1;
-      for (let i = 0; i < 9; i++) { const r = cil(mat(0x3f5a3a), 0.1, 0.2, 10 + rnd() * 12, Math.sin(i * 0.7) * 4.5, 0, Math.cos(i * 0.7) * 4.5, undefined, 5); r.position.y = r.geometry.parameters.height / 2; }   // hiedra
+      for (let i = 0; i < 9; i++) { const h = 10 + rnd() * 12, R = 4.5 - Math.max(0, h / 2 - 3) / 30, r = cil(mat(0x3f5a3a), 0.1, 0.2, h, Math.sin(i * 0.7) * R, 0, Math.cos(i * 0.7) * R, undefined, 5); r.rotation.set(-1 / 30, i * 0.7, 0, 'YXZ'); }   // hiedra: sube pegada al muro, que se estrecha
       // un huerto de hierbas, tutores y un banco
       cerca(8, 4, 18, 4); cerca(18, 4, 18, 14); cerca(18, 14, 8, 14); cerca(8, 14, 8, 8); for (let i = 0; i < 20; i++) roca(mat([0x5a8a44, 0x7a9a4a, 0x8a6a9a, 0xd9c24e][i % 4]), 0.5, 9.4 + (i % 5) * 1.9, 0.4, 5.6 + Math.floor(i / 5) * 2.2, 0.8);
       caja(mat(0x6a5039), 2.6, 0.14, 0.6, -7, 0.6, 6); for (const s of [-1, 1]) caja(mat(0x3a2a1c), 0.14, 0.6, 0.5, -7 + s, 0, 6);
@@ -600,6 +605,7 @@ export function crearEntrada(l) {
   escena.background = new THREE.Color(v.cielo); escena.fog = new THREE.FogExp2(v.cielo, bruma);
   const tinte = new THREE.Color(v.cielo), k = v.luz ?? 1;
   const blancoCielo = new THREE.Color(0xffffff), sueloCielo = new THREE.Color(0x4a4436);
+  const miraA = new THREE.Vector3(...v.objetivo), grisLluvia = new THREE.Color();
   function actualizar(t, luz, noche, cam) {
     sol.position.copy(luz.dirSol).multiplyScalar(180); sol.intensity = luz.sol.intensity * k; sol.color.copy(luz.sol.color); sol.castShadow = luz.sol.castShadow;
     luna.position.copy(luz.dirLuna).multiplyScalar(180); luna.intensity = luz.luna.intensity * 1.2;
@@ -609,11 +615,15 @@ export function crearEntrada(l) {
     nocheAhora = noche; vidrio.emissiveIntensity = noche * 1.3; farolM.emissiveIntensity = 0.1 + noche * 2.6; for (const [luzN, fuerza] of lucesNoche) luzN.intensity = fuerza * noche;
     const agua = lluvia(t, l.region); gotas.visible = agua > 0.02;
     if (gotas.visible) { gotas.material.opacity = agua * 0.5; const ahora = performance.now() / 1000; for (let i = 0; i < NG; i++) { const x = semG[i * 3], z = semG[i * 3 + 2], y = ((semG[i * 3 + 1] - ahora * (42 + (i % 7) * 3)) % 60 + 60) % 60; pg[i * 6] = x; pg[i * 6 + 1] = y; pg[i * 6 + 2] = z; pg[i * 6 + 3] = x + 0.3; pg[i * 6 + 4] = y - 1.6; pg[i * 6 + 5] = z; } gotas.geometry.attributes.position.needsUpdate = true; sol.intensity *= 1 - agua * 0.55; }
-    escena.fog.density = Math.max(bruma, Math.min(bruma * (1 + agua * 0.9), 0.008 + bruma * 0.25));   // el chubasco cierra un paraje despejado; el que ya tiene bruma espesa no se queda en blanco
+    // La bruma se mide en lo que se mira, no en metros: al alejar la cámara la densidad baja para que el centro del paraje nunca quede velado más de un tercio
+    // (con chubasco, algo más). Con densidad fija, alejarse o que empezara a llover dejaba toda la pantalla del color del cielo.
+    const lejos = cam ? Math.max(1, cam.position.distanceTo(miraA)) : 60;
+    escena.fog.density = Math.min(bruma * (1 + agua * 0.9), (0.62 + agua * 0.16) / lejos);
+    if (agua > 0.02) { grisLluvia.setHex(0x8e9aa6).multiplyScalar(0.25 + 0.75 * (1 - noche)); escena.background.lerp(grisLluvia, agua * 0.6); escena.fog.color.copy(escena.background); }
     for (const f of vivos) f(t, cam);
     if (vivos.haz) { vivos.haz.rotation.y = t * 0.5; vivos.haz.visible = noche > 0.3; }
   }
   const SONIDO = { criptas: { viento: 0.4, pajaros: 0.1 }, cuna: { viento: 0.95 }, sagrario: { viento: 0.3, pajaros: 0.6 }, ahogada: { mar: 0.55, viento: 0.3 }, faro: { mar: 0.9, viento: 0.4 }, torre: { viento: 0.25, pajaros: 0.5 },
     pueblo: { gentio: 0.35, pajaros: 0.5 }, posta: { viento: l.region === 'valcoria' ? 0.25 : 0.7, pajaros: l.region === 'valcoria' ? 0.4 : 0 }, quemado: { viento: 0.5 }, campamento: { viento: 0.4, pajaros: 0.2 }, mina: { viento: 0.7, fuego: 0.15 }, mercado: { gentio: 0.7, mar: 0.4 }, palafitos: { grillos: 0.7, viento: 0.2 }, pasarela: { grillos: 0.7, viento: 0.25 }, pecio: { grillos: 0.6, viento: 0.2 }, cabana: { viento: 0.8, fuego: 0.15 }, granja: { pajaros: 0.6, viento: 0.2 } };
-  return { escena, etiquetas, R: v.R ?? 34, minDist: 8, actualizar, sonido: SONIDO[l.id] || SONIDO[l.tipo] || { viento: 0.4 }, vista: { pos: new THREE.Vector3(...v.pos), objetivo: new THREE.Vector3(...v.objetivo) }, limite: v.limite ?? 34 };
+  return { escena, etiquetas, R: v.R ?? 34, minDist: 8, actualizar, sonido: SONIDO[l.id] || SONIDO[l.tipo] || { viento: 0.4 }, vista: { pos: new THREE.Vector3(...v.pos), objetivo: new THREE.Vector3(...v.objetivo) }, limite: v.limite ?? 34, arco: v.arco, maxDist: (v.R ?? 34) * 3.2 };   // maxDist: más lejos el paraje es una mota y se ve dónde acaba el suelo
 }

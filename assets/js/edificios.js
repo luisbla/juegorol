@@ -231,31 +231,33 @@ export function crearEdificios(k) {
       r.bandera = [2, 4.4, 7.5]; r.alto = 8;
     },
     santuario() {
+      // El Mudo es el santuario: una mole de hielo arrodillada en el centro del crómlech, más alta que los dinteles, para que se vea desde cualquier calle.
       const roca = matPiedra(0x565b67, 1), hielo = L(0xdfeaf2, { roughness: 0.2, metalness: 0.1 }), hielo2 = L(0xb9d6ea, { roughness: 0.15, metalness: 0.15, emissive: 0x3a7aa8, emissiveIntensity: 0.35 }), brasaAzul = L(0x9fd8ff, { emissive: 0x58b8ff, emissiveIntensity: 2 });
-      cil(roca, 9, 0.6, 0, 0, 0); cil(roca, 7.4, 0.6, 0, 0.6, 0); cil(roca, 5.6, 0.6, 0, 1.2, 0);
-      for (let i = 0; i < 3; i++) caja(pc, 3.6, 0.6 * (3 - i), 1.5, 0, 0, 5.4 + i * 1.5);
+      cil(roca, 11.2, 0.6, 0, 0, 0); cil(roca, 9.8, 0.6, 0, 0.6, 0); cil(roca, 8.2, 0.6, 0, 1.2, 0);
+      for (let i = 0; i < 3; i++) caja(pc, 4.4, 0.6 * (3 - i), 1.5, 0, 0, 8.4 + i * 1.5);
       for (let i = 0; i < 8; i++) {   // crómlech: ocho menhires con dinteles, abierto por delante
         const a = i / 8 * PI * 2 + PI / 8, am = a + PI / 8;
-        caja(roca, 1.0, 4.8 + (i % 3) * 0.4, 0.9, Math.cos(a) * 6.5, 1.2, Math.sin(a) * 6.5, -a);
-        if (Math.abs(Math.sin(am) - 1) > 0.1) caja(roca, 5.9, 0.7, 1.0, Math.cos(am) * 6.0, 6.0, Math.sin(am) * 6.0, -am - PI / 2);
-        caja(hielo2, 0.14, 1.4, 0.4, Math.cos(a) * 5.98, 2.6, Math.sin(a) * 5.98, -a);   // runas
+        caja(roca, 1.2, 6.2 + (i % 3) * 0.5, 1.1, Math.cos(a) * 8.9, 1.2, Math.sin(a) * 8.9, -a);
+        if (Math.abs(Math.sin(am) - 1) > 0.1) caja(roca, 7.9, 0.8, 1.2, Math.cos(am) * 8.2, 7.4, Math.sin(am) * 8.2, -am - PI / 2);
+        caja(hielo2, 0.16, 1.8, 0.5, Math.cos(a) * 8.28, 3.0, Math.sin(a) * 8.28, -a);   // runas
       }
-      caja(roca, 3.2, 1.2, 3.2, 0, 1.8, 0); cono(hielo, 2.2, 14, 0, 3.0, 0);
-      for (let i = 0; i < 7; i++) { const a = i / 7 * PI * 2 + 0.4, h = 3.5 + rnd() * 4; poner(G.cono, i % 2 ? hielo2 : hielo, Math.cos(a) * 2.0, 3.0 + h / 2 - 0.4, Math.sin(a) * 2.0, 0.65, h, 0.65, -a, -0.32); }
-      caja(pc, 2.6, 0.9, 1.2, 0, 1.8, 3.6); caja(L(0xe8f2f8), 2.2, 0.06, 0.9, 0, 2.7, 3.6); for (let i = 0; i < 4; i++) cil(i % 2 ? oro : hielo2, 0.16, 0.3, -0.8 + i * 0.55, 2.76, 3.6);   // altar con ofrendas
-      // el Mudo: una mole de hielo arrodillada dentro del círculo, con los puños en la losa y cadenas a dos menhires
-      sub(-3.3, 0.6, 0.4, () => { const Y = 1.8, ojo = L(0x0c1c2c, { emissive: 0x7fd4ff, emissiveIntensity: 2.4 });
+      // detrás, una corona de carámbanos que sube del suelo; delante queda despejado
+      for (let i = 0; i < 7; i++) { const u = (i + 0.5) / 7, a = PI + (0.12 + u * 0.76) * PI, h = 4.5 + Math.sin(u * PI) * 5 + rnd() * 2.5; poner(G.cono, i % 2 ? hielo2 : hielo, Math.cos(a) * 5.9, 1.8 + h / 2 - 0.3, Math.sin(a) * 5.9, 1.0, h, 1.0, -a, -0.22); }
+      for (let i = 0; i < 6; i++) { const a = PI + (0.2 + i * 0.12) * PI; poner(G.cono, i % 2 ? hielo : hielo2, Math.cos(a) * 7.0, 1.8 + 1.3, Math.sin(a) * 7.0, 0.6, 3.2 + (i % 3) * 0.8, 0.6, -a, -0.3); }
+      caja(pc, 3.0, 0.9, 1.3, 0, 1.8, 6.4); caja(L(0xe8f2f8), 2.6, 0.06, 1.0, 0, 2.7, 6.4); for (let i = 0; i < 4; i++) cil(i % 2 ? oro : hielo2, 0.18, 0.34, -0.9 + i * 0.6, 2.76, 6.4);   // altar con ofrendas
+      // el Mudo, al doble de tamaño: de rodillas, con los puños en la losa y cadenas a dos menhires
+      sub(0, -1.2, 0, () => { const Y = 0.9, ojo = L(0x0c1c2c, { emissive: 0x7fd4ff, emissiveIntensity: 3 });
         poner(G.roca, hielo2, 0, Y + 2.5, 0, 1.45, 1.7, 1.15, 0.3, 0.22); poner(G.roca, hielo, 0, Y + 1.0, 0.1, 1.25, 0.9, 1.2, 1.1);
         for (const s of [-1, 1]) { poner(G.roca, hielo2, s * 1.55, Y + 3.5, 0.15, 0.85, 0.75, 0.85, s); poner(G.caja, hielo, s * 1.85, Y + 1.75, 0.95, 0.62, 2.9, 0.62, 0, -0.42, s * 0.08); poner(G.roca, hielo2, s * 1.95, Y + 0.5, 1.75, 0.72, 0.55, 0.72, s * 2);
-          poner(G.roca, hielo, s * 0.8, Y + 0.5, 0.9, 0.7, 0.55, 1.2, s * 0.4); caja(ojo, 0.14, 0.09, 0.06, s * 0.2, Y + 4.42, 1.02); caja(hierro, 0.8, 0.22, 0.8, s * 1.9, Y + 1.0, 1.42);
-          poner(G.caja, hierro, s * 3.3, Y + 0.6, 1.9, 2.9, 0.09, 0.09, 0, 0, s * 0.18); }
+          poner(G.roca, hielo, s * 0.8, Y + 0.5, 0.9, 0.7, 0.55, 1.2, s * 0.4); caja(ojo, 0.16, 0.1, 0.06, s * 0.2, Y + 4.42, 1.02); caja(hierro, 0.8, 0.22, 0.8, s * 1.9, Y + 1.0, 1.42);
+          poner(G.caja, hierro, s * 2.95, Y + 0.7, 1.81, 2.32, 0.09, 0.09, -s * 0.355, -s * 0.262); }   // la cadena baja de la muñeca al pie del menhir
         poner(G.roca, hielo2, 0, Y + 4.35, 0.5, 0.58, 0.62, 0.58, 0.6);
-        for (let i = 0; i < 5; i++) poner(G.cono, i % 2 ? hielo : hielo2, (i - 2) * 0.55, Y + 4.3 - Math.abs(i - 2) * 0.35, -0.75, 0.36, 2.4 - Math.abs(i - 2) * 0.4, 0.36, 0, -0.55, -(i - 2) * 0.18); });
-      r.fuegos.push([0, 5, 3.0, 30, 0x8fd0ff]);
-      for (const s of [-1, 1]) { for (let i = 0; i < 3; i++) { const a = i * 2.094; caja(hierro, 0.1, 1.5, 0.1, s * 3.4 + Math.cos(a) * 0.45, 0, 8.6 + Math.sin(a) * 0.45); } cil(hierro, 0.75, 0.45, s * 3.4, 1.4, 8.6); cil(brasaAzul, 0.62, 0.1, s * 3.4, 1.85, 8.6); cono(brasaAzul, 0.3, 0.9, s * 3.4, 1.9, 8.6); }
-      for (let i = 0; i < 9; i++) { const a = i / 9 * PI * 2 + 0.2; if (Math.abs(Math.sin(a) - 1) < 0.25) continue; poner(G.roca, i % 3 ? L(0xcfdbe6, { roughness: 0.3 }) : roca, Math.cos(a) * 10.4, 1.2, Math.sin(a) * 9.6, 0.9, 1.6 + rnd() * 1.4, 0.8, a, 0.15); }
-      for (const s of [-1, 1]) { caja(osc, 0.2, 5, 0.2, s * 5, 0, 9.4); caja(L(0xe8f2f8), 1.1, 2.8, 0.07, s * 5, 2.0, 9.5); caja(hielo2, 0.5, 0.5, 0.09, s * 5, 3.6, 9.52); }
-      r.alto = 23;
+        for (let i = 0; i < 5; i++) poner(G.cono, i % 2 ? hielo : hielo2, (i - 2) * 0.55, Y + 4.3 - Math.abs(i - 2) * 0.35, -0.75, 0.36, 2.4 - Math.abs(i - 2) * 0.4, 0.36, 0, -0.55, -(i - 2) * 0.18); }, 2);
+      r.fuegos.push([0, 8, 2.5, 36, 0x8fd0ff]);
+      for (const s of [-1, 1]) { for (let i = 0; i < 3; i++) { const a = i * 2.094; caja(hierro, 0.1, 1.5, 0.1, s * 4.2 + Math.cos(a) * 0.45, 0, 12.0 + Math.sin(a) * 0.45); } cil(hierro, 0.75, 0.45, s * 4.2, 1.4, 12.0); cil(brasaAzul, 0.62, 0.1, s * 4.2, 1.85, 12.0); cono(brasaAzul, 0.3, 0.9, s * 4.2, 1.9, 12.0); }
+      for (let i = 0; i < 9; i++) { const a = i / 9 * PI * 2 + 0.2; if (Math.abs(Math.sin(a) - 1) < 0.25) continue; poner(G.roca, i % 3 ? L(0xcfdbe6, { roughness: 0.3 }) : roca, Math.cos(a) * 12.8, 1.2, Math.sin(a) * 12.2, 0.9, 1.6 + rnd() * 1.4, 0.8, a, 0.15); }
+      for (const s of [-1, 1]) { caja(osc, 0.2, 5, 0.2, s * 6.2, 0, 12.6); caja(L(0xe8f2f8), 1.1, 2.8, 0.07, s * 6.2, 2.0, 12.7); caja(hielo2, 0.5, 0.5, 0.09, s * 6.2, 3.6, 12.72); }
+      r.alto = 15;
     },
     molino() {
       cil(pc, 3.45, 0.7, 0, 0, 0); cil(muro, 3.3, 4, 0, 0, 0); cil(muro, 3.0, 4, 0, 4, 0); cil(muro, 2.7, 3.4, 0, 8, 0);

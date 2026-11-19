@@ -380,7 +380,7 @@ const CONSTRUCTORES = {
     for (const x of [-6, 0, 6]) caja(g, 0.4, 0.05, 3.2, x, 0.28, 0, tabla);
     const d = crearBarcoModelo({ eslora: 5, palos: 2, velas: 'recogidas', color: 0x3f2f24, lona: 0xb23a2e }); d.position.set(9.4, 0.02, 0); d.rotation.y = Math.PI / 2; g.add(d);
     pieza(g, gCono, toldo(0xb23a2e), 2.2, 0.6, 1.5, 9.4, 1.9, 0.9, Math.PI / 4);
-    return { humos: [], luz: 0.7, alto: 5 };
+    return { humos: [], luz: 0.7, alto: 5, flota: true };
   },
   // Cada ruina tiene su propia traza: nada en el mapa debe hacer pensar que son lo mismo.
   ruina(g, l, rnd) {
@@ -634,7 +634,7 @@ export function crearLugares(mundo, terreno) {
     const g = new THREE.Group(), escala = ESCALA * (l.tamano || 1);
     const info = (CONSTRUCTORES[l.tipo] || CONSTRUCTORES.pueblo)(g, l, azarDe(l.id), { colorRegion: colorDe(l.region), banderas });
     const suelo = terreno.alturaEn(l.x, l.y);
-    const y = l.suelo === 'agua' ? -2.4 : l.suelo === 'marisma' ? 0.1 : Math.max(suelo, 0.25);
+    const y = l.suelo === 'agua' ? (info.flota ? 0.04 : -2.4) : l.suelo === 'marisma' ? 0.1 : Math.max(suelo, 0.25);   // sobre el agua, lo que flota va en la lámina y lo que asoma del fondo, hundido
     g.scale.setScalar(escala);
     g.position.set(l.x - terreno.cx, y - 0.1, l.y - terreno.cz);
     if (info.muelles) {

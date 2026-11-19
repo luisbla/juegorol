@@ -90,7 +90,7 @@ export function crearCiudad(l, mundo, { movil = false } = {}) {
   }
   const conMarco = (x, z, ry, fn) => { marco = new THREE.Matrix4().makeRotationY(ry).setPosition(x, 0, z); fn(); marco = null; };
   // sub: un marco dentro del marco, para piezas que se repiten giradas (ventanas, puertas, carros)
-  const sub = (x, z, ry, fn) => { const antes = marco, local = new THREE.Matrix4().makeRotationY(ry).setPosition(x, 0, z); marco = antes ? antes.clone().multiply(local) : local; fn(); marco = antes; };
+  const sub = (x, z, ry, fn, e = 1) => { const antes = marco, local = new THREE.Matrix4().makeRotationY(ry).scale(new THREE.Vector3(e, e, e)).setPosition(x, 0, z); marco = antes ? antes.clone().multiply(local) : local; fn(); marco = antes; };
   const caja = (m, w, h, d, x, y, z, ry = 0) => poner(gCaja, m, x, y + h / 2, z, w, h, d, ry);
   const cil = (m, r, h, x, y, z) => poner(gCil, m, x, y + h / 2, z, r, h, r);
   const cono = (m, r, h, x, y, z) => poner(gCono, m, x, y + h / 2, z, r, h, r);
@@ -539,7 +539,7 @@ export function crearCiudad(l, mundo, { movil = false } = {}) {
     sol.position.copy(luz.dirSol).multiplyScalar(700); sol.intensity = luz.sol.intensity; sol.color.copy(luz.sol.color); sol.castShadow = luz.sol.castShadow;
     luna.position.copy(luz.dirLuna).multiplyScalar(700); luna.intensity = luz.luna.intensity * 1.2; cielo.intensity = luz.luzCielo.intensity; cielo.groundColor.setHex(0x4a4030).lerp(rebote, 1 - noche);
     escena.background.copy(luz.horizonte).lerp(luz.arriba, 0.3); escena.fog.color.copy(luz.horizonte);
-    const mojado = cam ? lluvia(t, l.region) : 0; gotas.visible = mojado > 0.02; escena.fog.density = 0.0015 * (1 + mojado * 0.25);   // poco: la ciudad se mira desde lejos y con más se queda en blanco
+    const mojado = cam ? lluvia(t, l.region) : 0; gotas.visible = mojado > 0.02; escena.fog.density = Math.min(0.0015 * (1 + mojado * 0.25), (0.5 + mojado * 0.1) / Math.max(1, cam ? cam.position.length() : 300));   // medida en lo que se mira: al alejar la cámara no se queda en blanco
     if (gotas.visible) {
       const frente = cam.getWorldDirection(frenteGo), lejos = Math.min(Math.max(frente.y < -0.05 ? cam.position.y / -frente.y : 140, 30), 420), ahora = performance.now() / 1000, claro = 1 - noche * 0.8;
       gotas.position.copy(cam.position).addScaledVector(frente, lejos * 0.55); gotas.scale.set(lejos * 1.9, lejos * 1.3, lejos * 1.9); gotas.material.opacity = mojado * 0.45 * (0.5 + 0.5 * claro);

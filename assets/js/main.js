@@ -212,7 +212,9 @@ async function iniciar() {
         : h('div', { class: `etq etq-${e.clase}` }, e.nombre);
       capaEtq.append(e.el);
     }
-    control.minDistance = c.minDist ?? 20; control.maxDistance = c.R * 5; limite.x = limite.z = c.limite;
+    control.minDistance = c.minDist ?? 20; control.maxDistance = c.maxDist ?? c.R * 5; limite.x = limite.z = c.limite;
+    // los parajes arrimados a una pared de roca limitan el giro: detrás solo se vería la peña por dentro
+    const az0 = c.arco ? Math.atan2(c.vista.pos.x - c.vista.objetivo.x, c.vista.pos.z - c.vista.objetivo.z) : 0; control.minAzimuthAngle = c.arco ? az0 - c.arco : -Infinity; control.maxAzimuthAngle = c.arco ? az0 + c.arco : Infinity;
     titulo.textContent = nombre; pista.textContent = tactil ? 'Interior · arrastra para moverte, pellizca para acercar y girar' : `Interior · Esc para volver ${pila.length > 1 ? 'atrás' : 'al mapa'}`; pista.classList.remove('fuera');
     volver.textContent = `← Volver ${pila.length > 1 ? 'atrás' : 'al mapa'}`; volver.hidden = false;
     document.body.classList.add('en-ciudad'); musica.ambiente(clave);
@@ -259,7 +261,7 @@ async function iniciar() {
     if (pila.length) { const padre = pila[pila.length - 1]; montar(padre.c, padre.nombre, padre.clave); hito = nivel.hito; }
     else {
       dentro = null; ciudad = null; hito = null;
-      control.minDistance = nivel.min; control.maxDistance = nivel.max; limite.x = W / 2; limite.z = H / 2;
+      control.minDistance = nivel.min; control.maxDistance = nivel.max; limite.x = W / 2; limite.z = H / 2; control.minAzimuthAngle = -Infinity; control.maxAzimuthAngle = Infinity;
       titulo.textContent = mundo.meta.nombre; pista.classList.add('fuera'); volver.hidden = true;
       document.body.classList.remove('en-ciudad'); musica.ambiente(elegido ? elegido.datos.tipo : null);
     }
