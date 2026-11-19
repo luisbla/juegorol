@@ -79,7 +79,7 @@ Todo se edita en `assets/data/mundo.json`. Las coordenadas van en una rejilla de
 - **Lagos, marisma, costa y fronteras**: elipses y listas de puntos; el relieve y el agua se recalculan al recargar.
 - **Ritmo de viaje**: `kmPorDia`.
 - **Música**: `musica` asigna un archivo de `assets/audio/` al mapa, a las ciudades y a cada tipo de lugar.
-- **Modelos de artista**: `modelos.lugares` asigna un glTF a un lugar o a un tipo de lugar, y `modelos.barco` a los barcos. Formato y packs recomendados, en `assets/modelos/LEEME.txt`.
+- **Modelos de artista**: `modelos.lugares` asigna un glTF a un lugar o a un tipo de lugar, y `modelos.barco` a los barcos. El formato está en `assets/modelos/LEEME.txt`; ahora mismo no hay ninguno asignado.
 - **Encuentros**: `encuentros.zonas` tiene, por región, el umbral del d20 y la tabla. Es una regla casera; cámbiala o borra el apartado para no tirar.
 
 ## La partida

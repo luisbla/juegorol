@@ -351,7 +351,7 @@ export function crearEntrada(l) {
       return { pos: [24, 30, 52], objetivo: [2, 1, -2], cielo: 0xa8c4dc, R: 46, limite: 42 };
     },
     posta() {
-      const nieve = l.region === 'thraengarde', esLlano = l.region === 'marendol', var_ = [...l.id].reduce((a, ch) => a + ch.charCodeAt(0), 0) % 4, AT = [15, 12, 17.5, 13.5][var_], piedra = canto([0x8d8372, 0x9a8f7a, 0x7f7a70, 0x94887a][var_], 1.0, 1.9, nieve ? 0 : 0.12), teja = nieve ? 0xe4eaf0 : 0x6b4a32, VISTA = [[22, 14, 40], [-27, 13, 36], [30, 16, 30], [-20, 15, 42]][var_], lejosDeVista = pts => pts.filter(([x, z]) => Math.hypot(x - VISTA[0], z - VISTA[2]) > 15);
+      const nieve = l.region === 'thraengarde', esLlano = l.region === 'marendol', var_ = [...l.id].reduce((a, ch) => a + ch.charCodeAt(0), 0) % 4, AT = [15, 12, 17.5, 13.5][var_], piedra = canto([0x8d8372, 0x9a8f7a, 0x7f7a70, 0x94887a][var_], 1.0, 1.9, nieve ? 0 : 0.05), teja = nieve ? 0xe4eaf0 : 0x6b4a32, VISTA = [[22, 14, 40], [-27, 13, 36], [30, 16, 30], [-20, 15, 42]][var_], lejosDeVista = pts => pts.filter(([x, z]) => Math.hypot(x - VISTA[0], z - VISTA[2]) > 15);
       suelo(nieve ? 0xe6ecf2 : esLlano ? 0xb0903e : 0x587a3c); disco(nieve ? 0xd8dfe6 : 0xbfae8c, 17, 0.02); caja(mat(nieve ? 0xcfd6de : 0xc2b494), 6, 0.06, 130, 3, 0, 0, 0.25).castShadow = false; if (nieve) bruma = 0.012;
       // la torre de la posta, con cadalso de madera
       caja(piedra, 7.6, 1.6, 7.6, -6, 0, -4); caja(piedra, 7, AT, 7, -6, 0, -4); caja(mat(0x5a4633), 9.4, 1.0, 9.4, -6, AT, -4); for (const [x, z] of [[-4, -4], [4, -4], [-4, 4], [4, 4]]) { caja(mat(0x5a4633), 0.5, 3.6, 0.5, -6 + x, AT + 1, -4 + z); const jab = caja(mat(0x4a3a2a), 0.3, 2.4, 0.3, -6 + x * 0.94, AT - 1.9, -4 + z * 0.94); jab.rotation.set(-z * 0.11, 0, x * 0.11); } for (const s of [-1, 1]) { caja(mat(0x6a5039), 9.4, 1.6, 0.3, -6, AT + 1, -4 + s * 4.4); caja(mat(0x6a5039), 0.3, 1.6, 9.4, -6 + s * 4.4, AT + 1, -4); }
@@ -606,7 +606,7 @@ export function crearEntrada(l) {
     nocheAhora = noche; vidrio.emissiveIntensity = noche * 1.3; farolM.emissiveIntensity = 0.1 + noche * 2.6; for (const [luzN, fuerza] of lucesNoche) luzN.intensity = fuerza * noche;
     const agua = lluvia(t, l.region); gotas.visible = agua > 0.02;
     if (gotas.visible) { gotas.material.opacity = agua * 0.5; const ahora = performance.now() / 1000; for (let i = 0; i < NG; i++) { const x = semG[i * 3], z = semG[i * 3 + 2], y = ((semG[i * 3 + 1] - ahora * (42 + (i % 7) * 3)) % 60 + 60) % 60; pg[i * 6] = x; pg[i * 6 + 1] = y; pg[i * 6 + 2] = z; pg[i * 6 + 3] = x + 0.3; pg[i * 6 + 4] = y - 1.6; pg[i * 6 + 5] = z; } gotas.geometry.attributes.position.needsUpdate = true; sol.intensity *= 1 - agua * 0.55; }
-    escena.fog.density = Math.max(bruma, Math.min(bruma * (1 + agua * 1.6), 0.011 + bruma * 0.25));   // el chubasco cierra un paraje despejado; el que ya tiene bruma espesa no se queda en blanco
+    escena.fog.density = Math.max(bruma, Math.min(bruma * (1 + agua * 0.9), 0.008 + bruma * 0.25));   // el chubasco cierra un paraje despejado; el que ya tiene bruma espesa no se queda en blanco
     for (const f of vivos) f(t, cam);
     if (vivos.haz) { vivos.haz.rotation.y = t * 0.5; vivos.haz.visible = noche > 0.3; }
   }

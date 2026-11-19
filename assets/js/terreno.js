@@ -380,6 +380,12 @@ export function crearTerreno(mundo, { movil = false } = {}) {
       .replace('#include <begin_vertex>', '#include <begin_vertex>\nvSuelo = position.xz; vAlto = position.y; vLadera = 1.0 - normal.y;');
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', `#include <common>\nvarying vec2 vSuelo; varying float vAlto; varying float vLadera; uniform float uTiempo; uniform float uNubes;${RUIDO_GLSL}`)
+      .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
+        {   // relieve fino en las laderas: rompe las facetas grandes de la malla sin subirle la resolución
+          float lad = smoothstep(0.12, 0.5, vLadera); vec2 q1 = vSuelo * 0.19 + vAlto * vec2(0.07, 0.05), q2 = vSuelo * 0.55 + vAlto * vec2(0.21, 0.17);
+          vec3 emp = vec3(fN(q1) - 0.5 + 0.5 * (fN(q2) - 0.5), fN(q1 + 17.3) - 0.5 + 0.5 * (fN(q2 + 9.1) - 0.5), 0.0);
+          normal = normalize(normal + lad * 0.55 * emp);
+        }`)
       .replace('#include <map_fragment>', `#include <map_fragment>
         float sombraNube = smoothstep(0.52, 0.72, fN(vSuelo * 0.0042 + vec2(uTiempo * 0.012, uTiempo * 0.004)));
         diffuseColor.rgb *= 1.0 - 0.34 * uNubes * sombraNube;

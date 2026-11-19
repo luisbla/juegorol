@@ -15,6 +15,4 @@ Modelos 3D opcionales (glTF: .gltf con su .bin y texturas, o .glb). Se declaran 
 - Cada modelo sustituye entero al generado. Si el archivo falla, se queda el generado.
 - Las capitales y el puerto se pueden sustituir, pero un solo edificio no hace una ciudad: mejor dejarlos.
 
-Packs de dominio público (CC0) que encajan:
-- KayKit Medieval Hexagon Pack: edificios enteros (taberna, molino, herrería, iglesia, casas, cuartel). https://kaylousberg.itch.io/kaykit-medieval-hexagon
-- Kenney Pirate Kit: barcos. https://opengameart.org/content/pirate-kit
+Ahora mismo no hay ningún modelo asignado: todo lo que se ve se genera por código. Esta carpeta queda por si algún día se quiere sustituir un lugar por un modelo propio.

@@ -197,9 +197,11 @@ export function crearInterior(l) {
     if (f < 1) moza.g.rotation.y = Math.atan2(b.x - a.x, b.z - a.z);
   }
 
+  // en espejo: la misma sala vuelta de lado (chimenea, barra y escalera cambian de mano). Para que dos posadas no sean la misma.
+  if (l.espejo) { baja.scale.x = alta.scale.x = -1; for (const e of etiquetas) e.pos.x *= -1; deFuera.position.x *= -1; }
   return {
     escena, etiquetas, R: 30, minDist: 9, actualizar, sonido: { fuego: 0.55, gentio: 0.7 }, plantas, verPlanta, get planta() { return plantaActual; },
-    vista: { pos: new THREE.Vector3(2, 31, 44), objetivo: new THREE.Vector3(0, 3, -1) },
+    vista: { pos: new THREE.Vector3(l.espejo ? -2 : 2, 31, 44), objetivo: new THREE.Vector3(0, 3, -1) },
     limite: 20,
   };
 }

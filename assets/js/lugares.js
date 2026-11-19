@@ -45,9 +45,11 @@ function matPared(color, { entramado = false, piedra = false } = {}) {
         x.fillRect(0, 0, w, 7); x.fillRect(0, h - 7, w, 7); x.fillRect(0, 0, 6, h); x.fillRect(w - 6, 0, 6, h); x.fillRect(w / 2 - 3, 0, 6, h);
       }
       for (const [u, v] of VENTANAS) {
-        x.fillStyle = '#2b2118'; x.fillRect(u * w - 2, v * h - 2, 22, 30);
-        x.fillStyle = '#1a1d24'; x.fillRect(u * w, v * h, 18, 26);
-        x.fillStyle = '#2b2118'; x.fillRect(u * w + 8, v * h, 2, 26);
+        const X = u * w, Y = v * h;   // marco de madera con su canto claro, cristal que coge algo de cielo arriba, cruceta y alféizar
+        x.fillStyle = '#6b5640'; x.fillRect(X - 3, Y - 3, 24, 32); x.fillStyle = '#3a2c1f'; x.fillRect(X - 2, Y - 2, 22, 30);
+        x.fillStyle = '#27323d'; x.fillRect(X, Y, 18, 26); x.fillStyle = '#3d5062'; x.fillRect(X, Y, 18, 11); x.fillStyle = '#52687c'; x.fillRect(X + 1, Y + 1, 6, 4); x.fillRect(X + 11, Y + 1, 6, 3);
+        x.fillStyle = '#3a2c1f'; x.fillRect(X + 8, Y, 2, 26); x.fillRect(X, Y + 11, 18, 2);
+        x.fillStyle = '#9a8a72'; x.fillRect(X - 4, Y + 28, 26, 3);
       }
       const g = x.createLinearGradient(0, 0, 0, h); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,0.28)');   // mugre junto al suelo
       x.fillStyle = g; x.fillRect(0, 0, w, h);

@@ -152,8 +152,10 @@ function levantar(planta, id, escena) {
   /* ---------- pasos: suelo, escalones si cambia la altura, muros, marcos y puerta ---------- */
   const salas = new Map((planta.salas || []).map(s => [s.id, { y: 0, ...s, huecos: { n: [], s: [], e: [], o: [] } }]));
   const muroCon = (w, d, x, y, z) => { const h = ALTO - y, alo = w > d; bloque(muro, w, h, d, x, y, z); bloque(remate, w + (alo ? 0 : 0.3), 0.45, d + (alo ? 0.3 : 0), x, y, z); bloque(remate, w + (alo ? 0 : 0.34), 0.24, d + (alo ? 0.34 : 0), x, ALTO, z); };
+  const vanos = [];   // [x0, x1, z0, z1] de todo lo excavado, muros incluidos
   function tramo(x0, z0, y0, x1, z1, y1, an) {
     const hor = Math.abs(x1 - x0) > Math.abs(z1 - z0), L = Math.hypot(x1 - x0, z1 - z0); if (L < 0.05) return;
+    vanos.push(hor ? [Math.min(x0, x1), Math.max(x0, x1), (z0 + z1) / 2 - an / 2 - GRUESO, (z0 + z1) / 2 + an / 2 + GRUESO] : [(x0 + x1) / 2 - an / 2 - GRUESO, (x0 + x1) / 2 + an / 2 + GRUESO, Math.min(z0, z1), Math.max(z0, z1)]);
     const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, ymin = Math.min(y0, y1), n = Math.abs(y1 - y0) < 0.05 ? 1 : Math.max(2, Math.ceil(Math.abs(y1 - y0) / 0.3));
     for (let i = 0; i < n; i++) { const t = (i + 0.5) / n, y = n === 1 ? y0 : y0 + (y1 - y0) * (i + (y1 < y0 ? 0 : 1)) / n; bloque(n === 1 ? suelo : losas, hor ? L / n : an, y - ymin + 0.5, hor ? an : L / n, x0 + (x1 - x0) * t, ymin - 0.5, z0 + (z1 - z0) * t); }
     for (const s of [-1, 1]) muroCon(hor ? L : GRUESO, hor ? GRUESO : L, cx + (hor ? 0 : s * (an + GRUESO) / 2), ymin, cz + (hor ? s * (an + GRUESO) / 2 : 0));
@@ -207,6 +209,7 @@ function levantar(planta, id, escena) {
   const libre = (v, huecos, margen = 0.9) => huecos.every(([m, an]) => Math.abs(v - m) > an / 2 + margen);
   for (const s of salas.values()) {
     const y = b = s.y, x0 = s.x - s.w / 2, x1 = s.x + s.w / 2, z0 = s.z - s.d / 2, z1 = s.z + s.d / 2, G = GRUESO, H = s.huecos;
+    vanos.push([x0 - G, x1 + G, z0 - G, z1 + G]);
     destino = new THREE.Group(); destino.position.y = y; escena.add(destino);
     // el suelo: una losa entera con su cenefa, salvo donde hay un pozo, que se abre de verdad (tiras alrededor y baldosas hasta el borde)
     const boca = (s.rasgos || []).find(r => r.tipo === 'pozo');
@@ -253,6 +256,18 @@ function levantar(planta, id, escena) {
   for (const s of salas.values()) { x0 = Math.min(x0, s.x - s.w / 2); x1 = Math.max(x1, s.x + s.w / 2); z0 = Math.min(z0, s.z - s.d / 2); z1 = Math.max(z1, s.z + s.d / 2); }
   if (!salas.size) x0 = x1 = z0 = z1 = 0;
   const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, R = Math.max(18, Math.hypot(x1 - x0, z1 - z0) / 2), fondo = tono.fondo ?? 0x07080a;
+  if (vanos.length) {
+    const C = 0.4, M = 16, ax = Math.min(...vanos.map(v => v[0])) - M, bx = Math.max(...vanos.map(v => v[1])) + M, az = Math.min(...vanos.map(v => v[2])) - M, bz = Math.max(...vanos.map(v => v[3])) + M, nx = Math.ceil((bx - ax) / C), nz = Math.ceil((bz - az) / C), abierto = new Uint8Array(nx * nz);
+    for (const [vx0, vx1, vz0, vz1] of vanos) { const i0 = Math.max(0, Math.round((vx0 - ax) / C)), i1 = Math.min(nx, Math.round((vx1 - ax) / C)), j0 = Math.max(0, Math.round((vz0 - az) / C)), j1 = Math.min(nz, Math.round((vz1 - az) / C)); for (let j = j0; j < j1; j++) abierto.fill(1, j * nx + i0, j * nx + i1); }
+    const p = [], col = [], base = new THREE.Color(cMuro).multiplyScalar(0.85), cc = new THREE.Color(), yL = ALTO + 0.12;
+    const tira = (i0, i1, j) => { const xa = ax + i0 * C, xb = ax + i1 * C, za = az + j * C, zb = za + C; p.push(xa, yL, za, xa, yL, zb, xb, yL, zb, xa, yL, za, xb, yL, zb, xb, yL, za);
+      // más oscura cuanto más lejos de lo excavado: la roca se pierde en lo negro
+      for (const [x, z] of [[xa, za], [xa, zb], [xb, zb], [xa, za], [xb, zb], [xb, za]]) { let d = 1e9; for (const [vx0, vx1, vz0, vz1] of vanos) d = Math.min(d, Math.hypot(Math.max(vx0 - x, 0, x - vx1), Math.max(vz0 - z, 0, z - vz1))); const k = Math.pow(1 - Math.min(1, d / M), 1.6) * 0.95 + 0.05; cc.copy(base).multiplyScalar(k * (0.9 + 0.2 * (((Math.round(x * 3) * 7 + Math.round(z * 3) * 13) % 10) / 10))); col.push(cc.r, cc.g, cc.b); } };
+    const PASO = 8;   // las tiras se cortan a trozos para que el oscurecimiento por vértice tenga dónde agarrarse
+    for (let j = 0; j < nz; j++) { let i = 0; while (i < nx) { if (abierto[j * nx + i]) { i++; continue; } let k = i; while (k < nx && !abierto[j * nx + k] && k - i < PASO) k++; tira(i, k, j); i = k; } }
+    const gl = new THREE.BufferGeometry(); gl.setAttribute('position', new THREE.Float32BufferAttribute(p, 3)); gl.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); gl.computeVertexNormals();
+    const losa = new THREE.Mesh(gl, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1 })); losa.receiveShadow = true; escena.add(losa);
+  }
   escena.add(new THREE.HemisphereLight(tono.cielo ?? 0x8a94a8, 0x1c1814, 0.85)); const alta = new THREE.DirectionalLight(0xbcd0ff, 0.8); alta.position.set(cx - 12, 30, cz + 16); escena.add(alta);
   // motas en el aire: nieve fina en el hielo, polvo en lo demás
   const N = 220, pos = new Float32Array(N * 3), cae = estilo === 'hielo'; const dentro = [...salas.values()]; for (let i = 0; i < N; i++) { const q = dentro[Math.floor(rnd() * dentro.length)] ?? { x: 0, z: 0, w: 1, d: 1 }; pos[i * 3] = q.x + (rnd() - 0.5) * q.w; pos[i * 3 + 1] = -1 + rnd() * 6; pos[i * 3 + 2] = q.z + (rnd() - 0.5) * q.d; }   // solo dentro de las salas
