@@ -374,6 +374,7 @@ export function crearEdificios(k) {
     const { w, d, alto: h, nivel, clase, lado: s, piedra, rnd: rd } = o, zf = s * d / 2, ryF = s > 0 ? 0 : PI, cc = L(CONTRAS[Math.floor(rd() * CONTRAS.length)]);
     const wh = h * 26 / 128, yb = h * 0.277, hueco = (x, z, ry, an) => sub(x, z, ry, () => {
       const a = an * 18 / 128; caja(pc, a + 0.36, 0.1, 0.3, 0, yb - 0.1, 0.1); caja(osc, a + 0.3, 0.12, 0.16, 0, yb + wh, 0.05);
+      caja(vidrio, a, wh, 0.05, 0, yb, 0.02); caja(clara, 0.07, wh, 0.07, 0, yb, 0.035); caja(clara, a, 0.07, 0.07, 0, yb + wh * 0.56, 0.035); for (const t of [-1, 1]) caja(clara, 0.07, wh, 0.07, t * (a / 2 - 0.035), yb, 0.035);
       for (const t of [-1, 1]) caja(cc, a * 0.5, wh, 0.08, t * a * 0.8, yb, 0.06);
     });
     caja(pc, w + 0.24, 0.4, d + 0.24, 0, 0, 0);

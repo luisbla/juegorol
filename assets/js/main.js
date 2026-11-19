@@ -70,7 +70,7 @@ async function iniciar() {
   escena.add(lugares.grupo);
   const ambiente = crearAmbiente(escena, renderer, mundo, terreno, lugares, { movil });
   const viajes = crearViajes(escena, mundo, terreno);
-  if (calidad === 'baja') renderer.shadowMap.enabled = false;
+  if (calidad === 'baja' && pequena) renderer.shadowMap.enabled = false;   // en un equipo grande la calidad baja conserva las sombras: sin ellas las casas parecen pegadas
   const musica = crearMusica(mundo.musica), sonido = crearSonido();
   cargarModelos(mundo.modelos, lugares, ambiente.barcos);
   // qué lugares tienen interior y cómo se llama el botón
@@ -243,7 +243,7 @@ async function iniciar() {
   // Entrar en un edificio de la ciudad (de momento, la posada).
   async function entrarEdificio(e) {
     const clave = `${dentro.datos.id}-${e.interior}`;
-    if (!ciudades.has(clave)) ciudades.set(clave, e.interior === 'posada' ? crearInterior({ id: clave, trofeo: false, espejo: ['astravan', 'liria'].includes(dentro.datos.id), tono: { solterra: { suelo: '#7a5a34', pared: '#d6bd86', alfombra: 0x8a6a22 }, astravan: { suelo: '#5a4a3c', pared: '#b9bcb4', alfombra: 0x2f4a6a }, liria: { suelo: '#6e5a44', pared: '#d8d4c4', alfombra: 0x2f5a4a } }[dentro.datos.id] }) : crearSala(e.interior, clave, { norte: dentro.datos.region === 'thraengarde', color: new THREE.Color(mundo.regiones.find(r => r.id === dentro.datos.region)?.color ?? '#7a2e2a').getHex() }));
+    if (!ciudades.has(clave)) ciudades.set(clave, e.interior === 'posada' ? crearInterior({ id: clave, trofeo: false, espejo: ['astravan', 'liria'].includes(dentro.datos.id), mesas: { solterra: [[-11, -5, 1], [-11, 6, 1], [-3, -3, 1], [-2, 8, 0], [7, -4, 0], [9, 6, 0]], astravan: [[-12, -6, 0], [-6, -1, 0], [-12, 6, 1], [0, 8.5, 1], [8, -4, 1], [9, 5, 0]], liria: [[-11, -6, 1], [-10, 2, 0], [-3, 8, 1], [4, -4, 0], [9, 6, 1], [9, -5, 0]] }[dentro.datos.id], tono: { solterra: { suelo: '#7a5a34', pared: '#d6bd86', alfombra: 0x8a6a22 }, astravan: { suelo: '#5a4a3c', pared: '#b9bcb4', alfombra: 0x2f4a6a }, liria: { suelo: '#6e5a44', pared: '#d8d4c4', alfombra: 0x2f5a4a } }[dentro.datos.id] }) : crearSala(e.interior, clave, { norte: dentro.datos.region === 'thraengarde', color: new THREE.Color(mundo.regiones.find(r => r.id === dentro.datos.region)?.color ?? '#7a2e2a').getHex() }));
     await abrir(ciudades.get(clave), `${e.nombre} · ${dentro.datos.nombre}`, e.interior === 'posada' ? 'taberna' : 'ciudad');
   }
   // El interior de una ruina: solo existe si el máster ha cargado su archivo, que es donde viene la planta.

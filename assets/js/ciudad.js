@@ -226,14 +226,20 @@ export function crearCiudad(l, mundo, { movil = false } = {}) {
   const TOLDOS = [0xc9283c, 0x2f6fb5, 0xe8a23a, 0x3f9a54, 0x9a4a9e];
   // enseres de utileria.js: se calculan una vez y se reparten
   const enseres = new Map(), enserDe = (clave, fn) => { if (!enseres.has(clave)) enseres.set(clave, fn()); return enseres.get(clave); };
-  for (let i = 0; i < 16; i++) {
-    const a = i / 16 * Math.PI * 2 + 0.2, r = 9.5 + (i % 2) * 3.2, x = Math.cos(a) * r, z = Math.sin(a) * r;
-    if (cercaAvenida(a, r, 3.2)) continue;
-    // el puesto mira a la fuente y lleva a su tendero detrás
-    const mira = Math.atan2(-Math.cos(a), -Math.sin(a));
+  // el reparto de los puestos cambia de ciudad en ciudad: corro, calles enfrentadas, media luna, cuadro o hileras de muelle. Cada puesto: [x, z, hacia dónde mira (dx, dz)]
+  const PUESTOS = [];
+  if (l.id === 'griselda') { for (const [x, d] of [[-13, 1], [-7.6, -1], [7.6, 1], [13, -1]]) for (const z of [-5, 0, 5]) PUESTOS.push([x, z, d, 0]); }
+  else if (l.id === 'solterra') for (let i = 0; i < 11; i++) { const a = 0.35 + i / 10 * 2.45, r = 10.5 + (i % 2) * 3; PUESTOS.push([Math.cos(a) * r, Math.sin(a) * r, -Math.cos(a), -Math.sin(a)]); }
+  else if (l.id === 'astravan') for (let i = 0; i < 16; i++) { const k = i % 4, o = -8.25 + k * 5.5, c = Math.floor(i / 4); PUESTOS.push(c === 0 ? [o, -11.5, 0, 1] : c === 1 ? [11.5, o, -1, 0] : c === 2 ? [o, 11.5, 0, -1] : [-11.5, o, 1, 0]); }
+  else if (l.id === 'liria') for (let i = 0; i < 14; i++) { const f = i % 2, o = -13.5 + Math.floor(i / 2) * 4.5; PUESTOS.push([o, 9.6 + f * 4.6, 0, f ? 1 : -1]); }
+  else for (let i = 0; i < 16; i++) { const a = i / 16 * Math.PI * 2 + 0.2, r = 9.5 + (i % 2) * 3.2; PUESTOS.push([Math.cos(a) * r, Math.sin(a) * r, -Math.cos(a), -Math.sin(a)]); }
+  PUESTOS.forEach(([x, z, dx, dz], i) => {
+    if (cercaAvenida(Math.atan2(z, x), Math.hypot(x, z), 3.2)) return;
+    // el puesto mira adonde pasa la gente y lleva a su tendero detrás
+    const mira = Math.atan2(dx, dz);
     poner(enserDe(`puesto-${i % 5}-${i % 2}`, () => gPuesto(TOLDOS[i % 5], i % 2 === 0)), matUtil, x, 0, z, 0.9, 0.9, 0.9, mira);
-    figura(x + Math.cos(a) * 1.05, z + Math.sin(a) * 1.05, mira, [0x6a5a2f, 0x7a3b2e, 0x5a6b3a, 0x8a7a55][i % 4], false);
-  }
+    figura(x - dx * 1.05, z - dz * 1.05, mira, [0x6a5a2f, 0x7a3b2e, 0x5a6b3a, 0x8a7a55][i % 4], false);
+  });
   for (let i = 0; i < 18; i++) { const a = rnd() * 6.28, r = 5 + rnd() * 11; if (rnd() > 0.5) poner(enserDe('barril', () => gBarril(0.55, 1.15)), matUtil, Math.cos(a) * r, 0, Math.sin(a) * r, 1, 1, 1, a); else poner(enserDe('cajon', () => gCajon(1.1)), matUtil, Math.cos(a) * r, 0, Math.sin(a) * r, 1, 1, 1, rnd()); }
   etiquetas.push({ nombre: 'Plaza del mercado', pos: new THREE.Vector3(0, 9, 0), clase: 'ciudad' });
 

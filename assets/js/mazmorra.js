@@ -291,7 +291,7 @@ export function crearMazmorra(planta, id = 'x') {
   // la cámara se aleja lo justo para que las cuatro esquinas de la planta quepan con margen (campo de 38°, pantalla apaisada)
   const encuadre = ([hw, hd]) => { const T = Math.tan(19 * Math.PI / 180), pos = new THREE.Vector3(), obj = new THREE.Vector3(), ojo = new THREE.Vector3(), lado = new THREE.Vector3(), arriba = new THREE.Vector3(), v = new THREE.Vector3();
     for (let r = 8; r < 400; r *= 1.05) { pos.set(r * 0.08, r * 1.5, r * 1.3); obj.set(0, 0, r * 0.06); ojo.subVectors(obj, pos).normalize(); lado.crossVectors(ojo, new THREE.Vector3(0, 1, 0)).normalize(); arriba.crossVectors(lado, ojo);
-      let cabe = true; for (const sx of [-1, 1]) for (const sz of [-1, 1]) for (const y of [0, 5]) { v.set(sx * hw, y, sz * hd).sub(pos); const f = v.dot(ojo); if (f <= 0 || Math.abs(v.dot(arriba)) > f * T * (v.dot(arriba) > 0 ? 0.84 : 0.95) || Math.abs(v.dot(lado)) > f * T * 1.45 * 0.95) cabe = false; }
+      let cabe = true; for (const sx of [-1, 1]) for (const sz of [-1, 1]) for (const y of [0, 5]) { v.set(sx * hw, y, sz * hd).sub(pos); const f = v.dot(ojo); if (f <= 0 || Math.abs(v.dot(arriba)) > f * T * (v.dot(arriba) > 0 ? 0.9 : 0.98) || Math.abs(v.dot(lado)) > f * T * 1.5 * 0.98) cabe = false; }
       if (cabe) break; }
     return { pos: pos.clone(), objetivo: obj.clone() }; };
   function verPlanta(i) { actual = i; niveles.forEach((n, k) => { n.raiz.visible = k === i; }); for (const e of etiquetas) e.oculta = e.planta !== i; escena.background = new THREE.Color(niveles[i].fondo); escena.fog = new THREE.Fog(niveles[i].fondo, R * 2.2, R * 6.5); api.vista = encuadre(niveles[i].medio); }

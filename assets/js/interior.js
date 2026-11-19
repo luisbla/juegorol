@@ -97,7 +97,7 @@ export function crearInterior(l) {
     f.grupo.position.set(x, sentado ? 0.14 : 0, z); f.grupo.rotation.y = mira; destino.add(f.grupo);
     const p = { g: f.grupo, f }; gente.push(p); return p;
   }
-  const MESAS = [[-11, -6, 1], [-2, -2, 0], [-12, 7, 0], [-1, 8.5, 1], [8, 5, 0], [10, -4.5, 1]];
+  const MESAS = l.mesas ?? [[-11, -6, 1], [-2, -2, 0], [-12, 7, 0], [-1, 8.5, 1], [8, 5, 0], [10, -4.5, 1]];
   for (const [mx, mz, redonda] of MESAS) {
     pieza(redonda ? mesaRedonda : mesaLarga, matUtil, mx, 0, mz);
     const n = redonda ? 4 : 6;

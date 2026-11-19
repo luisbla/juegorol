@@ -7,7 +7,7 @@ import { crearRuido } from './ruido.js';
 export const suave = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 const mezcla = (a, b, t) => a + (b - a) * t;
 
-const NX = 481, NY = 321;        // malla del relieve
+let NX = 481, NY = 321;          // malla del relieve (más fina fuera del móvil; se fija al crear el terreno)
 const GW = 193, GH = 129;        // rejilla de pesos de región
 const DW = 241, DH = 161;        // rejilla de distancias (caminos, lugares, ríos)
 
@@ -54,6 +54,7 @@ function bilineal(arr, gw, gh, u, v) {
 export const radioDe = l => (l.tipo === 'capital' ? 15 : l.tipo === 'puerto' ? 14 : 9) * (l.tamano || 1);
 
 export function crearTerreno(mundo, { movil = false } = {}) {
+  NX = movil ? 481 : 641; NY = movil ? 321 : 427;
   const W = mundo.meta.ancho, H = mundo.meta.alto, cx = W / 2, cz = H / 2;
   const TW = movil ? 1024 : 1344, TH = Math.round(TW * H / W);   // textura de color
   const R = crearRuido(20261113);

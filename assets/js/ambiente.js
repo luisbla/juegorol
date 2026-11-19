@@ -77,7 +77,7 @@ export function crearAmbiente(escena, renderer, mundo, terreno, lugares, { movil
     sol.color.copy(SOL_BAJO).lerp(SOL_ALTO, suave(0.0, 0.5, alto));
     sol.castShadow = dia > 0.04;
     luna.intensity = 0.9 * estado.noche;
-    luzCielo.intensity = 0.3 + 0.55 * dia; rellenoNoche.intensity = estado.noche * 0.55;
+    luzCielo.intensity = 0.3 + 0.55 * dia; rellenoNoche.intensity = estado.noche * 0.9;
     uCielo.uArriba.value.copy(CENIT_NOCHE).lerp(CENIT_DIA, dia);
     uCielo.uHorizonte.value.copy(HORIZ_NOCHE).lerp(HORIZ_DIA, dia).lerp(HORIZ_TARDE, ocaso * 0.75);
     uCielo.uSol.value.copy(dirSol); uCielo.uLuna.value.copy(dirLuna); uCielo.uColorSol.value.copy(sol.color); uCielo.uNoche.value = estado.noche;
@@ -86,7 +86,7 @@ export function crearAmbiente(escena, renderer, mundo, terreno, lugares, { movil
     const u = terreno.uAgua;
     u.uSol.value.copy(estado.noche > 0.6 ? dirLuna : dirSol);
     u.uColorSol.value.copy(sol.color).multiplyScalar(dia).lerp(LUZ_LUNA, estado.noche);
-    terreno.uniformes.uLuz.value = 0.27 + 0.73 * dia;
+    terreno.uniformes.uLuz.value = 0.36 + 0.64 * dia;
     u.uCielo.value.copy(uCielo.uHorizonte.value).lerp(uCielo.uArriba.value, 0.35);
     for (const m of lugares.ventanas) m.emissiveIntensity = estado.noche * 1.5;
   }
