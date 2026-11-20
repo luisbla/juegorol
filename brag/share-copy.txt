@@ -1,0 +1,1 @@
+Cuatro tierras, una frontera que arde y un invierno que llega pronto. Tierras de Alden es el mapa de mi campaña de rol: en 3D, en el navegador, con capitales en las que se entra y viajes medidos en días a pie. Ni un modelo, ni una textura: todo es código. luisbla.github.io/juegorol
