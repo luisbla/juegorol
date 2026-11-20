@@ -324,7 +324,13 @@ export function crearTerreno(mundo, { movil = false } = {}) {
       r = mezcla(r, 126 + gr * 22 + est, rk); v = mezcla(v, 118 + gr * 20 + est, rk); b = mezcla(b, 106 + gr * 18 + est, rk);
       // marisma
       const wMa = pesoMarisma(x, y);
-      r = mezcla(r, 54 + n * 26, wMa); v = mezcla(v, 68 + n * 24, wMa); b = mezcla(b, 42 + n * 10, wMa);
+      if (wMa > 0.01) {   // no es un verde liso: turba oscura, musgo a manchas, paja en los lomos secos y fango mojado junto a las charcas
+        const musgo = suave(0.42, 0.62, fbm(x * 0.11 + 31, y * 0.11 + 17, 2)) * 0.75, paja = suave(0.7, 1.15, h) * suave(0.35, 0.6, g) * 0.6, mojado = suave(0.42, 0.04, h) * 0.85;
+        let mr = mezcla(50 + n * 22, 86 + g2 * 22, musgo), mv = mezcla(60 + n * 20, 106 + g2 * 20, musgo), mb = mezcla(40 + n * 8, 50, musgo);
+        mr = mezcla(mr, 138, paja); mv = mezcla(mv, 130, paja); mb = mezcla(mb, 76, paja);
+        mr = mezcla(mr, 46 + g2 * 10, mojado); mv = mezcla(mv, 41 + g2 * 8, mojado); mb = mezcla(mb, 30, mojado);
+        r = mezcla(r, mr, wMa); v = mezcla(v, mv, wMa); b = mezcla(b, mb, wMa);
+      }
       // ribera de los ríos
       const dr = distRio(x, y), rib = suave(19, 8, dr) * 0.6 * (1 - nieve * wT) * (1 - wMa * 0.8), grava = suave(9, 5, dr) * 0.8 * (1 - suave(0.05, 0.5, wMa));   // en la marisma no hay ribera ni grava: solo fango
       r = mezcla(r, 70, rib); v = mezcla(v, 100, rib); b = mezcla(b, 56, rib);
@@ -464,15 +470,18 @@ export function crearTerreno(mundo, { movil = false } = {}) {
         vec3 col = mix(somero, hondo, smoothstep(0.0, 0.55, d));
         col = mix(col, vec3(0.030, 0.050, 0.028), turbia * 0.92);   // agua de turbera (valores lineales)
         col = mix(col, uCielo, fres * 0.6 * (1.0 - turbia * 0.5)) * uLuz;
+        // en la marisma, verdín flotando a manchas: mate y verde, que rompe el espejo de las charcas
+        float verdin = turbia * smoothstep(0.50, 0.60, rN(p * 0.085 + 3.0) * 0.55 + rN(p * 0.29 + 11.0) * 0.3 + rN(p * 0.9) * 0.15);
+        col = mix(col, mix(vec3(0.085, 0.15, 0.04), vec3(0.16, 0.24, 0.07), rN(p * 1.7)) * uLuz, verdin * 0.9);
         float brillo = pow(max(dot(reflect(-normalize(uSol), n), v), 0.0), 120.0);
-        col += uColorSol * brillo * 0.9;
+        col += uColorSol * brillo * 0.9 * (1.0 - verdin);
         // espuma que llega a la orilla en ondas
         float orilla = smoothstep(0.06, 0.0, d) * (1.0 - turbia);
         float onda = sin(d * 95.0 - uTiempo * 1.5 + rN(p * 0.08) * 6.0) * 0.5 + 0.5;
         float espuma = orilla * smoothstep(0.55, 0.9, onda + orilla * 0.5) * (0.5 + 0.5 * rN(p * 0.6 + uTiempo * 0.1));
         col = mix(col, vec3(0.93, 0.96, 0.97) * (0.35 + 0.65 * uLuz), espuma * 0.6);
         col = mix(col, uCielo, 1.0 - exp(-lejos * lejos * uBruma * uBruma));
-        gl_FragColor = vec4(col, mix(0.62, 0.96, max(smoothstep(0.0, 0.3, d), turbia)));
+        gl_FragColor = vec4(col, mix(0.62, 0.96, max(smoothstep(0.0, 0.3, d), turbia)) * mix(1.0, smoothstep(0.004, 0.035, d), turbia));   // la charca se funde con el fango en vez de acabar en un corte
         #include <tonemapping_fragment>
         #include <colorspace_fragment>
       }`,
@@ -528,11 +537,14 @@ export function crearTerreno(mundo, { movil = false } = {}) {
         col = mix(col, vec3(0.09, 0.30, 0.31), c * c * 0.65);       // somero junto a la orilla
         col = mix(col, uCielo, 0.2);
         col = mix(col, mix(vec3(0.030, 0.050, 0.028), uCielo, 0.045), vTurbia);   // dentro de la marisma es un canal más de agua de turbera
+        col = mix(col, vec3(0.10, 0.17, 0.05), vTurbia * 0.85 * smoothstep(0.5, 0.62, rN(vec2(vUv.x * 4.0, vUv.y * 0.22)) * 0.6 + rN(vec2(vUv.x * 11.0 + 5.0, vUv.y * 0.7)) * 0.4));   // con su verdín
         float rizos = smoothstep(0.6, 0.8, veta) * (0.22 + vRap * 1.1);
         float orilla = smoothstep(0.72, 1.0, c) * smoothstep(0.42, 0.7, rN(vec2(vUv.x * 2.0, y * 5.0 + 9.0))) * 0.55;
         float destello = smoothstep(0.93, 1.0, rN(vec2(vUv.x * 30.0, y * 22.0 + uTiempo * 0.7))) * 0.5;
         col = mix(col, vec3(0.9, 0.95, 0.97), clamp(rizos + orilla + destello, 0.0, 1.0) * (1.0 - vTurbia * 0.9));
-        float borde = smoothstep(0.0, 0.1, vUv.x) * smoothstep(1.0, 0.9, vUv.x);
+        // en la marisma el cauce no tiene orilla: se ensancha el difuminado y serpentea, para que no quede una cinta recta sobre el fango
+        float ancho = mix(0.1, 0.42, vTurbia), xr = vUv.x + (rN(vec2(vUv.y * 0.12, 3.0)) - 0.5) * 0.4 * vTurbia;
+        float borde = smoothstep(0.0, ancho, xr) * smoothstep(1.0, 1.0 - ancho, xr);
         gl_FragColor = vec4(col * uLuz, borde * 0.96 * smoothstep(0.0, 1.0, vFin));
         #include <tonemapping_fragment>
         #include <colorspace_fragment>
@@ -609,7 +621,11 @@ export function crearTerreno(mundo, { movil = false } = {}) {
       const mancha = fbm(jx * 0.014 + 20, jy * 0.014 + 4, 3);
       const dado = azar((jx * 3.1) | 0, (jy * 2.7) | 0);
       const esc = 0.75 + azar((jx * 1.7) | 0, (jy * 5.3) | 0) * 0.6;
-      if (wMa > 0.45) { if (dado < 0.22) secos.push([jx, h, jy, esc]); else if (h < 1.1 && dado < 0.75) juncos.push([jx, h, jy, esc]); continue; }
+      if (wMa > 0.45) { if (dado < 0.22) secos.push([jx, h, jy, esc]); else if (h < 1.1 && dado < 0.75) juncos.push([jx, h, jy, esc]);
+        // y juncales: varias matas más por celda, pegadas al agua, para que la marisma no sea un prado
+        for (let s = 0; s < (movil ? 1 : 4); s++) { const ex = jx + (azar((jx * 7.3 + s * 31) | 0, (jy * 3.9) | 0) - 0.5) * paso * 1.6, ey = jy + (azar((jx * 2.3) | 0, (jy * 9.1 + s * 17) | 0) - 0.5) * paso * 1.6, eh = alturaEn(ex, ey);
+          if (eh > 0.1 && eh < 0.85 && pesoMarisma(ex, ey) > 0.4 && distLugar(ex, ey) > 7 && distCamino(ex, ey) > 4) juncos.push([ex, eh, ey, 0.9 + azar((ex * 5) | 0, (ey * 5) | 0) * 0.9]); }
+        continue; }
       if (lugarCerca < 8 || decorado.some(d => Math.abs(d.x - jx) < d.radio && Math.abs(d.y - jy) < d.radio)) continue;
       if (haciaCosta(jx, jy) < 9 || pendienteEn(jx, jy) > 1.1 || pesoIslote(jx, jy) > 0.05) continue;
       const densidad = wV * suave(0.2, 0.55, mancha) * 0.95 + wA * suave(0.25, 0.6, mancha) * 0.85 + wM * suave(0.66, 0.8, mancha) * 0.4

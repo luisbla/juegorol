@@ -136,8 +136,8 @@ export function crearAmbiente(escena, renderer, mundo, terreno, lugares, { movil
     const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: blanda, transparent: true, opacity: 0.22, depthWrite: false, color: 0xd8e0d4 }));
     const a = R.rnd() * 6.28, d = Math.sqrt(R.rnd()) * 0.8;
     s.userData = { x: ma.x + Math.cos(a) * ma.rx * d, y: ma.y + Math.sin(a) * ma.ry * d, f: R.rnd() * 6.28, t: 80 + R.rnd() * 70 };
-    s.scale.set(s.userData.t, s.userData.t * 0.3, 1);
-    niebla.push(s); clima.add(s);
+    s.scale.set(s.userData.t, s.userData.t * 0.17, 1);   // jirones tendidos; van enteros sobre el suelo (ver abajo) para que el terreno no los corte en línea recta
+    s.renderOrder = 2; niebla.push(s); clima.add(s);   // después del agua, que es translúcida
   }
 
   /* ---------- fuegos fatuos: luces frías que vagan por la marisma al caer la tarde ---------- */
@@ -323,7 +323,7 @@ export function crearAmbiente(escena, renderer, mundo, terreno, lugares, { movil
       }
       for (const s of niebla) {
         const u = s.userData, x = u.x + Math.sin(t * 0.05 + u.f) * 22, y = u.y + Math.cos(t * 0.04 + u.f * 1.7) * 12;
-        s.position.set(x - cx, 4.5 + Math.sin(t * 0.2 + u.f) * 1.2, y - cz);
+        s.position.set(x - cx, 2.2 + u.t * 0.085 + Math.sin(t * 0.2 + u.f) * 1.2, y - cz);
         s.material.opacity = (0.16 + 0.1 * Math.sin(t * 0.13 + u.f)) * (0.55 + 0.45 * luzDia) + estado.noche * 0.06;
       }
     }

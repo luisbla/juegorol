@@ -182,7 +182,8 @@ export function crearEntrada(l) {
   const carro = (x, z, ry, carga = ['sacos', 'pacas', 'barriles', 'cajas'][Math.floor(Math.abs(x * 7 + z * 3)) % 4]) => { const o = enser(gCarro({ carga }), x, z, ry, 1.05); o.userData.fijo = true; return o; };
   let texBlanda = null;
   const blanda = () => texBlanda ??= blandaDe(0.55);
-  const niebla = (n, y, radio, opacidad = 0.5, color = 0xffffff, ancho = 26) => { for (let i = 0; i < n; i++) { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: blanda(), transparent: true, depthWrite: false, opacity: opacidad, color })), x0 = (rnd() - 0.5) * radio * 2, z = (rnd() - 0.5) * radio * 2; s.scale.set(ancho, ancho * 0.28, 1); s.position.set(x0, y + rnd() * 1.5, z); escena.add(s); vivos.push((t, cam) => { s.position.x = x0 + Math.sin(t * 0.05 + i) * 10; if (cam) { const d = s.position.distanceTo(cam.position); s.material.opacity = opacidad * THREE.MathUtils.smoothstep(d, ancho * 0.45, ancho * 1.5); } s.material.color.setHex(color).multiplyScalar(1 - nocheAhora * 0.8); }); } };
+  // cada jirón va entero por encima del suelo: si lo corta el agua o la tierra, se ve una raya recta
+  const niebla = (n, y, radio, opacidad = 0.5, color = 0xffffff, ancho = 26) => { for (let i = 0; i < n; i++) { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: blanda(), transparent: true, depthWrite: false, opacity: opacidad, color })), x0 = (rnd() - 0.5) * radio * 2, z = (rnd() - 0.5) * radio * 2; s.scale.set(ancho, ancho * 0.28, 1); s.position.set(x0, y + ancho * 0.125 + rnd() * 1.5, z); escena.add(s); vivos.push((t, cam) => { s.position.x = x0 + Math.sin(t * 0.05 + i) * 10; if (cam) { const d = s.position.distanceTo(cam.position); s.material.opacity = opacidad * THREE.MathUtils.smoothstep(d, ancho * 0.45, ancho * 1.5); } s.material.color.setHex(color).multiplyScalar(1 - nocheAhora * 0.8); }); } };
   const humo = (x, y, z, oscuro) => { for (let k = 0; k < 5; k++) { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: blanda(), transparent: true, depthWrite: false, color: oscuro ? 0x2a2725 : 0xd9d4cc })); escena.add(s); vivos.push(t => { const f = (t * 0.12 + k / 5) % 1; s.position.set(x + f * f * 5, y + f * 9, z); const e = 1.5 + f * 6; s.scale.set(e, e, 1); s.material.opacity = Math.sin(f * Math.PI) * (oscuro ? 0.7 : 0.5) * (1 - nocheAhora * 0.45); if (!oscuro) s.material.color.setHex(0xd9d4cc).multiplyScalar(1 - nocheAhora * 0.6); }); } };
   const nevada = (n = 600, ancho = 80) => { const p = new Float32Array(n * 3); for (let i = 0; i < n; i++) { p[i * 3] = (rnd() - 0.5) * ancho; p[i * 3 + 1] = rnd() * 30; p[i * 3 + 2] = (rnd() - 0.5) * ancho; } const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(p, 3)); escena.add(new THREE.Points(g, new THREE.PointsMaterial({ color: 0xffffff, size: 0.22, transparent: true, opacity: 0.85 }))); vivos.push(() => { for (let i = 0; i < n; i++) { p[i * 3 + 1] -= 0.06; p[i * 3] += 0.03; if (p[i * 3 + 1] < 0) { p[i * 3 + 1] = 30; p[i * 3] = Math.sin(i * 12.9) * ancho * 0.5; } } g.attributes.position.needsUpdate = true; }); };
   let texRizo = null;
@@ -192,10 +193,56 @@ export function crearEntrada(l) {
       x.putImageData(img, 0, 0); texRizo = new THREE.CanvasTexture(c); texRizo.wrapS = texRizo.wrapT = THREE.RepeatWrapping; }
     return texRizo;
   };
-  const lamina = (color, radio, y = 0.12, quieta = false) => {
+  const lamina = (color, radio, y = 0.12, quieta = false, pintura) => {
     const n = rizo().clone(); n.repeat.set(radio / (quieta ? 14 : 10), radio / (quieta ? 14 : 10)); n.anisotropy = 4; n.needsUpdate = true;
-    const o = disco(color, radio, y, { roughness: quieta ? 0.08 : 0.18, metalness: 0.35, transparent: true, opacity: 0.93, normalMap: n, normalScale: new THREE.Vector2(quieta ? 0.2 : 0.4, quieta ? 0.2 : 0.4) });
+    const o = disco(color, radio, y, { roughness: quieta ? 0.08 : 0.18, metalness: 0.35, transparent: true, opacity: 0.93, normalMap: n, normalScale: new THREE.Vector2(quieta ? 0.2 : 0.4, quieta ? 0.2 : 0.4), ...pintura });
     vivos.push(t => { n.offset.set(t * (quieta ? 0.004 : 0.012), t * (quieta ? 0.003 : 0.02)); }); return o;
+  };
+  // Agua de marisma: en vez de una lámina de un solo color, lleva pintadas manchas de verdín (mate), claros de agua limpia (que brillan) y pozas oscuras.
+  // Es una sola textura sobre la misma lámina, así que no añade capas transparentes ni cuesta más de pintar. Píxel a píxel, sin degradados de canvas.
+  let texMarisma = null;
+  const aguaMarisma = () => {
+    if (!texMarisma) { const N = 512, r = azarDe('marisma'), lienzo = () => { const c = document.createElement('canvas'); c.width = c.height = N; return c; }, c1 = lienzo(), c2 = lienzo(), x1 = c1.getContext('2d'), x2 = c2.getContext('2d'), i1 = x1.createImageData(N, N), i2 = x2.createImageData(N, N);
+      const ruido = G => { const g = Array.from({ length: G * G }, () => r()), at = (a, b) => g[((b % G + G) % G) * G + ((a % G + G) % G)]; return (u, v) => { const x = u * G, y = v * G, i = Math.floor(x), j = Math.floor(y), fx = x - i, fy = y - j, sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy); return (at(i, j) * (1 - sx) + at(i + 1, j) * sx) * (1 - sy) + (at(i, j + 1) * (1 - sx) + at(i + 1, j + 1) * sx) * sy; }; };
+      const n1 = ruido(5), n2 = ruido(11), n3 = ruido(23), n4 = ruido(61), n5 = ruido(127), paso = (a, b, v) => { const k = Math.min(1, Math.max(0, (v - a) / (b - a))); return k * k * (3 - 2 * k); }, mez = (a, b, k) => a + (b - a) * k;
+      for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) { const u = (i + 0.5) / N, v = (j + 0.5) / N, m = 0.5 * n1(u, v) + 0.3 * n2(u, v) + 0.2 * n3(u, v), fino = n4(u, v), grano = n5(u, v);
+        const verdin = paso(0.535, 0.57, m + (fino - 0.5) * 0.13 + (grano - 0.5) * 0.05) * (0.7 + 0.3 * grano), suelto = m > 0.47 && grano > 0.86 ? 0.55 : 0, V = Math.max(verdin, suelto), hondo = paso(0.47, 0.36, m), limo = paso(0.42, 0.62, n2(v, u)) * 0.35;
+        let R = mez(mez(58, 76, limo), 20, hondo * 0.75), Gc = mez(mez(74, 78, limo), 30, hondo * 0.75), B = mez(mez(60, 48, limo), 26, hondo * 0.75);   // agua: verde gris, parda donde hay limo, casi negra en las pozas
+        const tr = mez(58, 122, fino * 0.45 + grano * 0.55), tg = mez(84, 140, fino * 0.45 + grano * 0.55), tb = mez(38, 60, fino);   // verdín: de verde botella a verde lima
+        R = mez(R, tr, V); Gc = mez(Gc, tg, V); B = mez(B, tb, V); const o = (j * N + i) * 4;
+        i1.data[o] = R; i1.data[o + 1] = Gc; i1.data[o + 2] = B; i1.data[o + 3] = 255;
+        i2.data[o] = 255; i2.data[o + 1] = Math.round(mez(22, 240, V)); i2.data[o + 2] = Math.round(mez(90, 0, V)); i2.data[o + 3] = 255; }   // G = rugosidad, B = metal: el verdín no brilla
+      x1.putImageData(i1, 0, 0); x2.putImageData(i2, 0, 0); const tex = (c, color) => { const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 4; if (color) t.colorSpace = THREE.SRGBColorSpace; return t; };
+      texMarisma = [tex(c1, true), tex(c2, false)]; }
+    return texMarisma;
+  };
+  // hueco(x, z, r) dice dónde no cabe un banco: lo construido del paraje.
+  const marisma = (nivel, hueco = () => false, { bancos = 16, radio = 150 } = {}) => {
+    const [pintura, brillo] = aguaMarisma().map(t => { const q = t.clone(); q.repeat.set(radio / 27, radio / 27); q.rotation = 0.37; q.needsUpdate = true; return q; });
+    suelo(0x3a3f2a, radio, { plano: true }); lamina(0xffffff, radio, nivel, true, { map: pintura, roughnessMap: brillo, metalnessMap: brillo, roughness: 1, metalness: 1 });
+    const r = azarDe('fango'), fango = new THREE.MeshStandardMaterial({ vertexColors: true, map: (() => { const t = manchas().clone(); t.repeat.set(3, 3); t.needsUpdate = true; return t; })(), roughness: 1 }), sitios = [], M = new THREE.Matrix4(), Q = new THREE.Quaternion(), E = new THREE.Euler(), P = new THREE.Vector3(), S = new THREE.Vector3(), c = new THREE.Color();
+    fango.userData.conUV = true;   // al fundir los lomos, que conserven las uv: llevan la textura de manchas
+    for (let i = 0; i < bancos * 6 && sitios.length < bancos; i++) { const a = r() * 6.28, d = 7 + r() * 52, x = Math.cos(a) * d, z = Math.sin(a) * d, R = 2.4 + r() * 4.2; if (hueco(x, z, R) || sitios.some(q => Math.hypot(q[0] - x, q[1] - z) < q[2] + R + 1.5)) continue; sitios.push([x, z, R, 0.75 + r() * 0.3, r() * 6.28]); }
+    const alto = (q, dx, dz) => { const k = Math.hypot(dx, dz / q[3]) / q[2]; return k >= 1 ? 0 : (1 - k * k) * q[2] * 0.16; };   // un lomo bajo: medio palmo sobre el agua
+    const cFango = new THREE.Color(0x29231a), cMusgo = new THREE.Color(0x3d5020), tinte = new THREE.Color();
+    for (const q of sitios) {   // orilla mojada (disco de borde difuso) y lomo de contorno irregular: fango en el borde, musgo arriba
+      const [x, z, R, ach] = q, orla = disco(0x2b291d, R * 1.4, nivel + 0.025); orla.position.set(x, nivel + 0.025, z); orla.scale.set(1, ach, 1);
+      const g = new THREE.SphereGeometry(1, 16, 7, 0, Math.PI * 2, 0, Math.PI / 2), p = g.attributes.position, col = new Float32Array(p.count * 3), fa = r() * 6.28, fb = r() * 6.28;
+      for (let i = 0; i < p.count; i++) { const a = Math.atan2(p.getZ(i), p.getX(i)), y = p.getY(i), k = 1 + 0.2 * Math.sin(a * 3 + fa) + 0.12 * Math.sin(a * 5 + fb), ab = y > 0.02 && y < 0.98 ? 0.75 + r() * 0.5 : 1; p.setXYZ(i, p.getX(i) * k, y * ab, p.getZ(i) * k);
+        const u = Math.min(1, Math.max(0, (y - 0.12) / 0.5)); tinte.copy(cFango).lerp(cMusgo, u * u * (3 - 2 * u) * (0.75 + r() * 0.25)); col[i * 3] = tinte.r; col[i * 3 + 1] = tinte.g; col[i * 3 + 2] = tinte.b; }
+      g.setAttribute('color', new THREE.BufferAttribute(col, 3)); g.computeVertexNormals();
+      const lomo = pieza(g, fango, x, nivel - 0.02, z); lomo.scale.set(R * 0.92, R * 0.16, R * 0.92 * ach); lomo.castShadow = false; lomo.userData.fijo = true; }
+    // matas de hierba sobre cada banco, espadañas en su orilla y algún tronco medio hundido
+    const cuantas = q => Math.round(q[2] * q[2] * 3.6), nMatas = sitios.reduce((n, q) => n + cuantas(q), 0), matas = new THREE.InstancedMesh(new THREE.ConeGeometry(0.13, 1, 3).translate(0, 0.5, 0), mat(0xffffff, {}), nMatas); let k = 0;
+    for (const q of sitios) for (let i = 0, n = cuantas(q); i < n; i++) { const a = r() * 6.28, d = Math.sqrt(r()) * q[2] * 0.72, dx = Math.cos(a) * d, dz = Math.sin(a) * d * q[3], h = 0.45 + r() * 0.95;
+      M.compose(P.set(q[0] + dx, nivel - 0.05 + alto(q, dx, dz), q[1] + dz), Q.setFromEuler(E.set((r() - 0.5) * 0.5, r() * 6.28, (r() - 0.5) * 0.5)), S.set(1 + r(), h, 1 + r())); matas.setMatrixAt(k, M); matas.setColorAt(k++, c.setHex([0x6f8a3c, 0x8a9a48, 0x5d7634, 0xa8a45a, 0x7c8f42][Math.floor(r() * 5)])); }
+    matas.castShadow = false; matas.receiveShadow = true; escena.add(matas);
+    const nEsp = sitios.length * 6, tallos = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.03, 0.045, 1, 4).translate(0, 0.5, 0), mat(0x7f8a4a), nEsp), mazas = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.1, 0.1, 0.5, 6), mat(0x5a3a22), nEsp); k = 0;
+    for (const q of sitios) { const a0 = r() * 6.28; for (let i = 0; i < 6; i++) { const a = a0 + (r() - 0.5) * 1.3, d = q[2] * (0.82 + r() * 0.3), x = q[0] + Math.cos(a) * d, z = q[1] + Math.sin(a) * d * q[3], h = 1.7 + r() * 1.1, inc = Q.setFromEuler(E.set((r() - 0.5) * 0.16, 0, (r() - 0.5) * 0.16));
+      M.compose(P.set(x, nivel - 0.1, z), inc, S.set(1, h, 1)); tallos.setMatrixAt(k, M); M.compose(P.set(0, h - 0.38, 0).applyQuaternion(inc).add(S.set(x, nivel - 0.1, z)), inc, S.set(1, 1, 1)); mazas.setMatrixAt(k++, M); } }
+    escena.add(tallos, mazas);
+    for (let i = 0; i < 5; i++) { const a = r() * 6.28, d = 12 + r() * 40, x = Math.cos(a) * d, z = Math.sin(a) * d, L = 3.5 + r() * 3.5; if (hueco(x, z, L / 2)) continue; const t = cil(mat(i % 2 ? 0x4a3c2c : 0x3f3528), 0.24, 0.32, L, x, 0, z, undefined, 7); t.rotation.set((r() - 0.5) * 0.12, r() * 6.28, Math.PI / 2); t.position.y = nivel + 0.04; t.userData.fijo = true; }
+    return sitios;
   };
   // nenúfares: hojas redondas con su muesca, algunas con flor, que suben y bajan apenas
   const nenufares = (n, radio, y, hueco = () => false) => {
@@ -206,7 +253,7 @@ export function crearEntrada(l) {
   // burbujas de gas del fango: suben, crecen y revientan
   const burbujas = (n, radio, y) => { for (let i = 0; i < n; i++) { const b = pieza(new THREE.SphereGeometry(0.14, 8, 6), mat(0xcfe0d8, { transparent: true, opacity: 0.5, roughness: 0.1 }), 0, y, 0), an = pieza(new THREE.RingGeometry(0.2, 0.26, 16), new THREE.MeshBasicMaterial({ color: 0xdfeee6, transparent: true, opacity: 0, side: THREE.DoubleSide }), 0, y + 0.02, 0); b.castShadow = an.castShadow = false; an.rotation.x = -Math.PI / 2; const f = rnd() * 10, v = 0.25 + rnd() * 0.3; let x = 0, z = 0, vuelta = -1;
     vivos.push(t => { const u = (t * v + f) % 1, nv = Math.floor(t * v + f); if (nv !== vuelta) { vuelta = nv; x = (Math.sin(nv * 12.9898 + i) * 43758.5453 % 1) * radio; z = (Math.sin(nv * 78.233 + i * 3) * 43758.5453 % 1) * radio; } b.position.set(x, y - 0.3 + Math.min(1, u * 1.6) * 0.32, z); b.scale.setScalar(u < 0.62 ? 0.4 + u * 1.6 : 0.001); an.position.set(x, y + 0.02, z); const w = Math.max(0, (u - 0.62) / 0.38); an.scale.setScalar(1 + w * 5); an.material.opacity = w > 0 ? (1 - w) * 0.6 : 0; }); } };
-  const juncos = (n, radio, hueco = () => false) => { const m = new THREE.InstancedMesh(new THREE.ConeGeometry(0.12, 1.6, 4), mat(0x7a8a4a), n), M = new THREE.Matrix4(); let k = 0; for (let i = 0; i < n * 3 && k < n; i++) { const x = (rnd() - 0.5) * radio * 2, z = (rnd() - 0.5) * radio * 2; if (hueco(x, z)) continue; M.makeScale(1, 0.7 + rnd() * 0.8, 1).setPosition(x, 0.7, z); m.setMatrixAt(k++, M); } m.count = k; escena.add(m); };
+  const juncos = (n, radio, hueco = () => false) => { const m = new THREE.InstancedMesh(new THREE.ConeGeometry(0.12, 1.6, 4), mat(0x7a8a4a, {}), n), M = new THREE.Matrix4(), tono = new THREE.Color(); let k = 0; for (let i = 0; i < n * 3 && k < n; i++) { const x = (rnd() - 0.5) * radio * 2, z = (rnd() - 0.5) * radio * 2; if (hueco(x, z)) continue; M.makeScale(1, 0.7 + rnd() * 0.8, 1).setPosition(x, 0.7, z); m.setMatrixAt(k, M); m.setColorAt(k, tono.setHex([0xffffff, 0xd8e0b0, 0xfff0c8, 0xc8d8a8, 0xf0d8a0][(k * 7 + (k >> 3)) % 5])); k++; } m.count = k; escena.add(m); };
   const cuervos = (pts) => pts.forEach(([x, y, z], i) => { const g = nido(x, z, 0, y); pieza(new THREE.SphereGeometry(0.28, 6, 5), mat(0x15151a), 0, 0, 0, g).scale.set(1, 0.9, 1.6); pieza(new THREE.ConeGeometry(0.07, 0.25, 4), mat(0x15151a), 0, 0.05, 0.5, g).rotation.x = Math.PI / 2; vivos.push(t => { g.rotation.y = Math.sin(t * 0.5 + i * 2) * 1.2; }); });
   const cintas = (x, y, z, n, radio) => { for (let i = 0; i < n; i++) { const a = i / n * 6.28, c = caja(mat([0xb23a2e, 0xe0c040, 0x2f6aa0, 0xf0ead8][i % 4]), 0.12, 1.1, 0.03, x + Math.cos(a) * radio, y + (i % 3) * 0.5, z + Math.sin(a) * radio); vivos.push(tt => { c.rotation.z = Math.sin(tt * 2.5 + i) * 0.4; }); } };
   let bruma = 0.0042;
@@ -235,7 +282,7 @@ export function crearEntrada(l) {
       // la gente del reino deja avisos y no pasa de aquí
       for (let i = 0; i < 9; i++) { const x = -14 + i * 3.5, z = 24 + Math.sin(i) * 1.4, p = cil(mat(0x4a3a2a), 0.12, 0.16, 3.2, x, 0, z, undefined, 5); p.rotation.z = (rnd() - 0.5) * 0.3; const t = caja(mat(i % 2 ? 0x8a2a22 : 0xd8d0c0), 0.9, 1.1, 0.04, x + 0.4, 1.9, z); vivos.push(tt => { t.rotation.y = Math.sin(tt * 2 + i) * 0.5; }); }
       cuervos([[-4, 19.4, -4.2], [1.5, 19.4, -4.2], [6, 19.4, -4.2], [-12, 2.9, 3]]);
-      niebla(26, 0.8, 46, 0.42, 0xdfe8dc, 30);
+      niebla(26, 0.8, 46, 0.32, 0xdfe8dc, 30);
       rotulo('La puerta', 0, 17, -3); rotulo('Estacas de aviso', 0, 6, 24);
       return { pos: [14, 9, 52], objetivo: [0, 8.5, 0], cielo: 0x4a5a4a, R: 46, limite: 44, luz: 0.55, arco: 1.1 };   // arco: la cámara no gira hasta meterse en el bosque de detrás
     },
@@ -402,7 +449,7 @@ export function crearEntrada(l) {
     },
     // Los Palafitos
     palafitos() {
-      suelo(0x3a3f2a, 150, { plano: true }); lamina(0x3a4a3a, 150, 0.5, true); bruma = 0.02; const vieja = mat(0x5a4c3a), podrida = mat(0x3f3528);
+      marisma(0.5, (x, z, R) => x > -17 - R && x < 20 + R && z > -16 - R && z < 12 + R); bruma = 0.02; const vieja = mat(0x5a4c3a), podrida = mat(0x3f3528);
       for (const [x, z, ry, caida, h] of [[-8, -4, 0.2, 0.05, 3.6], [2, -8, -0.3, -0.12, 4.2], [10, -1, 0.5, 0.2, 3.0], [-2, 6, 1.2, 0, 3.4], [14, -10, 0.1, -0.3, 2.2]]) {
         const g = nido(x, z, ry); g.rotation.z = caida; for (const sx of [-2, 2]) for (const sz of [-1.6, 1.6]) cil(podrida, 0.18, 0.22, h + 1.5, sx, -1.5, sz, g, 5);
         caja(vieja, 5, 0.3, 4.2, 0, h, 0, 0, g); caja(vieja, 4.4, 2.6, 3.6, 0, h + 0.3, 0, 0, g); pieza(gDosAguas, mat(0x6a6a4a), 0, h + 3.9, 0, g).scale.set(5.6, 2.2, 4.8); caja(mat(0x14120e), 1, 1.8, 0.1, 0, h + 0.3, 1.82, 0, g); if (caida) caja(vieja, 2, 0.2, 3, 2.6, h - 0.6, 0, 0, g).rotation.z = -0.7;
@@ -410,32 +457,32 @@ export function crearEntrada(l) {
       for (const [x0, z0, x1, z1] of [[-8, -4, 2, -8], [2, -8, 10, -1], [-8, -4, -2, 6]]) { const d = Math.hypot(x1 - x0, z1 - z0), n = Math.round(d / 1.1); for (let i = 1; i < n; i++) if ((i * 7) % 5) caja(vieja, 1.6, 0.14, 0.9, x0 + (x1 - x0) * i / n, 3.5 + Math.sin(i) * 0.15, z0 + (z1 - z0) * i / n, -Math.atan2(z1 - z0, x1 - x0) + Math.PI / 2); }
       const b = crearBarcoModelo({ eslora: 5, palos: 1, velas: 'ninguna' }); b.position.set(-12, 0.1, 6); b.rotation.set(0.5, 0.6, 0.3); escena.add(b);
       for (let i = 0; i < 16; i++) arbol((rnd() - 0.5) * 80, (rnd() - 0.5) * 70, 1 + rnd() * 0.8, 0, true);
-      juncos(700, 60, (x, z) => Math.hypot(x, z + 3) < 6); nenufares(260, 46, 0.5, (x, z) => Math.hypot(x - 2, z + 2) < 4); burbujas(9, 30, 0.5); niebla(30, 1.2, 50, 0.5, 0xdfe8dc, 30);
+      juncos(700, 60, (x, z) => Math.hypot(x, z + 3) < 6); nenufares(260, 46, 0.5, (x, z) => Math.hypot(x - 2, z + 2) < 4); burbujas(9, 30, 0.5); niebla(30, 1.2, 50, 0.34, 0xdfe8dc, 30);
       for (let i = 0; i < 3; i++) { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: blanda(), color: 0x9fffd0, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })); s.scale.set(2.4, 2.4, 1); escena.add(s); vivos.push(t => { s.position.set(Math.sin(t * 0.2 + i * 2) * 22, 1.6 + Math.sin(t + i), -18 + Math.cos(t * 0.15 + i) * 14); s.material.opacity = 0.5 + 0.4 * Math.sin(t * 1.3 + i); }); }
       rotulo('Cabañas', 0, 11, -5); rotulo('Pasarelas', -3, 6, 1);
       return { pos: [18, 11, 34], objetivo: [1, 3.5, -3], cielo: 0x6a7a70, R: 40, luz: 0.7 };
     },
     // El Paso Viejo
     pasarela() {
-      suelo(0x3a3f2a, 150, { plano: true }); lamina(0x3a4a3a, 150, 0.5, true); bruma = 0.02; const tronco = mat(0x5a4c3a);
+      marisma(0.5, (x, z, R) => Math.abs(x) < 6.5 + R); bruma = 0.02; const tronco = mat(0x5a4c3a);
       for (let i = 0; i < 60; i++) { if ((i > 14 && i < 21) || (i > 36 && i < 41) || i === 50) continue; const z = 34 - i * 1.25, c = cil(tronco, 0.34, 0.34, 6 + (i % 3) * 0.4, Math.sin(i * 0.12) * 2.4, 0.5, z, undefined, 7); c.rotation.z = Math.PI / 2; c.rotation.y = (rnd() - 0.5) * 0.08; c.position.y = 0.75 + (i % 7 === 0 ? -0.25 : 0); if (i % 6 === 0) for (const s of [-3.2, 3.2]) cil(mat(0x3f3528), 0.22, 0.26, 3.4, Math.sin(i * 0.12) * 2.4 + s, -1, z, undefined, 5); }
       for (const [x, z, ry] of [[3, 14, 0.5], [-4, 8, 1.4], [2.5, -14, 2.2]]) { const c = cil(tronco, 0.34, 0.34, 5.5, x, 0.5, z, undefined, 7); c.rotation.set(0.1, ry, Math.PI / 2); c.position.y = 0.45; }   // troncos sueltos donde falta camino
       const mo = nido(-5, 30, 0.2); cil(mat(0x7d766c), 0.5, 0.7, 2.6, 0, 0.3, 0, mo, 6); caja(mat(0x7d766c), 1.4, 0.3, 0.4, 0, 2.6, 0, 0, mo);
       for (let i = 0; i < 18; i++) arbol((rnd() - 0.5) * 90 + (rnd() > 0.5 ? 14 : -14), (rnd() - 0.5) * 80, 1 + rnd() * 0.8, 0, true);
-      juncos(900, 62, (x, z) => Math.abs(x - Math.sin((34 - z) / 1.25 * 0.12) * 2.4) < 4); nenufares(260, 48, 0.5, (x, z) => Math.abs(x) < 5); burbujas(9, 30, 0.5); niebla(30, 1.2, 55, 0.5, 0xdfe8dc, 30);
+      juncos(900, 62, (x, z) => Math.abs(x - Math.sin((34 - z) / 1.25 * 0.12) * 2.4) < 4); nenufares(260, 48, 0.5, (x, z) => Math.abs(x) < 5); burbujas(9, 30, 0.5); niebla(30, 1.2, 55, 0.34, 0xdfe8dc, 30);
       rotulo('Calzada de troncos', 0, 4, 18); rotulo('Tramo perdido', 0, 4, 10); rotulo('Mojón', -5, 5, 30);
       return { pos: [16, 9, 44], objetivo: [0, 1.5, 4], cielo: 0x6a7a70, R: 44, limite: 40, luz: 0.7 };
     },
     // La Barcaza Hundida
     pecio() {
-      suelo(0x3a3f2a, 150, { plano: true }); lamina(0x3a4a3a, 150, 0.35, true); bruma = 0.016; disco(0x4a4030, 18, 0.4).position.set(6, 0.4, 2);
+      marisma(0.35, (x, z, R) => Math.hypot(x - 4, z - 3) < 21 + R || Math.hypot(x + 14, z - 10) < 3 + R); bruma = 0.016; disco(0x4a4030, 18, 0.4).position.set(6, 0.4, 2);
       const b = crearBarcoModelo({ eslora: 22, palos: 1, velas: 'ninguna', color: 0x4d3c2a }); b.position.set(0, 0.6, 0); b.rotation.set(0.42, 0.5, 0.06); escena.add(b);
       const palo = cil(mat(0x3a2c20), 0.2, 0.26, 11, 6, 0.6, 9, undefined, 6); palo.rotation.set(0.2, 0.9, Math.PI / 2 - 0.08); palo.position.y = 0.9;
       for (let i = 0; i < 9; i++) { const c = caja(mat(i % 2 ? 0x8a6a48 : 0x6a5039), 1.4, 1.1, 1.4, 3 + rnd() * 9, 0.2, 5 + rnd() * 8, rnd() * 3); c.rotation.z = (rnd() - 0.5) * 0.5; } for (let i = 0; i < 6; i++) { const c = cil(mat(0x6a4a2e), 0.55, 0.55, 1.2, 8 + rnd() * 8, 0.3, -2 + rnd() * 9, undefined, 9); c.rotation.z = rnd() > 0.5 ? Math.PI / 2 : 0.2; c.position.y = 0.7; }
       for (let i = 0; i < 4; i++) roca(mat(0xb89a62), 0.7, 5 + rnd() * 6, 0.6, 9 + rnd() * 4, 0.6);
       const g = nido(-14, 10, 0.6); cil(mat(0xd8d4cc), 0.05, 0.05, 1.6, 0, 0.4, 0, g, 4); pieza(new THREE.SphereGeometry(0.4, 8, 6), mat(0xe8e4dc), 0, 2.2, 0, g).scale.set(0.8, 1, 1.5); const cu = cil(mat(0xe8e4dc), 0.07, 0.09, 1.1, 0, 2.4, 0.5, g, 5); cu.rotation.x = 0.7; vivos.push(t => { cu.rotation.x = 0.7 + Math.max(0, Math.sin(t * 0.4)) * 0.8; });   // una garza
       for (let i = 0; i < 12; i++) arbol((rnd() - 0.5) * 90, -20 - rnd() * 40, 1 + rnd() * 0.8, 0, true);
-      juncos(700, 60, (x, z) => Math.hypot(x - 4, z - 3) < 15); nenufares(220, 46, 0.35, (x, z) => Math.hypot(x - 5, z - 2) < 19); burbujas(9, 30, 0.35); niebla(22, 1.2, 50, 0.45, 0xdfe8dc, 30);
+      juncos(700, 60, (x, z) => Math.hypot(x - 4, z - 3) < 15); nenufares(220, 46, 0.35, (x, z) => Math.hypot(x - 5, z - 2) < 19); burbujas(9, 30, 0.35); niebla(22, 1.2, 50, 0.32, 0xdfe8dc, 30);
       rotulo('El casco', 0, 9, 0); rotulo('Carga desparramada', 9, 4, 8);
       return { pos: [22, 11, 32], objetivo: [3, 2, 2], cielo: 0x6a7a70, R: 40, luz: 0.75 };
     },
@@ -596,6 +643,9 @@ export function crearEntrada(l) {
   gotas.frustumCulled = false; gotas.visible = false; escena.add(gotas);
   if (l.region === 'marendol') for (let i = 0; i < 7; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: blanda(), transparent: true, depthWrite: false, opacity: 0.16, color: 0xd9c08a })), z0 = (rnd() - 0.5) * 90, f0 = rnd() * 140; sp.scale.set(30, 7, 1); escena.add(sp); vivos.push(t => { sp.position.set(((t * 5 + f0) % 140) - 70, 2.2, z0 + Math.sin(t * 0.2 + i) * 4); }); }
   plantar(v.pos); fundir();
+  // Bruma, humo, lluvia y fuegos fatuos se pintan después del agua y de los discos del suelo. Con el mismo orden, la lámina (translúcida) tapaba los jirones lejanos
+  // y solo se veían sobre lo que asoma del agua: cabañas, árboles y bancos parecían blanqueados.
+  escena.traverse(o => { if (o.isSprite || o.isLineSegments || o.isPoints) o.renderOrder = Math.max(o.renderOrder, 2); });
 
   /* ---------- luz del día, la misma hora que en el mapa ---------- */
   const sol = new THREE.DirectionalLight(0xffffff, 2); sol.castShadow = true; sol.shadow.mapSize.setScalar(2048);
